@@ -57,10 +57,10 @@ export default function DashboardPage() {
       const mappedLeads = leadsResult.data.map((l) => ({
         id: l.id,
         name: l.business_name,
-        company: l.city ?? "",
+        company: l.city || l.country || "",
         status: l.status,
-        score: l.hot_score,
-        date: l.created_at.slice(0, 10),
+        score: l.hot_score || 0,
+        date: l.created_at ? new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—",
       }));
 
       setData({
