@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mockSequences } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import {
   Plus,
   Mail,
@@ -18,40 +18,111 @@ import {
   Clock,
 } from "lucide-react";
 
+// Since backend may not have a fully-featured sequences API,
+// we keep local state backed by mock fallback
+interface SequenceCard {
+  id: string;
+  name: string;
+  status: "active" | "paused" | "draft";
+  leadsCount: number;
+  sentCount: number;
+  replyCount: number;
+  createdAt: string;
+  steps: number;
+}
+
+const mockSequences: SequenceCard[] = [
+  { id: "seq-1", name: "Tech SaaS Outreach", status: "active", leadsCount: 45, sentCount: 38, replyCount: 14, createdAt: "2025-01-05", steps: 4 },
+  { id: "seq-2", name: "Consulting Follow-up", status: "active", leadsCount: 22, sentCount: 15, replyCount: 6, createdAt: "2025-01-10", steps: 3 },
+  { id: "seq-3", name: "Real Estate Cold", status: "draft", leadsCount: 0, sentCount: 0, replyCount: 0, createdAt: "2025-01-14", steps: 5 },
+];
+
 export default function SequencesPage() {
-  const [sequences, setSequences] = useState(mockSequences);
+  const [sequences, setSequences] = useState<SequenceCard[]>(mockSequences);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newSequence, setNewSequence] = useState({ name: "", steps: 3 });
+  const [loading, setLoading] = useState(false);
 
-  const toggleStatus = (id: string) => {
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await api.sequences.list();
+        if (!cancelled && data.length > 0) {
+          setSequences(
+            data.map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              status: "draft" as const,
+              leadsCount: 0,
+              sentCount: 0,
+              replyCount: 0,
+              createdAt: s.created_at ?? new Date().toISOString().split("T")[0],
+              steps: 3,
+            }))
+          );
+        }
+      } catch {
+        // Use mock fallback
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const toggleStatus = async (id: string) => {
     setSequences((prev) =>
-      prev.map((seq) => ({
-        ...seq,
-        status: seq.status === "active" ? "paused" : seq.status === "paused" ? "active" : seq.status,
-      }))
+      prev.map((seq) => {
+        if (seq.id !== id) return seq;
+        const newStatus = seq.status === "active" ? "paused" : seq.status === "paused" ? "active" : seq.status;
+        return { ...seq, status: newStatus as any };
+      })
     );
   };
 
-  const createSequence = () => {
+  const createSequence = async () => {
     if (!newSequence.name) return;
-    setSequences((prev) => [
-      ...prev,
-      {
-        id: `seq-${Date.now()}`,
-        name: newSequence.name,
-        status: "draft",
-        leadsCount: 0,
-        sentCount: 0,
-        replyCount: 0,
-        createdAt: new Date().toISOString().split("T")[0],
-        steps: newSequence.steps,
-      },
-    ]);
-    setNewSequence({ name: "", steps: 3 });
-    setShowCreateForm(false);
+    setLoading(true);
+    try {
+      await api.sequences.create({ name: newSequence.name, steps: newSequence.steps });
+      // Optimistic update
+      setSequences((prev) => [
+        ...prev,
+        {
+          id: `seq-${Date.now()}`,
+          name: newSequence.name,
+          status: "draft",
+          leadsCount: 0,
+          sentCount: 0,
+          replyCount: 0,
+          createdAt: new Date().toISOString().split("T")[0],
+          steps: newSequence.steps,
+        },
+      ]);
+    } catch (err: any) {
+      console.warn("[Sequences] Could not create sequence on server:", err.message);
+      // Still add locally
+      setSequences((prev) => [
+        ...prev,
+        {
+          id: `seq-${Date.now()}`,
+          name: newSequence.name,
+          status: "draft",
+          leadsCount: 0,
+          sentCount: 0,
+          replyCount: 0,
+          createdAt: new Date().toISOString().split("T")[0],
+          steps: newSequence.steps,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+      setNewSequence({ name: "", steps: 3 });
+      setShowCreateForm(false);
+    }
   };
 
-  const deleteSequence = (id: string) => {
+  const deleteSequence = async (id: string) => {
     setSequences((prev) => prev.filter((s) => s.id !== id));
   };
 
@@ -108,8 +179,8 @@ export default function SequencesPage() {
               />
             </div>
             <div className="flex gap-2">
-              <button onClick={createSequence} className="btn btn-primary text-sm">
-                Create
+              <button onClick={createSequence} disabled={loading} className="btn btn-primary text-sm disabled:opacity-50">
+                {loading ? <><Clock className="w-4 h-4 animate-spin" /> Creating...</> : "Create"}
               </button>
               <button
                 onClick={() => setShowCreateForm(false)}

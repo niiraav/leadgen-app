@@ -1,56 +1,92 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { LeadCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { mockLeads } from "@/lib/mock-data";
-import { Search, Filter, ArrowUpDown, Download, Plus, UserPlus } from "lucide-react";
+import { api, BackendPaginatedLeads } from "@/lib/api";
+import { Search, ArrowUpDown, Download, Plus, UserPlus, Loader2 } from "lucide-react";
 import Link from "next/link";
 
+interface FrontendLead {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  email: string;
+  location: string;
+  hotScore: number;
+  status: string;
+  addedAt: string;
+}
+
 const STATUS_OPTIONS = [
-  { value: "all", label: "All Status" },
+  { value: "", label: "All Status" },
   { value: "new", label: "New" },
   { value: "contacted", label: "Contacted" },
-  { value: "replied", label: "Replied" },
-  { value: "meeting", label: "Meeting" },
-  { value: "won", label: "Won" },
+  { value: "qualified", label: "Qualified" },
+  { value: "proposal_sent", label: "Proposal Sent" },
+  { value: "converted", label: "Won" },
   { value: "lost", label: "Lost" },
+  { value: "archived", label: "Archived" },
 ];
 
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sortBy, setSortBy] = useState<"name" | "score" | "date">("score");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "score" | "date">("date");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
+  const [leads, setLeads] = useState<FrontendLead[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const pageSize = 5;
 
-  const filteredLeads = useMemo(() => {
-    let filtered = mockLeads.filter((lead) => {
-      const matchesSearch =
-        !searchTerm ||
-        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus =
-        statusFilter === "all" || lead.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await api.leads.list({
+        limit: pageSize,
+        status: statusFilter || undefined,
+        search: searchTerm || undefined,
+        sortField: sortBy === "name" ? "business_name" : sortBy === "score" ? "hot_score" : "created_at",
+        sortOrder,
+      });
 
-    filtered.sort((a, b) => {
-      if (sortBy === "score") return b.hotScore - a.hotScore;
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      return 0;
-    });
+      const mapped = result.data.map((l) => ({
+        id: String(l.id),
+        name: l.businessName || "Unknown",
+        title: l.category || "",
+        company: l.city || l.country || "",
+        email: l.email || "",
+        location: [l.city, l.country].filter(Boolean).join(", "),
+        hotScore: l.hotScore,
+        status: l.status,
+        addedAt: new Date(l.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      }));
 
-    return filtered;
-  }, [searchTerm, statusFilter, sortBy]);
+      setLeads(mapped);
+      setTotalCount(result.pagination.total);
+      setCurrentPage(1);
+      setLoading(false);
+    } catch (err: any) {
+      console.warn("[Leads] API unreachable:", err.message);
+      // Mock fallback via mockLeads — do nothing, show empty with hint
+      setLeads([]);
+      setTotalCount(0);
+      setLoading(false);
+      setError(`Unable to reach API server. Is the backend running? (${err.message})`);
+    }
+  }, [statusFilter, searchTerm, sortBy, sortOrder]);
 
-  const totalPages = Math.ceil(filteredLeads.length / pageSize);
-  const paginatedLeads = filteredLeads.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="space-y-6 max-w-6xl">
@@ -59,7 +95,7 @@ export default function LeadsPage() {
         <div>
           <h1 className="text-2xl font-bold text-text tracking-tight">Leads</h1>
           <p className="text-sm text-text-muted mt-1">
-            {filteredLeads.length} leads in your database
+            {loading ? "Loading..." : `${totalCount} leads in your database`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -77,6 +113,13 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* Error State */}
+      {error && (
+        <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red">
+          {error}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
@@ -89,6 +132,7 @@ export default function LeadsPage() {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
+            onKeyDown={(e) => e.key === "Enter" && fetchLeads()}
             className="input pl-9"
           />
         </div>
@@ -109,7 +153,11 @@ export default function LeadsPage() {
         </select>
 
         <button
-          onClick={() => setSortBy(sortBy === "name" ? "score" : sortBy === "score" ? "date" : "name")}
+          onClick={() => {
+            if (sortBy === "name") { setSortBy("date"); setSortOrder("desc"); }
+            else if (sortBy === "date") { setSortBy("score"); setSortOrder("desc"); }
+            else { setSortBy("name"); setSortOrder("asc"); }
+          }}
           className="btn btn-ghost text-xs py-1.5 h-10"
         >
           {sortBy === "name" ? "Name" : sortBy === "score" ? "Hot Score" : "Date"}
@@ -119,27 +167,33 @@ export default function LeadsPage() {
 
       {/* Lead List */}
       <div className="space-y-2">
-        {paginatedLeads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} />
-        ))}
-        {paginatedLeads.length === 0 && (
+        {loading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-20 rounded-xl border border-border/60 bg-surface animate-pulse" />
+            ))}
+          </div>
+        ) : leads.length > 0 ? (
+          leads.map((lead) => (
+            <LeadCard key={lead.id} lead={lead} />
+          ))
+        ) : (
           <div className="card text-center py-12">
             <UserPlus className="w-10 h-10 text-text-faint mx-auto mb-3" />
             <p className="text-sm text-text-muted">No leads found</p>
             <p className="text-xs text-text-faint mt-1">
-              Try adjusting your filters or add a new lead
+              Try adjusting your filters, search Google Maps, or import a CSV
             </p>
           </div>
         )}
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-text-muted">
-            Showing {(currentPage - 1) * pageSize + 1}–
-            {Math.min(currentPage * pageSize, filteredLeads.length)} of{" "}
-            {filteredLeads.length}
+            Showing {totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0}–
+            {Math.min(currentPage * pageSize, totalCount)} of {totalCount}
           </p>
           <div className="flex items-center gap-1">
             <button

@@ -1,5 +1,8 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
 import { KPICard } from "@/components/ui/card";
-import { Users, Mail, MessageSquare, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { Users, Mail, MessageSquare, ArrowRight, TrendingUp } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -12,10 +15,110 @@ import {
   Line,
   Legend,
 } from "recharts";
+import { api } from "@/lib/api";
 import { mockDashboardStats } from "@/lib/mock-data";
+import Link from "next/link";
+
+interface DashboardData {
+  totalLeads: number;
+  contacted: number;
+  replied: number;
+  openSequences: number;
+  weeklyData: { day: string; leads: number; replied: number }[];
+  monthlyTrend: { month: string; leads: number; contacted: number; replied: number }[];
+  recentLeads: { id: string; name: string; company: string; status: string; score: number; date: string }[];
+  loading: boolean;
+  error: string | null;
+}
 
 export default function DashboardPage() {
-  const stats = mockDashboardStats;
+  const [data, setData] = useState<DashboardData>({
+    totalLeads: mockDashboardStats.totalLeads,
+    contacted: mockDashboardStats.contacted,
+    replied: mockDashboardStats.replied,
+    openSequences: mockDashboardStats.openSequences,
+    weeklyData: mockDashboardStats.weeklyData,
+    monthlyTrend: mockDashboardStats.monthlyTrend,
+    recentLeads: [
+      { name: "Sarah Chen", company: "TechFlow Inc", status: "new", score: 92, date: "Jan 15", id: "" },
+      { name: "Marcus Rivera", company: "GrowthLab", status: "contacted", score: 78, date: "Jan 14", id: "" },
+      { name: "Emily Park", company: "BrightPath", status: "replied", score: 85, date: "Jan 13", id: "" },
+      { name: "James O'Brien", company: "DataScale", status: "meeting", score: 97, date: "Jan 12", id: "" },
+    ],
+    loading: true,
+    error: null,
+  });
+
+  const fetchData = useCallback(async () => {
+    try {
+      // Fetch KPI from real API
+      const kpi = await api.kpi.get();
+      
+      // Fetch recent leads for the table
+      const leadsResult = await api.leads.list({ limit: 4 });
+      const mappedLeads = leadsResult.data.map((l) => ({
+        id: l.id,
+        name: l.businessName,
+        company: l.city ?? "",
+        status: l.status,
+        score: l.hotScore,
+        date: l.createdAt.slice(0, 10),
+      }));
+
+      setData({
+        totalLeads: kpi.total_leads,
+        contacted: kpi.contacted_this_week,
+        replied: kpi.replies,
+        openSequences: kpi.open_sequences,
+        weeklyData: mockDashboardStats.weeklyData, // keep mock until backend provides time-series
+        monthlyTrend: mockDashboardStats.monthlyTrend, // keep mock until backend provides time-series
+        recentLeads: mappedLeads.length > 0 ? mappedLeads : [
+          { name: "No leads yet", company: "—", status: "new", score: 0, date: "—", id: "" },
+        ],
+        loading: false,
+        error: null,
+      });
+    } catch (err: any) {
+      console.warn("[Dashboard] API unreachable, showing mock data:", err.message);
+      // Fall back to mock data
+      setData({
+        totalLeads: mockDashboardStats.totalLeads,
+        contacted: mockDashboardStats.contacted,
+        replied: mockDashboardStats.replied,
+        openSequences: mockDashboardStats.openSequences,
+        weeklyData: mockDashboardStats.weeklyData,
+        monthlyTrend: mockDashboardStats.monthlyTrend,
+        recentLeads: [
+          { name: "Sarah Chen", company: "TechFlow Inc", status: "new", score: 92, date: "Jan 15", id: "" },
+          { name: "Marcus Rivera", company: "GrowthLab", status: "contacted", score: 78, date: "Jan 14", id: "" },
+          { name: "Emily Park", company: "BrightPath", status: "replied", score: 85, date: "Jan 13", id: "" },
+          { name: "James O'Brien", company: "DataScale", status: "meeting", score: 97, date: "Jan 12", id: "" },
+        ],
+        loading: false,
+        error: null,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  if (data.loading) {
+    return (
+      <div className="space-y-6 max-w-7xl">
+        <div className="flex animate-pulse items-center gap-3">
+          <div className="h-8 w-40 bg-surface-2 rounded" />
+          <div className="h-4 w-64 bg-surface-2 rounded" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-28 bg-surface-2 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl">
@@ -31,28 +134,28 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="Total Leads"
-          value={stats.totalLeads.toLocaleString()}
+          value={data.totalLeads.toLocaleString()}
           change="+18.5%"
           changeType="positive"
           icon={<Users className="w-5 h-5" />}
         />
         <KPICard
           title="Contacted"
-          value={stats.contacted.toLocaleString()}
+          value={data.contacted.toLocaleString()}
           change="+12.3%"
           changeType="positive"
           icon={<Mail className="w-5 h-5" />}
         />
         <KPICard
           title="Replies"
-          value={stats.replied.toLocaleString()}
+          value={data.replied.toLocaleString()}
           change="-2.1%"
           changeType="negative"
           icon={<MessageSquare className="w-5 h-5" />}
         />
         <KPICard
           title="Open Sequences"
-          value={stats.openSequences}
+          value={data.openSequences}
           change="+3"
           changeType="positive"
           icon={<ArrowRight className="w-5 h-5" />}
@@ -68,7 +171,7 @@ export default function DashboardPage() {
             <TrendingUp className="w-4 h-4 text-green" />
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={stats.weeklyData}>
+            <BarChart data={data.weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
               <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
@@ -94,7 +197,7 @@ export default function DashboardPage() {
             <TrendingUp className="w-4 h-4 text-green" />
           </div>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={stats.monthlyTrend}>
+            <LineChart data={data.monthlyTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "var(--text-muted)" }} axisLine={false} tickLine={false} />
@@ -106,9 +209,7 @@ export default function DashboardPage() {
                   fontSize: "12px",
                 }}
               />
-              <Legend
-                wrapperStyle={{ fontSize: "11px" }}
-              />
+              <Legend wrapperStyle={{ fontSize: "11px" }} />
               <Line type="monotone" dataKey="leads" stroke="var(--blue)" strokeWidth={2} dot={{ r: 3 }} name="Leads" />
               <Line type="monotone" dataKey="contacted" stroke="var(--amber)" strokeWidth={2} dot={{ r: 3 }} name="Contacted" />
               <Line type="monotone" dataKey="replied" stroke="var(--green)" strokeWidth={2} dot={{ r: 3 }} name="Replied" />
@@ -156,14 +257,15 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {[
-                { name: "Sarah Chen", company: "TechFlow Inc", status: "new", score: 92, date: "Jan 15" },
-                { name: "Marcus Rivera", company: "GrowthLab", status: "contacted", score: 78, date: "Jan 14" },
-                { name: "Emily Park", company: "BrightPath", status: "replied", score: 85, date: "Jan 13" },
-                { name: "James O'Brien", company: "DataScale", status: "meeting", score: 97, date: "Jan 12" },
-              ].map((lead, i) => (
+              {data.recentLeads.map((lead, i) => (
                 <tr key={i} className="border-b border-border/30 text-text hover:bg-surface-2/40 transition-colors">
-                  <td className="py-2.5 pr-4 font-medium">{lead.name}</td>
+                  <td className="py-2.5 pr-4 font-medium">
+                    {lead.id ? (
+                      <Link href={`/leads/${lead.id}`} className="hover:text-blue transition-colors">
+                        {lead.name}
+                      </Link>
+                    ) : lead.name}
+                  </td>
                   <td className="py-2.5 pr-4 hidden sm:table-cell">{lead.company}</td>
                   <td className="py-2.5 pr-4 hidden md:table-cell">
                     <span

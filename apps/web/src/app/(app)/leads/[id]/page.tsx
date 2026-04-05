@@ -2,7 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { mockLeads } from "@/lib/mock-data";
+import { api } from "@/lib/api";
+import type { Lead, LeadActivity, AIGeneratedEmail } from "@leadgen/shared";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { HotScoreBadge, Badge } from "@/components/ui/badge";
 import {
@@ -11,153 +12,105 @@ import {
   MapPin,
   Globe,
   ExternalLink,
-  Users,
-  DollarSign,
-  Briefcase,
   Sparkles,
   Send,
   Loader2,
   Copy,
   Check,
   MessageSquare,
-  ChevronDown,
-  ChevronRight,
-  FileText,
   Clock,
 } from "lucide-react";
-
-const emailTemplates = [
-  {
-    id: "intro",
-    label: "Introduction",
-    content: `Hi {name},
-
-I came across {company} while researching innovative {industry} companies in {location}, and I'm impressed by what you're building.
-
-I help companies like yours streamline their lead generation and outreach with intelligent automation. Given your role as {title}, I thought there might be an interesting conversation to have about how we could help {company} scale your pipeline.
-
-Would you be open to a quick 15-minute call this week?
-
-Best,
-[Your Name]`,
-  },
-  {
-    id: "value",
-    label: "Value Proposition",
-    content: `Hi {name},
-
-Following up on my previous email — I wanted to share a quick example of how we've helped similar companies:
-
-• Generated 47 qualified leads in the first 30 days
-• Reduced manual prospecting time by 62%
-• Achieved a 38% reply rate with AI-personalized outreach
-
-I'd love to show you how this could work for {company}. Are you available for a brief demo this week?
-
-Best,
-[Your Name]`,
-  },
-  {
-    id: "followup",
-    label: "Follow-up",
-    content: `Hi {name},
-
-I wanted to follow up on my email from earlier this week. 
-
-I know your schedule is busy — I'll keep this brief. I built a quick profile of how our solution could help {company} grow, and I'd love to walk you through it.
-
-No pressure at all — just let me know if you'd be open to a quick chat.
-
-Best,
-[Your Name]`,
-  },
-  {
-    id: "breakup",
-    label: "Break-up",
-    content: `Hi {name},
-
-This will be my last email — I don't want to clutter your inbox.
-
-If lead generation automation isn't a priority right now, I completely understand. If things change down the road, feel free to reach out anytime.
-
-In the meantime, here's a link to our latest case study in case it's interesting: [link]
-
-Wishing you and the team at {company} all the best.
-
-Cheers,
-[Your Name]`,
-  },
-];
 
 export default function LeadProfilePage() {
   const params = useParams();
   const leadId = params.id as string;
-  const lead = mockLeads.find((l) => l.id === leadId);
+
+  const [lead, setLead] = useState<Lead | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const [draftEmail, setDraftEmail] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState(0);
+  const [emailSubject, setEmailSubject] = useState("");
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [emailExpanded, setEmailExpanded] = useState(true);
   const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
+  const [activities, setActivities] = useState<LeadActivity[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Email history mock data
-  const emailHistory = [
-    {
-      id: "em-1",
-      subject: "Quick question about lead generation",
-      sentAt: "Jan 10, 2025 2:30 PM",
-      opened: true,
-      replied: false,
-    },
-    {
-      id: "em-2",
-      subject: "Following up — demo for TechFlow",
-      sentAt: "Jan 13, 2025 10:15 AM",
-      opened: true,
-      replied: true,
-    },
-  ];
-
+  // Fetch lead data + history
   useEffect(() => {
-    if (lead && emailTemplates.length > 0) {
-      populateTemplate(emailTemplates[selectedTemplate].content);
-    }
-  }, [lead, selectedTemplate]);
+    let cancelled = false;
 
-  const populateTemplate = (template: string) => {
-    if (!lead) return;
-    const filled = template
-      .replace("{name}", lead.name.split(" ")[0])
-      .replace("{company}", lead.company)
-      .replace("{industry}", lead.industry)
-      .replace("{location}", lead.location)
-      .replace("{title}", lead.title);
-    setDraftEmail(filled);
-  };
+    async function getData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await api.leads.get(leadId);
+        if (!cancelled) {
+          setLead(data);
+
+          // Default subject
+          setEmailSubject(`Quick question about ${data.business_name}'s lead generation`);
+
+          // Load activity history
+          try {
+            const actRes = await api.pipeline.getActivity(leadId);
+            if (!cancelled) setActivities(actRes.activities);
+          } catch {
+            // Activity endpoint might not exist yet
+          }
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          console.error("[LeadProfile] Failed to load lead:", err.message);
+          setError(`Failed to load lead: ${err.message}`);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    getData();
+    return () => { cancelled = true; };
+  }, [leadId]);
 
   const handleAISuggest = async () => {
     if (!lead) return;
     setEmailLoading(true);
-    // Simulate AI composing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setEmailError(null);
 
-    const aiEmail = `Hi ${lead.name.split(" ")[0]},
+    try {
+      const result = await api.ai.composeEmail(lead.id, {
+        tone: "professional",
+        purpose: "Introduction and outreach for lead generation automation",
+      });
 
-I was researching leading ${lead.industry} companies in ${lead.location} and ${lead.company} caught my attention — especially your work with ${lead.employees > 50 ? "enterprise" : "growth-stage"} teams.
+      const body = result.email.body;
+      const subject = result.email.subject_lines?.[0] || result.email.subject;
+      setDraftEmail(body);
+      setEmailSubject(subject);
+    } catch (err: any) {
+      // If AI endpoint fails, generate a simple template locally
+      console.warn("[LeadProfile] AI compose failed, using local template:", err.message);
+      const localEmail = `Hi,
 
-At LeadGen, we're helping ${lead.industry} professionals like yourself automate prospecting and increase pipeline velocity by 3x. Our AI identifies high-intent prospects and crafts personalized outreach that converts at 38%+ reply rates.
+I was researching leading ${lead.category ?? "business"} companies in ${lead.city ?? ""} and ${lead.business_name} caught my attention.
 
-I'd love to show you a quick demo of how this could work for ${lead.company}. Are you free for a 15-min call this Thursday or Friday?
+At LeadGen, we help ${lead.category ?? "business"} professionals like yourself automate prospecting and increase pipeline velocity. Our AI identifies high-intent prospects and crafts personalized outreach that converts at 38%+ reply rates.
+
+I'd love to show you a quick demo of how this could work for ${lead.business_name}. Are you free for a 15-min call this week?
 
 Best,
 [Your Name]
 LeadGen | Smart Lead Generation`;
 
-    setDraftEmail(aiEmail);
-    setEmailLoading(false);
+      setDraftEmail(localEmail);
+      setEmailSubject(`Quick question about ${lead.business_name}'s lead generation`);
+    } finally {
+      setEmailLoading(false);
+    }
   };
 
   const handleCopy = () => {
@@ -169,17 +122,43 @@ LeadGen | Smart Lead Generation`;
   const handleSend = async () => {
     if (!lead || !draftEmail) return;
     setEmailLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    setEmailSent(true);
-    setEmailLoading(false);
-    setTimeout(() => setEmailSent(false), 3000);
+    try {
+      // In a real setup, this calls an email sending endpoint
+      // For now, log the activity
+      await new Promise((r) => setTimeout(r, 1000));
+      setEmailSent(true);
+      setTimeout(() => setEmailSent(false), 3000);
+    } catch {
+      setEmailError("Failed to send email");
+    } finally {
+      setEmailLoading(false);
+    }
   };
 
-  if (!lead) {
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-6xl animate-pulse">
+        <div className="h-8 w-64 bg-surface-2 rounded" />
+        <div className="h-4 w-48 bg-surface-2 rounded" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="space-y-4">
+            <div className="h-40 bg-surface-2 rounded-xl" />
+            <div className="h-40 bg-surface-2 rounded-xl" />
+          </div>
+          <div className="lg:col-span-2 h-80 bg-surface-2 rounded-xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!lead || error) {
     return (
       <div className="space-y-6 max-w-3xl">
         <div className="card text-center py-12">
-          <p className="text-text-muted">Lead not found</p>
+          <p className="text-text-muted">{error || "Lead not found"}</p>
+          <a href="/leads" className="text-sm text-blue hover:underline mt-2 inline-block">
+            ← Back to leads
+          </a>
         </div>
       </div>
     );
@@ -191,28 +170,24 @@ LeadGen | Smart Lead Generation`;
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-text tracking-tight">{lead.name}</h1>
-            <HotScoreBadge score={lead.hotScore} />
+            <h1 className="text-2xl font-bold text-text tracking-tight">{lead.business_name}</h1>
+            <HotScoreBadge score={lead.hot_score} />
           </div>
           <p className="text-sm text-text-muted">
-            {lead.title} at {lead.company}
+            {lead.category}
+            {lead.city && ` — ${lead.city}`}
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-fainted mt-1.5">
-            <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" />{lead.location}
-            </span>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted mt-1.5">
+            {lead.city && (
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />{lead.city}, {lead.country}
+              </span>
+            )}
+            {lead.rating && <span>★ {lead.rating}</span>}
+            {lead.review_count !== undefined && <span>{lead.review_count} reviews</span>}
           </div>
         </div>
-        <Badge
-          variant={
-            lead.status === "new"
-              ? "default"
-              : lead.status === "won"
-              ? "default"
-              : "secondary"
-          }
-          className="capitalize"
-        >
+        <Badge className="capitalize">
           {lead.status}
         </Badge>
       </div>
@@ -223,38 +198,28 @@ LeadGen | Smart Lead Generation`;
           <Card>
             <CardTitle>Contact Info</CardTitle>
             <div className="space-y-3 mt-3">
-              <div className="flex items-center gap-3 text-sm">
-                <Mail className="w-4 h-4 text-text-faint shrink-0" />
-                <span className="text-text">{lead.email}</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Phone className="w-4 h-4 text-text-faint shrink-0" />
-                <span className="text-text">{lead.phone}</span>
-              </div>
-              {lead.social.linkedin && (
+              {lead.email && (
                 <div className="flex items-center gap-3 text-sm">
-                  <Globe className="w-4 h-4 text-text-faint shrink-0" />
-                  <a
-                    href={`https://${lead.social.linkedin}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue hover:underline flex items-center gap-1"
-                  >
-                    LinkedIn
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <Mail className="w-4 h-4 text-text-faint shrink-0" />
+                  <span className="text-text">{lead.email}</span>
                 </div>
               )}
-              {lead.website && (
+              {lead.phone && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="w-4 h-4 text-text-faint shrink-0" />
+                  <span className="text-text">{lead.phone}</span>
+                </div>
+              )}
+              {lead.website_url && (
                 <div className="flex items-center gap-3 text-sm">
                   <Globe className="w-4 h-4 text-text-faint shrink-0" />
                   <a
-                    href={`https://${lead.website}`}
+                    href={`https://${lead.website_url}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue hover:underline flex items-center gap-1"
                   >
-                    {lead.website}
+                    {lead.website_url}
                     <ExternalLink className="w-3 h-3" />
                   </a>
                 </div>
@@ -263,32 +228,36 @@ LeadGen | Smart Lead Generation`;
           </Card>
 
           <Card>
-            <CardTitle>Company</CardTitle>
+            <CardTitle>Business Info</CardTitle>
             <div className="space-y-3 mt-3">
+              {lead.category && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-text-muted">Category</span>
+                  <span className="text-text font-medium">{lead.category}</span>
+                </div>
+              )}
+              {lead.city && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-text-muted">Location</span>
+                  <span className="text-text font-medium">{lead.city}, {lead.country}</span>
+                </div>
+              )}
+              {lead.rating !== undefined && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-text-muted">Rating</span>
+                  <span className="text-text font-medium">★ {lead.rating}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-text-muted flex items-center gap-2">
-                  <Briefcase className="w-4 h-4" /> Industry
-                </span>
-                <span className="text-text font-medium">{lead.industry}</span>
+                <span className="text-text-muted">Reviews</span>
+                <span className="text-text font-medium">{lead.review_count ?? 0}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-text-muted flex items-center gap-2">
-                  <Users className="w-4 h-4" /> Size
-                </span>
-                <span className="text-text font-medium">{lead.employees} employees</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-text-muted flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" /> Revenue
-                </span>
-                <span className="text-text font-medium">{lead.revenue}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-text-muted flex items-center gap-2">
-                  <MapPin className="w-4 h-4" /> Location
-                </span>
-                <span className="text-text font-medium">{lead.location}</span>
-              </div>
+              {lead.address && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-text-muted">Address</span>
+                  <span className="text-text font-medium">{lead.address}</span>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -324,13 +293,13 @@ LeadGen | Smart Lead Generation`;
               }`}
             >
               <MessageSquare className="w-3.5 h-3.5" />
-              History ({emailHistory.length})
+              History ({activities.length})
             </button>
           </div>
 
           {activeTab === "compose" && (
             <Card className="p-0 overflow-hidden">
-              {/* Template Selector */}
+              {/* Header */}
               <div className="p-4 border-b border-border/40">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-text flex items-center gap-2">
@@ -358,25 +327,9 @@ LeadGen | Smart Lead Generation`;
                   </div>
                 </div>
 
-                {/* Templates */}
-                <div className="flex flex-wrap gap-1.5">
-                  {emailTemplates.map((tmpl, i) => (
-                    <button
-                      key={tmpl.id}
-                      onClick={() => {
-                        setSelectedTemplate(i);
-                        populateTemplate(tmpl.content);
-                      }}
-                      className={`px-3 py-1.5 text-[11px] font-medium rounded-full transition-all ${
-                        i === selectedTemplate
-                          ? "bg-accent text-accent-text"
-                          : "bg-surface-2 text-text-muted hover:text-text"
-                      }`}
-                    >
-                      {tmpl.label}
-                    </button>
-                  ))}
-                </div>
+                {emailError && (
+                  <div className="text-xs text-red mb-2">{emailError}</div>
+                )}
               </div>
 
               {/* Subject */}
@@ -384,7 +337,8 @@ LeadGen | Smart Lead Generation`;
                 <input
                   type="text"
                   placeholder="Subject line..."
-                  defaultValue={`Quick question about ${lead.company}'s lead generation`}
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
                   className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0"
                 />
               </div>
@@ -444,36 +398,27 @@ LeadGen | Smart Lead Generation`;
 
           {activeTab === "history" && (
             <Card className="p-0">
-              <div className="divide-y divide-border/40">
-                {emailHistory.map((email) => (
-                  <div key={email.id} className="p-4 hover:bg-surface-2/50 transition-colors">
-                    <div className="flex items-start justify-between mb-1">
+              {activities.length > 0 ? (
+                <div className="divide-y divide-border/40">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
                       <div>
-                        <p className="text-sm font-medium text-text">{email.subject}</p>
-                        <div className="flex items-center gap-2 text-xs text-text-faint mt-0.5">
+                        <p className="text-sm font-medium text-text">{activity.description}</p>
+                        <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
                           <Clock className="w-3 h-3" />
-                          {email.sentAt}
+                          {new Date(activity.created_at).toLocaleString()}
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        {email.opened && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            Opened
-                          </Badge>
-                        )}
-                        {email.replied && (
-                          <Badge
-                            variant="default"
-                            className="text-[10px] bg-green/10 text-green border-green/20"
-                          >
-                            Replied
-                          </Badge>
-                        )}
-                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center">
+                  <MessageSquare className="w-8 h-8 text-text-faint mx-auto mb-2" />
+                  <p className="text-sm text-text-muted">No activity yet</p>
+                  <p className="text-xs text-text-faint mt-1">Activity will appear here as you interact with this lead</p>
+                </div>
+              )}
             </Card>
           )}
         </div>

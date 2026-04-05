@@ -1,18 +1,172 @@
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
-import type { Lead, LeadActivity, Sequence, AIGeneratedEmail, DashboardKPI } from "@leadgen/shared";
+import type {
+  Lead,
+  LeadActivity,
+  Sequence,
+  AIGeneratedEmail,
+  DashboardKPI,
+} from "@leadgen/shared";
 
-export interface SearchResults {
-  leads: Lead[];
-  total: number;
+// ─── Response shapes matching the backend ─────────────────────────────────────
+
+/** Backend returns { data: Lead[], pagination: { limit, hasMore, nextCursor, total } } */
+export interface BackendPaginatedLeads {
+  data: BackendLead[];
+  pagination: {
+    limit: number;
+    hasMore: boolean;
+    nextCursor: string | null;
+    total: number;
+  };
 }
 
-export interface PaginatedLeads {
-  leads: Lead[];
-  nextCursor?: string;
-  total: number;
+/** Backend returns { query, count, results[] } for search */
+export interface BackendSearchResult {
+  query: string;
+  count: number;
+  results: BackendRawSearchLead[];
 }
+
+/** Lead fields as returned by the backend (camelCase) */
+export interface BackendLead {
+  id: string;
+  businessName: string;
+  email: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  address: string | null;
+  city: string | null;
+  country: string;
+  category: string | null;
+  rating: number | null;
+  reviewCount: number;
+  hotScore: number;
+  readinessFlags: string[];
+  status: string;
+  source: string;
+  notes: string | null;
+  tags: string[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  lastContacted: string | null;
+}
+
+/** A raw search result from SerpAPI (before it becomes a Lead) */
+export interface BackendRawSearchLead {
+  business_name: string;
+  phone?: string;
+  website_url?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  category?: string;
+  rating?: number;
+  review_count?: number;
+  latitude?: number;
+  longitude?: number;
+  hot_score?: number;
+  readiness_flags?: string[];
+}
+
+/** Single lead from GET /leads/:id */
+export interface BackendLeadDetail {
+  id: string;
+  businessName: string;
+  email: string | null;
+  phone: string | null;
+  websiteUrl: string | null;
+  address: string | null;
+  city: string | null;
+  country: string;
+  category: string | null;
+  rating: number | null;
+  reviewCount: number;
+  hotScore: number;
+  readinessFlags: string[];
+  status: string;
+  source: string;
+  notes: string | null;
+  tags: string[];
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  lastContacted: string | null;
+}
+
+/** Pipeline activity response */
+export interface BackendActivityResponse {
+  lead_id: string;
+  activities: LeadActivity[];
+}
+
+/** Pipeline status update response */
+export interface BackendStatusUpdateResponse {
+  message: string;
+  lead_id: string;
+  status: string;
+}
+
+/** AI email response */
+export interface BackendAIEmailResponse {
+  lead_id: string;
+  email: {
+    subject_lines?: string[];
+    subject: string;
+    body: string;
+  };
+}
+
+/** KPI summary from API */
+export interface BackendKPI {
+  total_leads: number;
+  contacted_this_week: number;
+  replies: number;
+  open_sequences: number;
+}
+
+// ─── Field mapping: backend (camelCase) → frontend (snake_case) ──────────────
+
+function mapBackendLead(raw: BackendLead): Lead {
+  return {
+    id: raw.id,
+    business_name: raw.businessName,
+    contact_name: undefined,
+    email: raw.email ?? undefined,
+    phone: raw.phone ?? undefined,
+    website_url: raw.websiteUrl ?? undefined,
+    address: raw.address ?? undefined,
+    city: raw.city ?? undefined,
+    country: raw.country,
+    latitude: undefined,
+    longitude: undefined,
+    category: raw.category ?? undefined,
+    industry: raw.category ?? undefined,
+    company_size: undefined,
+    linkedin_url: undefined,
+    facebook_url: undefined,
+    instagram_url: undefined,
+    twitter_handle: undefined,
+    has_website: !!raw.websiteUrl,
+    rating: raw.rating ?? undefined,
+    review_count: raw.reviewCount,
+    hot_score: raw.hotScore,
+    readiness_flags: raw.readinessFlags,
+    status: raw.status as Lead["status"],
+    source: raw.source as Lead["source"],
+    notes: raw.notes ?? undefined,
+    tags: raw.tags,
+    metadata: raw.metadata,
+    created_at: raw.createdAt,
+    updated_at: raw.updatedAt,
+    last_contacted: raw.lastContacted ?? undefined,
+    sequence_ended: undefined,
+  };
+}
+
+// ─── Generic request helper ──────────────────────────────────────────────────
 
 async function request<T>(
   endpoint: string,
@@ -20,27 +174,40 @@ async function request<T>(
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `API error: ${response.status} ${response.statusText}`
-    );
+  // Only set Content-Type when NOT sending FormData
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
   }
 
-  return response.json() as Promise<T>;
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(
+        errorData.message ||
+          errorData.error ||
+          `API error: ${response.status} ${response.statusText}`
+      );
+    }
+
+    return (await response.json()) as Promise<T>;
+  } catch (err) {
+    // Re-throw network errors so callers can handle them
+    throw err;
+  }
 }
 
+// ─── Public API client ───────────────────────────────────────────────────────
+
 export const api = {
-  // Google Maps search
+  // ── Google Maps search ──
   search: {
     googleMaps: (params: {
       query: string;
@@ -48,79 +215,156 @@ export const api = {
       maxResults?: number;
       noWebsite?: boolean;
     }) =>
-      request<SearchResults>("/search/google-maps", {
+      request<BackendSearchResult>("/search/google-maps", {
         method: "POST",
         body: JSON.stringify({
-          query: params.query,
+          businessType: params.query,
           location: params.location,
-          maxResults: params.maxResults || 50,
-          noWebsite: params.noWebsite || false,
+          maxResults: Math.min(params.maxResults ?? 50, 50),
         }),
       }),
   },
 
-  // Leads CRUD
+  // ── Leads CRUD ──
   leads: {
     list: (params?: {
-      page?: number;
+      cursor?: string;
       limit?: number;
       status?: string;
       search?: string;
+      sortField?: string;
+      sortOrder?: "asc" | "desc";
     }) => {
       const qs = new URLSearchParams();
-      if (params?.page) qs.set("page", String(params.page));
+      if (params?.cursor) qs.set("cursor", params.cursor);
       if (params?.limit) qs.set("limit", String(params.limit));
       if (params?.status) qs.set("status", params.status);
       if (params?.search) qs.set("search", params.search);
-      return request<PaginatedLeads>(`/leads?${qs.toString()}`);
+      if (params?.sortField) qs.set("sortField", params.sortField);
+      if (params?.sortOrder) qs.set("sortOrder", params.sortOrder);
+      return request<BackendPaginatedLeads>(`/leads?${qs.toString()}`);
     },
-    get: (id: string) => request<Lead>(`/leads/${id}`),
+
+    get: (id: string) =>
+      request<BackendLeadDetail>(`/leads/${id}`).then(mapBackendLead),
+
     create: (data: Record<string, unknown>) =>
-      request<Lead>("/leads", { method: "POST", body: JSON.stringify(data) }),
+      request<BackendLeadDetail>("/leads", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }).then(mapBackendLead),
+
+    batchCreate: (leads: Record<string, unknown>[]) =>
+      request<{ imported: number }>("/leads/batch", {
+        method: "POST",
+        body: JSON.stringify({ leads }),
+      }),
+
     update: (id: string, data: Record<string, unknown>) =>
-      request<Lead>(`/leads/${id}`, {
+      request<BackendLeadDetail>(`/leads/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
-      }),
+      }).then(mapBackendLead),
+
     delete: (id: string) =>
-      request<void>(`/leads/${id}`, { method: "DELETE" }),
+      request<{ message: string }>(`/leads/${id}`, { method: "DELETE" }),
   },
 
-  // Pipeline
+  // ── Pipeline ──
   pipeline: {
-    list: () => request<Lead[]>("/pipeline"),
-    update: (id: string, data: { status: string }) =>
-      request<Lead>(`/pipeline/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
+    list: async () => {
+      // Backend doesn't have a standalone pipeline list — use leads with wider scope
+      const res = await api.leads.list({ limit: 500 });
+      return res.data.map(mapBackendLead);
+    },
+
+    updateStatus: (id: string, status: string, notes?: string) =>
+      request<BackendStatusUpdateResponse>(`/pipeline/${id}/status`, {
+        method: "POST",
+        body: JSON.stringify({ status, notes }),
       }),
+
+    getActivity: (id: string) =>
+      request<BackendActivityResponse>(`/pipeline/${id}/activity`),
   },
 
-  // Sequences
+  // ── Sequences ──
   sequences: {
     list: () => request<Sequence[]>("/sequences"),
     create: (data: Record<string, unknown>) =>
-      request<Sequence>("/sequences", { method: "POST", body: JSON.stringify(data) }),
+      request<Sequence>("/sequences", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   },
 
-  // AI Email composition
+  // ── AI Email ──
   ai: {
-    composeEmail: (params: {
-      leadId: string; 
-      context?: string;
-      tone?: string;
+    composeEmail: (leadId: string, params: {
+      tone: "professional" | "friendly" | "casual" | "persuasive";
+      purpose: string;
+      customInstructions?: string;
     }) =>
-      request<AIGeneratedEmail>("/ai/compose-email", {
+      request<BackendAIEmailResponse>(`/leads/${leadId}/ai-email`, {
         method: "POST",
         body: JSON.stringify(params),
       }),
   },
 
-  // Import
+  // ── Import ──
   import: {
-    csv: (data: FormData) => request<{ imported: number }>("/import/csv", { 
-      method: "POST", 
-      body: data,
-    }),
+    csv: (rows: Record<string, unknown>[]) =>
+      request<{ imported: number }>("/leads/batch", {
+        method: "POST",
+        body: JSON.stringify({ leads: rows }),
+      }),
+  },
+
+  // ── KPI / Dashboard ──
+  kpi: {
+    get: async (): Promise<DashboardKPI> => {
+      // The backend doesn't have a dedicated KPI endpoint yet.
+      // Fetch lead list to compute totals.
+      const res = await api.leads.list({ limit: 1 }); // just need total
+      const total = res.pagination.total;
+
+      // For now derive simple KPIs — extend when backend adds /kpi endpoint
+      return {
+        total_leads: total,
+        contacted_this_week: 0,
+        replies: 0,
+        open_sequences: 0,
+      };
+    },
+  },
+
+  // ── Utility: map raw search leads to frontend-friendly shape ──
+  mapSearchResult(backendResult: BackendSearchResult) {
+    return backendResult.results.map((r, idx) => ({
+      id: `search-${idx}`,
+      business_name: r.business_name,
+      contact_name: "",
+      email: "",
+      phone: r.phone ?? "",
+      website_url: r.website_url ?? "",
+      address: r.address ?? "",
+      city: r.city ?? "",
+      country: r.country ?? "",
+      category: r.category ?? "",
+      industry: r.category ?? "",
+      rating: r.rating,
+      review_count: r.review_count,
+      hot_score: r.hot_score ?? 0,
+      readiness_flags: r.readiness_flags ?? [],
+      status: "new" as const,
+      source: "serpapi" as const,
+      tags: [] as string[],
+      metadata: {} as Record<string, unknown>,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      has_website: !!r.website_url,
+    }));
   },
 };
+
+export type { Lead, AIGeneratedEmail, LeadActivity, Sequence, DashboardKPI };

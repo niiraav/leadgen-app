@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import Papa from "papaparse";
+import { api } from "@/lib/api";
 import {
   Upload,
   FileText,
@@ -23,6 +24,7 @@ export default function ImportPage() {
   const [fileName, setFileName] = useState("");
   const [fileSize, setFileSize] = useState(0);
   const [csvData, setCsvData] = useState<Record<string, string>[]>([]);
+  const [fullCsvData, setFullCsvData] = useState<Record<string, string>[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [isDragging, setIsDragging] = useState(false);
@@ -59,6 +61,7 @@ export default function ImportPage() {
         const data = results.data as Record<string, string>[];
         const cols = results.meta.fields || [];
         setCsvData(data.slice(0, 10));
+        setFullCsvData(data);
         setHeaders(cols);
 
         // Auto-map common fields
@@ -100,10 +103,35 @@ export default function ImportPage() {
 
   const handleImport = async () => {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setImportedCount(csvData.length);
-    setStep("complete");
-    setLoading(false);
+    setError(null);
+    try {
+      // Map fields using the user's field mapping
+      const dataToImport = fullCsvData.length > 0 ? fullCsvData : csvData;
+      const mappedLeads = dataToImport.map((row) => {
+        const lead: Record<string, unknown> = {
+          business_name: row[mapping.company] || row[mapping.name] || "",
+          email: row[mapping.email] || "",
+          phone: row[mapping.phone] || "",
+          website_url: row[mapping.website] || "",
+          city: row[mapping.location] || "",
+          category: row[mapping.industry] || "",
+          status: "new",
+          source: "manual",
+          tags: [],
+        };
+        return lead;
+      }).filter((l) => l.business_name !== "");
+
+      // Send to backend via batch create
+      const result = await api.import.csv(mappedLeads);
+      setImportedCount(result.imported || mappedLeads.length);
+      setStep("complete");
+    } catch (err: any) {
+      console.error("[Import] Failed to import CSV:", err.message);
+      setError(`Import failed: ${err.message}. The API server may not be running — check backend status.`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
