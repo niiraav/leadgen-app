@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { KPICard } from "@/components/ui/card";
 import { Users, Mail, MessageSquare, ArrowRight, TrendingUp } from "lucide-react";
@@ -304,3 +305,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+export const getServerSideProps = withAuth();

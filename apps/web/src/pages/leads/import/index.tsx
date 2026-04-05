@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import Papa from "papaparse";
@@ -415,3 +416,5 @@ function mappedCount(mapping: Record<string, string>, data: Record<string, strin
   const hasEmail = !!mapping.email;
   return hasEmail ? data.length : 0;
 }
+
+export const getServerSideProps = withAuth();

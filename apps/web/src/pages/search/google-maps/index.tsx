@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge, HotScoreBadge } from "@/components/ui/badge";
@@ -357,3 +358,5 @@ export default function GoogleMapsSearchPage() {
     </div>
   );
 }
+
+export const getServerSideProps = withAuth();

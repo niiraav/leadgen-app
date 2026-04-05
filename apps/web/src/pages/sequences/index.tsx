@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -298,3 +299,5 @@ export default function SequencesPage() {
     </div>
   );
 }
+
+export const getServerSideProps = withAuth();

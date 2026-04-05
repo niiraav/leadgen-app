@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { HotScoreBadge } from "@/components/ui/badge";
@@ -193,3 +194,5 @@ export default function PipelinePage() {
     </div>
   );
 }
+
+export const getServerSideProps = withAuth();

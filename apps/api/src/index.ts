@@ -6,16 +6,26 @@ config({ path: resolve(process.cwd(), '.env') });
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { authMiddleware } from './db';
 
-// Create the main app and apply CORS BEFORE any routes
 const app = new Hono();
 
-// CORS middleware - applied FIRST, before all routes
+// CORS first
 app.use('*', cors({
   origin: '*',
-  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Public routes
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+// Auth routes require JWT
+app.use('/leads/*', authMiddleware);
+app.use('/search/*', authMiddleware);
+app.use('/pipeline/*', authMiddleware);
+app.use('/sequences/*', authMiddleware);
+app.use('/import/*', authMiddleware);
+app.use('/kpi/*', authMiddleware);
 
 // Mount route modules
 import leadsRouter from './routes/leads';
@@ -32,8 +42,13 @@ app.route('/pipeline', pipelineRouter);
 app.route('/sequences', sequencesRouter);
 app.route('/import', importRouter);
 
-// Health check
-app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+// KPI endpoint
+import { getKPI, getUserId } from './db';
+app.get('/kpi', async (c) => {
+  const userId = getUserId(c);
+  const kpi = await getKPI(userId);
+  return c.json(kpi);
+});
 
 // Error handler
 app.onError((err, c) => {

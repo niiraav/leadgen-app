@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { LeadCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -227,3 +228,5 @@ export default function LeadsPage() {
     </div>
   );
 }
+
+export const getServerSideProps = withAuth();

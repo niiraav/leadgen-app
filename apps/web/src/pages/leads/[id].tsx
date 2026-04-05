@@ -1,3 +1,4 @@
+import { withAuth } from "@/lib/auth";
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import { api } from "@/lib/api";
@@ -423,3 +424,5 @@ LeadGen | Smart Lead Generation`;
     </div>
   );
 }
+
+export const getServerSideProps = withAuth();
