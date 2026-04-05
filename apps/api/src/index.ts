@@ -26,6 +26,7 @@ app.use('/pipeline/*', authMiddleware);
 app.use('/sequences/*', authMiddleware);
 app.use('/import/*', authMiddleware);
 app.use('/kpi/*', authMiddleware);
+app.use('/dead-leads/*', authMiddleware);
 
 // Mount route modules
 import leadsRouter from './routes/leads';
@@ -34,6 +35,8 @@ import aiEmailRouter from './routes/ai-email';
 import pipelineRouter from './routes/pipeline';
 import sequencesRouter from './routes/sequences';
 import importRouter from './routes/import';
+import deadLeadsRouter from './routes/dead-leads';
+import { startSequenceWorker, stopWorkers } from './services/sequence-scheduler';
 
 app.route('/leads', leadsRouter);
 app.route('/search', searchRouter);
@@ -41,6 +44,7 @@ app.route('/leads', aiEmailRouter);
 app.route('/pipeline', pipelineRouter);
 app.route('/sequences', sequencesRouter);
 app.route('/import', importRouter);
+app.route('/dead-leads', deadLeadsRouter);
 
 // KPI endpoint
 import { getKPI, getUserId } from './db';
@@ -49,6 +53,13 @@ app.get('/kpi', async (c) => {
   const kpi = await getKPI(userId);
   return c.json(kpi);
 });
+
+// Start sequence workers (non-blocking)
+try {
+  startSequenceWorker();
+} catch (err) {
+  console.warn('[Sequences] Could not start workers:', err);
+}
 
 // Error handler
 app.onError((err, c) => {

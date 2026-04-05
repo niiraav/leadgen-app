@@ -20,7 +20,9 @@ import {
   Clock,
   AlertCircle,
   Pencil,
+  Pencil,
   X,
+  ArrowUp,
 } from "lucide-react";
 
 const FALLBACK_SUBJECTS = (lead?: Pick<Lead, "business_name" | "category" | "city">) => [
@@ -64,6 +66,8 @@ export default function LeadProfilePage() {
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [sequencesDropdown, setSequencesDropdown] = useState(false);
+  const [sequences, setSequences] = useState<Array<{ id: string; name: string }>>([]);
 
   // Edit state
   const [editing, setEditing] = useState(false);
@@ -136,6 +140,29 @@ export default function LeadProfilePage() {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Fetch available sequences for enrollment
+  useEffect(() => {
+    fetch("/api/sequences", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setSequences(data ?? []))
+      .catch(() => {});
+  }, []);
+
+  const handleEnroll = async (seqId: string) => {
+    if (!lead) return;
+    try {
+      await fetch(`/api/sequences/${seqId}/enroll`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ lead_ids: [lead.id] }),
+      });
+      setSequencesDropdown(false);
+    } catch (err) {
+      console.error("Failed to enroll:", err);
+    }
+  };
 
   // Fetch lead data + history
   useEffect(() => {
@@ -304,9 +331,47 @@ export default function LeadProfilePage() {
             {lead.review_count !== undefined && <span>{lead.review_count} reviews</span>}
           </div>
         </div>
-        <Badge className="capitalize">
-          {lead.status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge className="capitalize">
+            {lead.status}
+          </Badge>
+          <div className="relative">
+            <button
+              onClick={() => setSequencesDropdown(!sequencesDropdown)}
+              className="btn btn-ghost text-xs py-1 h-7 px-2"
+              title="Enroll in sequence"
+            >
+              Enroll in Sequence
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            {sequencesDropdown && (
+              <div className="absolute right-0 mt-1 w-56 rounded-lg border border-border/60 bg-surface shadow-lg py-1 z-20">
+                <div className="px-3 py-1.5 border-b border-border/40">
+                  <p className="text-xs font-medium text-text">Enroll in Sequence</p>
+                </div>
+                {sequences.length === 0 ? (
+                  <div className="px-3 py-2 text-xs text-text-muted">No active sequences</div>
+                ) : (
+                  sequences.map((seq: { id: string; name: string }) => (
+                    <button
+                      key={seq.id}
+                      onClick={() => handleEnroll(seq.id)}
+                      className="w-full px-3 py-2 text-sm text-text hover:bg-surface-2 transition-colors text-left truncate"
+                    >
+                      {seq.name}
+                    </button>
+                  ))
+                )}
+                <a
+                  href="/sequences/new"
+                  className="block px-3 py-2 text-xs text-blue hover:bg-blue/5 transition-colors"
+                >
+                  + Create Sequence
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,61 +1,395 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { z as zod } from 'zod';
-import {
-  getUserId,
-  supabaseAdmin,
-} from '../db';
+import { getUserId, supabaseAdmin, createActivity } from '../db';
+import { schedulerQueue, deadLeadQueue } from '../services/sequence-scheduler';
 
 const router = new Hono();
 
-// ─── GET /sequences ─────────────────────────────────────────────────────
+// ─── Schemas ─────────────────────────────────────────────────────────────────
+
+const stepSchema = z.object({
+  step_order: z.number().min(1),
+  subject: z.string().min(1, 'Subject is required'),
+  body: z.string().min(1, 'Body is required'),
+  delay_days: z.number().min(0).default(0),
+});
+
+const createSequenceSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  steps: z.array(stepSchema).min(1, 'At least one step is required'),
+});
+
+const updateSequenceSchema = z.object({
+  name: z.string().optional(),
+  status: z.enum(['active', 'paused', 'draft']).optional(),
+});
+
+const enrollSchema = z.object({
+  lead_ids: z.array(z.string().uuid().or(z.string())).min(1, 'At least one lead ID required'),
+});
+
+// ─── GET /sequences ──────────────────────────────────────────────────────────
+
 router.get('/', async (c) => {
   try {
     const userId = getUserId(c);
-    const { data, error } = await supabaseAdmin
+
+    const { data: sequences } = await supabaseAdmin
       .from('sequences')
-      .select('*')
-      .eq('user_id', userId);
-    if (error) throw error;
-    return c.json(data ?? []);
+      .select(`
+        *,
+        steps:sequence_steps(count),
+        enrollments:sequence_enrollments(count)
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const result = (sequences ?? []).map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      status: s.status,
+      step_count: s.steps?.[0]?.count ?? 0,
+      enrolled_count: s.enrollments?.[0]?.count ?? 0,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
+    }));
+
+    return c.json(result);
   } catch (err: any) {
     return c.json({ error: 'Failed to fetch sequences', details: err.message }, 500);
   }
 });
 
-// ─── POST /sequences ────────────────────────────────────────────────────
-const sequenceSchema = z.object({
-  name: z.string().min(1),
-  steps: z.number().min(1).default(1),
+// ─── GET /sequences/:id ──────────────────────────────────────────────────────
+
+router.get('/:id', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+
+    const { data: sequence } = await supabaseAdmin
+      .from('sequences')
+      .select(`
+        *,
+        steps:sequence_steps(*)
+      `)
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (!sequence) {
+      return c.json({ error: 'Sequence not found' }, 404);
+    }
+
+    return c.json({
+      ...sequence,
+      steps: (sequence.steps ?? []).sort((a: any, b: any) => a.step_order - b.step_order),
+    });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to fetch sequence', details: err.message }, 500);
+  }
 });
+
+// ─── POST /sequences ─────────────────────────────────────────────────────────
 
 router.post('/', async (c) => {
   try {
     const userId = getUserId(c);
     const body = await c.req.json();
-    const parsed = sequenceSchema.safeParse(body);
+    const parsed = createSequenceSchema.safeParse(body);
+
     if (!parsed.success) {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    const { data, error } = await supabaseAdmin
+    const { name, steps } = parsed.data;
+
+    // Create sequence
+    const { data: sequence, error: seqError } = await supabaseAdmin
       .from('sequences')
       .insert({
         user_id: userId,
-        name: parsed.data.name,
-        steps: parsed.data.steps,
+        name,
         status: 'draft',
-        leads_count: 0,
-        sent_count: 0,
-        reply_count: 0,
       })
       .select('id')
       .single();
 
-    if (error) throw error;
-    return c.json({ id: (data as any).id }, 201);
+    if (seqError) throw seqError;
+
+    // Create steps
+    if (steps.length > 0) {
+      const stepsData = steps.map((s) => ({
+        sequence_id: sequence.id,
+        step_order: s.step_order,
+        subject: s.subject,
+        body: s.body,
+        delay_days: s.delay_days,
+      }));
+
+      const { error: stepError } = await supabaseAdmin
+        .from('sequence_steps')
+        .insert(stepsData);
+
+      if (stepError) throw stepError;
+    }
+
+    return c.json({ id: sequence.id }, 201);
   } catch (err: any) {
     return c.json({ error: 'Failed to create sequence', details: err.message }, 500);
+  }
+});
+
+// ─── PATCH /sequences/:id ────────────────────────────────────────────────────
+
+router.patch('/:id', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = updateSequenceSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from('sequences')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (!existing) {
+      return c.json({ error: 'Sequence not found' }, 404);
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (parsed.data.name !== undefined) updates.name = parsed.data.name;
+    if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+
+    if (Object.keys(updates).length > 0) {
+      await supabaseAdmin
+        .from('sequences')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', userId);
+    }
+
+    return c.json({ message: 'Sequence updated' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to update sequence', details: err.message }, 500);
+  }
+});
+
+// ─── POST /sequences/:id/enroll ──────────────────────────────────────────────
+
+router.post('/:id/enroll', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const sequenceId = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = enrollSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    }
+
+    // Verify sequence exists
+    const { data: sequence } = await supabaseAdmin
+      .from('sequences')
+      .select('id')
+      .eq('id', sequenceId)
+      .eq('user_id', userId)
+      .single();
+
+    if (!sequence) {
+      return c.json({ error: 'Sequence not found' }, 404);
+    }
+
+    let enrolled = 0;
+    for (const leadId of parsed.data.lead_ids) {
+      // Skip if already enrolled
+      const { data: existing } = await supabaseAdmin
+        .from('sequence_enrollments')
+        .select('id')
+        .eq('lead_id', leadId)
+        .eq('sequence_id', sequenceId)
+        .in('status', ['active', 'completed'])
+        .maybeSingle();
+
+      if (existing) continue;
+
+      // Create enrollment
+      const now = new Date().toISOString();
+      const { data: enrollment } = await supabaseAdmin
+        .from('sequence_enrollments')
+        .insert({
+          lead_id: leadId,
+          sequence_id: sequenceId,
+          user_id: userId,
+          current_step: 1,
+          status: 'active',
+          enrolled_at: now,
+          next_step_at: now,
+        })
+        .select('id')
+        .single();
+
+      if (enrollment && schedulerQueue) {
+        // Queue first step (delay = 0, so immediate processing)
+        await schedulerQueue.add(
+          `${enrollment.id}-1`,
+          { enrollment_id: enrollment.id, step_order: 1 },
+          { delay: 0, jobId: `${enrollment.id}-1` }
+        );
+      }
+
+      enrolled++;
+
+      // Log activity
+      await createActivity(userId, {
+        lead_id: leadId,
+        type: 'sequence_enrolled',
+        description: 'Enrolled in sequence',
+      });
+    }
+
+    return c.json({ enrolled });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to enroll leads', details: err.message }, 500);
+  }
+});
+
+// ─── POST /enrollments/:id/reply ─────────────────────────────────────────────
+
+router.post('/enrollments/:id/reply', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const enrollmentId = c.req.param('id');
+
+    const { data: enrollment } = await supabaseAdmin
+      .from('sequence_enrollments')
+      .select('*')
+      .eq('id', enrollmentId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!enrollment) {
+      return c.json({ error: 'Enrollment not found' }, 404);
+    }
+
+    // Mark as replied
+    await supabaseAdmin
+      .from('sequence_enrollments')
+      .update({ status: 'replied', completed_at: new Date().toISOString() })
+      .eq('id', enrollmentId);
+
+    if (schedulerQueue) {
+      // Cancel any pending jobs for this enrollment
+      const jobs = await schedulerQueue.getJobs(['delayed', 'waiting']);
+      for (const job of jobs) {
+        if (job.data?.enrollment_id === enrollmentId) {
+          await job.remove();
+        }
+      }
+    }
+
+    await createActivity(userId, {
+      lead_id: enrollment.lead_id,
+      type: 'lead_replied',
+      description: 'Lead replied — sequence paused',
+    });
+
+    return c.json({ message: 'Marked as replied' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to update enrollment', details: err.message }, 500);
+  }
+});
+
+// ─── POST /sequences/:id/pause ───────────────────────────────────────────────
+
+router.post('/:id/pause', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const sequenceId = c.req.param('id');
+
+    await supabaseAdmin
+      .from('sequences')
+      .update({ status: 'paused', updated_at: new Date().toISOString() })
+      .eq('id', sequenceId)
+      .eq('user_id', userId);
+
+    // Pause active enrollments
+    await supabaseAdmin
+      .from('sequence_enrollments')
+      .update({ status: 'paused' })
+      .eq('sequence_id', sequenceId)
+      .in('status', ['active']);
+
+    // Cancel pending jobs
+    if (schedulerQueue) {
+      const jobs = await schedulerQueue.getJobs(['delayed', 'waiting']);
+      for (const job of jobs) {
+        await job.remove();
+      }
+    }
+
+    return c.json({ message: 'Sequence paused' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to pause sequence', details: err.message }, 500);
+  }
+});
+
+// ─── POST /sequences/:id/resume ──────────────────────────────────────────────
+
+router.post('/:id/resume', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const sequenceId = c.req.param('id');
+
+    await supabaseAdmin
+      .from('sequences')
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .eq('id', sequenceId)
+      .eq('user_id', userId);
+
+    // Resume paused enrollments
+    const { data: pausedEnrollments } = await supabaseAdmin
+      .from('sequence_enrollments')
+      .select('*')
+      .eq('sequence_id', sequenceId)
+      .eq('status', 'paused');
+
+    for (const enrollment of pausedEnrollments ?? []) {
+      await supabaseAdmin
+        .from('sequence_enrollments')
+        .update({ status: 'active' })
+        .eq('id', enrollment.id);
+
+      // Re-queue next step
+      if (schedulerQueue) {
+        const stepOrder = enrollment.current_step;
+        // Fetch the step to get delay
+        const { data: step } = await supabaseAdmin
+          .from('sequence_steps')
+          .select('*')
+          .eq('sequence_id', sequenceId)
+          .eq('step_order', stepOrder)
+          .maybeSingle();
+
+        const delayMs = step ? step.delay_days * 86400000 : 3600000;
+        await schedulerQueue.add(
+          `${enrollment.id}-${stepOrder}`,
+          { enrollment_id: enrollment.id, step_order: stepOrder },
+          { delay: Math.max(delayMs, 100), jobId: `${enrollment.id}-${stepOrder}` }
+        );
+      }
+    }
+
+    return c.json({ message: 'Sequence resumed' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to resume sequence', details: err.message }, 500);
   }
 });
 
