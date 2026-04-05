@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 // Load .env before anything else
-import { config } from 'dotenv';
-import { resolve } from 'path';
-config({ path: resolve(__dirname, '..', '.env') });
+import { config as loadEnv } from 'dotenv';
+import * as path from 'path';
+loadEnv({ path: path.join(process.cwd(), '.env') });
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -155,6 +155,8 @@ export async function getLeadById(userId: string, id: string) {
     metadata: safeParseJson(lead.metadata, {}),
   };
 }
+
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 export async function createLead(userId: string, values: any) {
   const insertData = {

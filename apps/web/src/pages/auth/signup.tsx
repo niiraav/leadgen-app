@@ -143,5 +143,5 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     return { redirect: { destination: "/dashboard", permanent: false } };
   }
 
-  return { props: {} };
+  return { props: { __authPage: true } };
 };

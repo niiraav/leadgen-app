@@ -7,7 +7,9 @@ import {
   deleteLead,
   createActivity,
   getLeads,
+  batchCreateLeads,
   type JsonValue,
+  getUserId,
 } from '../db';
 
 const router = new Hono();
@@ -40,6 +42,7 @@ const updateLeadSchema = createLeadSchema.partial();
 
 router.get('/', async (c) => {
   try {
+    const userId = getUserId(c);
     const query = c.req.query();
     const limit = Math.min(parseInt(query.limit ?? '20', 10), 100);
     const cursor = query.cursor;
@@ -48,7 +51,7 @@ router.get('/', async (c) => {
     const status = query.status;
     const search = query.search;
 
-    const result = await getLeads({
+    const result = await getLeads(userId, {
       limit,
       cursor,
       sortField,
@@ -69,8 +72,9 @@ router.get('/', async (c) => {
 
 router.get('/:id', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = c.req.param('id');
-    const lead = await getLeadById(id);
+    const lead = await getLeadById(userId, id);
 
     if (!lead) {
       return c.json({ error: 'Lead not found' }, 404);
@@ -88,6 +92,7 @@ router.get('/:id', async (c) => {
 
 router.post('/', async (c) => {
   try {
+    const userId = getUserId(c);
     const body = await c.req.json();
     const parsed = createLeadSchema.safeParse(body);
 
@@ -96,7 +101,7 @@ router.post('/', async (c) => {
     }
 
     const data = parsed.data;
-    const result = await createLead({
+    const result = await createLead(userId, {
       business_name: data.business_name,
       email: data.email || null,
       phone: data.phone || null,
@@ -117,7 +122,7 @@ router.post('/', async (c) => {
     });
 
     // Log activity
-    await createActivity({
+    await createActivity(userId, {
       lead_id: result.id,
       type: 'created',
       description: `Lead created via ${data.source}`,
@@ -135,6 +140,7 @@ router.post('/', async (c) => {
 
 router.patch('/:id', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = c.req.param('id');
     const body = await c.req.json();
     const parsed = updateLeadSchema.safeParse(body);
@@ -143,7 +149,7 @@ router.patch('/:id', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    const existing = await getLeadById(id);
+    const existing = await getLeadById(userId, id);
     if (!existing) {
       return c.json({ error: 'Lead not found' }, 404);
     }
@@ -169,11 +175,11 @@ router.patch('/:id', async (c) => {
     if (parsed.data.tags !== undefined) updateData.tags = parsed.data.tags;
     if (parsed.data.metadata !== undefined) updateData.metadata = parsed.data.metadata;
 
-    await updateLead(id, updateData);
+    await updateLead(userId, id, updateData);
 
     // Log activity
     const changedFields = Object.keys(updateData).filter((k) => k !== 'updated_at');
-    await createActivity({
+    await createActivity(userId, {
       lead_id: id,
       type: 'updated',
       description: `Lead updated: ${changedFields.join(', ')}`,
@@ -191,8 +197,9 @@ router.patch('/:id', async (c) => {
 
 router.delete('/:id', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = c.req.param('id');
-    const deleted = await deleteLead(id);
+    const deleted = await deleteLead(userId, id);
 
     if (!deleted) {
       return c.json({ error: 'Lead not found' }, 404);
@@ -213,6 +220,7 @@ const batchLeadSchema = z.array(createLeadSchema);
 
 router.post('/batch', async (c) => {
   try {
+    const userId = getUserId(c);
     const body = await c.req.json();
     const leads = body.leads || body;
     
@@ -227,7 +235,7 @@ router.post('/batch', async (c) => {
       
       const data = parsed.data;
       try {
-        const result = await createLead({
+        const result = await createLead(userId, {
           business_name: data.business_name,
           email: data.email || null,
           phone: data.phone || null,
@@ -246,7 +254,7 @@ router.post('/batch', async (c) => {
           tags: data.tags ?? [],
           metadata: (data.metadata ?? {}) as Record<string, JsonValue>,
         });
-        await createActivity({
+        await createActivity(userId, {
           lead_id: result.id,
           type: 'created',
           description: `Lead created via ${data.source}`,

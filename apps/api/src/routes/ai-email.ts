@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getLeadById } from '../db';
+import { getLeadById, getUserId, createLead, createActivity, type JsonValue } from '../db';
 import { generateEmailWithAI } from '../services/ai-email';
 
 const router = new Hono();
@@ -11,12 +11,9 @@ const aiEmailSchema = z.object({
   customInstructions: z.string().max(500).optional(),
 });
 
-// ─── POST /leads/:id/ai-email ────────────────────────────────────────────────
-// This router is mounted at /leads in routes/index.ts, so this route becomes
-// POST /leads/:id/ai-email.
-
 router.post('/:id/ai-email', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = c.req.param('id');
     const body = await c.req.json();
     const parsed = aiEmailSchema.safeParse(body);
@@ -25,8 +22,7 @@ router.post('/:id/ai-email', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    // Fetch lead
-    const lead = await getLeadById(id);
+    const lead = await getLeadById(userId, id);
     if (!lead) {
       return c.json({ error: 'Lead not found' }, 404);
     }
@@ -51,12 +47,9 @@ router.post('/:id/ai-email', async (c) => {
       customInstructions,
     });
 
-    return c.json({
-      lead_id: id,
-      email: emailData,
-    });
+    return c.json({ lead_id: id, email: emailData });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error generating email';
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error(`[AI Email] Error: ${message}`);
     return c.json({ error: 'Failed to generate email', details: message }, 500);
   }

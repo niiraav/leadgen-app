@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getLeadById, updateLead, createActivity, getActivitiesForLead } from '../db';
+import { getUserId, getLeadById, updateLead, createActivity, getActivitiesForLead } from '../db';
 
 const router = new Hono();
 
 const statusUpdateSchema = z.object({
-  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'converted', 'lost', 'archived']),
+  status: z.string(),
   notes: z.string().optional(),
 });
 
@@ -13,6 +13,7 @@ const statusUpdateSchema = z.object({
 
 router.post('/:id/status', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = c.req.param('id');
     const body = await c.req.json();
     const parsed = statusUpdateSchema.safeParse(body);
@@ -21,7 +22,7 @@ router.post('/:id/status', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    const existing = await getLeadById(id);
+    const existing = await getLeadById(userId, id);
     if (!existing) {
       return c.json({ error: 'Lead not found' }, 404);
     }
@@ -34,7 +35,6 @@ router.post('/:id/status', async (c) => {
       updated_at: now,
     };
 
-    // Auto-set last_contacted when moving to 'contacted' or beyond
     if (['contacted', 'qualified', 'proposal_sent', 'converted'].includes(status)) {
       updateData.last_contacted = now;
     }
@@ -43,10 +43,10 @@ router.post('/:id/status', async (c) => {
       updateData.notes = notes;
     }
 
-    await updateLead(id, updateData);
+    await updateLead(userId, id, updateData);
 
     // Log activity
-    await createActivity({
+    await createActivity(userId, {
       lead_id: id,
       type: 'status_change',
       description: `Status changed to: ${status}${notes ? ` - ${notes}` : ''}`,
@@ -64,14 +64,15 @@ router.post('/:id/status', async (c) => {
 
 router.get('/:id/activity', async (c) => {
   try {
+    const userId = getUserId(c);
     const id = c.req.param('id');
 
-    const existing = await getLeadById(id);
+    const existing = await getLeadById(userId, id);
     if (!existing) {
       return c.json({ error: 'Lead not found' }, 404);
     }
 
-    const activities = await getActivitiesForLead(id);
+    const activities = await getActivitiesForLead(userId, id);
 
     return c.json({ lead_id: id, activities });
   } catch (error) {

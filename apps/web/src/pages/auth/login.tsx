@@ -162,9 +162,5 @@ export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
     return { redirect: { destination: "/dashboard", permanent: false } };
   }
 
-  // If redirected from callback with error
-  const { query } = req.url ? new URL(req.url, "http://localhost") : { query: {} };
-  const errorMessage = query.error ? decodeURIComponent(query.error as string) : undefined;
-
-  return { props: { errorMessage } };
+  return { props: { __authPage: true } };
 };

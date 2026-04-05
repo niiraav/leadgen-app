@@ -1,6 +1,7 @@
 const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+import { createBrowserSupabaseClient } from "./supabase";
 import type {
   Lead,
   LeadActivity,
@@ -172,6 +173,19 @@ async function request<T>(
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
+
+  // Attach Supabase JWT if available
+  try {
+    const supabase = createBrowserSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.access_token) {
+      headers["Authorization"] = `Bearer ${session.access_token}`;
+    }
+  } catch {
+    // Not logged in — let the API return 401
+  }
 
   // Only set Content-Type when NOT sending FormData
   if (!(options.body instanceof FormData)) {

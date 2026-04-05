@@ -1,124 +1,64 @@
 import { Hono } from 'hono';
-import { createLead, createActivity } from '../db';
-import { getLeads, getLeadById, createLead, batchCreateLeads, updateLead, deleteLead, createActivity, getActivitiesForLead, searchLeads, getKPI, getUserId } from '../db';
+import { z } from 'zod';
+import {
+  createLead,
+  batchCreateLeads,
+  createActivity,
+  getUserId,
+  type JsonValue,
+} from '../db';
 
 const router = new Hono();
 
 // ─── POST /import/csv ────────────────────────────────────────────────────────
-// Accepts JSON body with { mappings, leads }.
-// mappings: Array of { csvColumn, leadField }
-// leads: Array of raw lead data objects
 
 router.post('/csv', async (c) => {
   try {
+    const userId = getUserId(c);
     const contentType = c.req.header('content-type') ?? '';
 
-    const now = new Date().toISOString();
-    let imported = 0;
-
     if (contentType.includes('multipart/form-data')) {
-      // Handle form data (if frontend sends FormData)
-      const formData = await c.req.formData();
-      const file = formData.get('file') as File | null;
-
-      if (!file) {
-        return c.json({ error: 'No file provided' }, 400);
-      }
-
-      // For CSV file uploads, just return count - full CSV parser would be added
-      // For now, expect JSON body route
-      return c.json({ imported: 0, message: 'CSV file parsing not yet implemented, use JSON body' });
+      return c.json({ imported: 0, message: 'CSV file not yet implemented, use JSON body' });
     }
 
-    // JSON body: { mappings, leads }
     const body = await c.req.json();
-    const { mappings, leads } = body as {
-      mappings?: Array<{ csvColumn: string; leadField: string }>;
-      leads: Record<string, unknown>[];
-    };
+    const leads = (body.leads || body) as Record<string, unknown>[];
 
-    if (!leads || !Array.isArray(leads)) {
-      return c.json({ error: 'Invalid request: leads array is required' }, 400);
+    if (!Array.isArray(leads)) {
+      return c.json({ error: 'leads array is required' }, 400);
     }
 
-    const fieldMap = (mappings ?? []).reduce(
-      (acc, m) => {
-        acc[m.leadField] = m.csvColumn;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
-
-    // If no mappings, assume lead field names match directly
-    const directFields = Object.keys(leads[0] ?? {});
-
+    let imported = 0;
     for (const rawLead of leads) {
       const businessName =
         rawLead.business_name ||
         rawLead.businessName ||
         rawLead.name ||
         rawLead.company ||
-        (mappings
-          ? rawLead[fieldMap['business_name'] ?? fieldMap['businessName']]
-          : null);
+        null;
 
       if (!businessName) continue;
 
-      const email = (
-        rawLead.email ||
-        (mappings ? rawLead[fieldMap['email']] : null)
-      ) as string | null;
-
-      const phone = (
-        rawLead.phone ||
-        rawLead.Phone ||
-        (mappings ? rawLead[fieldMap['phone']] : null)
-      ) as string | null;
-
-      const websiteUrl = (
-        rawLead.website_url ||
-        rawLead.website ||
-        rawLead.websiteUrl ||
-        (mappings ? rawLead[fieldMap['website_url']] : null)
-      ) as string | null;
-
-      const address = (
-        rawLead.address ||
-        rawLead.Address ||
-        (mappings ? rawLead[fieldMap['address']] : null)
-      ) as string | null;
-
-      const city = (
-        rawLead.city ||
-        rawLead.City ||
-        (mappings ? rawLead[fieldMap['city']] : null)
-      ) as string | null;
-
-      const country = (
-        rawLead.country ||
-        rawLead.Country ||
-        (mappings ? rawLead[fieldMap['country']] : null)
-      ) as string | null;
-
-      const category = (
-        rawLead.category ||
-        rawLead.Category ||
-        (mappings ? rawLead[fieldMap['category']] : null)
-      ) as string | null;
-
+      const email = rawLead.email ? String(rawLead.email) : null;
+      const phone = rawLead.phone ? String(rawLead.phone) : null;
+      const website = rawLead.website_url || rawLead.website_url ? String(rawLead.website_url) : null;
+      const address = rawLead.address ? String(rawLead.address) : null;
+      const city = rawLead.city ? String(rawLead.city) : null;
+      const country = rawLead.country ? String(rawLead.country) : null;
+      const category = rawLead.category ? String(rawLead.category) : null;
       const rating = rawLead.rating ? Number(rawLead.rating) : null;
       const reviewCount = rawLead.review_count ? Number(rawLead.review_count) : 0;
 
       try {
-        const result = await createLead({
+        const result = await createLead(userId, {
           business_name: String(businessName),
-          email: email ? String(email) : null,
-          phone: phone ? String(phone) : null,
-          website_url: websiteUrl ? String(websiteUrl) : null,
-          address: address ? String(address) : null,
-          city: city ? String(city) : null,
-          country: country ? String(country) : null,
-          category: category ? String(category) : null,
+          email,
+          phone,
+          website_url: website,
+          address,
+          city,
+          country,
+          category,
           rating,
           review_count: reviewCount,
           hot_score: 0,
@@ -126,27 +66,26 @@ router.post('/csv', async (c) => {
           status: 'new',
           source: 'csv',
           notes: null,
-          tags: [] as string[],
-          metadata: {} as Record<string, JsonValue>,
+          tags: [],
+          metadata: {},
         });
 
-        // Log activity
-        await createActivity({
+        await createActivity(userId, {
           lead_id: result.id,
           type: 'imported',
-          description: `Lead imported via CSV`,
+          description: 'Lead imported via CSV',
         });
 
         imported++;
       } catch (err) {
-        console.warn('[Import] Failed to insert lead:', err instanceof Error ? err.message : err);
+        console.warn('[Import] Failed to insert lead:', err);
       }
     }
 
     return c.json({ imported }, 200);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[Import POST /csv] Error:', message);
+    console.error('[Import] Error:', message);
     return c.json({ error: 'Import failed', details: message }, 500);
   }
 });
