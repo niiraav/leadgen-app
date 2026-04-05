@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge, HotScoreBadge } from "@/components/ui/badge";
@@ -145,10 +143,7 @@ export default function GoogleMapsSearchPage() {
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text tracking-tight">Google Maps Search</h1>
-        <p className="text-sm text-text-muted mt-1">
-          Find leads by searching Google Maps for businesses in specific locations
-        </p>
+        <h1 className="text-2xl font-bold text-text tracking-tight">Search Leads</h1>
       </div>
 
       {/* Error */}

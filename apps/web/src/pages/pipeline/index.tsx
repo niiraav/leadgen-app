@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { HotScoreBadge } from "@/components/ui/badge";
@@ -39,12 +37,12 @@ export default function PipelinePage() {
       const result = await api.leads.list({ limit: 500 });
       const mapped = result.data.map((l) => ({
         id: l.id,
-        businessName: l.businessName,
-        email: l.email ?? "",
-        category: l.category ?? "",
-        city: l.city ?? "",
-        country: l.country ?? "",
-        hotScore: l.hotScore,
+        businessName: l.business_name,
+        email: l.email || "",
+        category: l.category || "",
+        city: l.city || "",
+        country: l.country || "",
+        hotScore: l.hot_score,
         status: l.status,
       }));
       setLeads(mapped);

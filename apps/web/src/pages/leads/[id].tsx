@@ -1,7 +1,5 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useRouter } from "next/router";
 import { api } from "@/lib/api";
 import type { Lead, LeadActivity, AIGeneratedEmail } from "@leadgen/shared";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -22,8 +20,8 @@ import {
 } from "lucide-react";
 
 export default function LeadProfilePage() {
-  const params = useParams();
-  const leadId = params.id as string;
+  const router = useRouter();
+  const leadId = router.query.id as string;
 
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,16 +85,15 @@ export default function LeadProfilePage() {
         purpose: "Introduction and outreach for lead generation automation",
       });
 
-      const body = result.email.body;
-      const subject = result.email.subject_lines?.[0] || result.email.subject;
-      setDraftEmail(body);
-      setEmailSubject(subject);
-    } catch (err: any) {
-      // If AI endpoint fails, generate a simple template locally
-      console.warn("[LeadProfile] AI compose failed, using local template:", err.message);
-      const localEmail = `Hi,
+          const body = result.email.body;
+          const subject = result.email.subject_lines?.[0] || result.email.subject;
+          setDraftEmail(body);
+          setEmailSubject(subject);
+        } catch (err: any) {
+          console.warn("[LeadProfile] AI compose failed, using local template:", err.message);
+          const localEmail = `Hi,
 
-I was researching leading ${lead.category ?? "business"} companies in ${lead.city ?? ""} and ${lead.business_name} caught my attention.
+I was researching leading ${lead.category ?? "business"} companies in ${lead.city ?? ""}
 
 At LeadGen, we help ${lead.category ?? "business"} professionals like yourself automate prospecting and increase pipeline velocity. Our AI identifies high-intent prospects and crafts personalized outreach that converts at 38%+ reply rates.
 

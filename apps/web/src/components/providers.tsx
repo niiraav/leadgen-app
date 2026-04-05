@@ -1,10 +1,7 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Inter } from "next/font/google";
-import { useState, useEffect } from "react";
-
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+import { useState, useEffect, ReactNode } from "react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,15 +12,11 @@ const queryClient = new QueryClient({
   },
 });
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem("leadgen-theme");
-    if (savedTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    }
   }, []);
 
   return (

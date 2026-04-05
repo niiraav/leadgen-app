@@ -1,5 +1,5 @@
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 import type {
   Lead,
@@ -11,15 +11,11 @@ import type {
 
 // ─── Response shapes matching the backend ─────────────────────────────────────
 
-/** Backend returns { data: Lead[], pagination: { limit, hasMore, nextCursor, total } } */
+/** Backend returns { data: Lead[], nextCursor: string|null, total: number } */
 export interface BackendPaginatedLeads {
   data: BackendLead[];
-  pagination: {
-    limit: number;
-    hasMore: boolean;
-    nextCursor: string | null;
-    total: number;
-  };
+  nextCursor: string | null;
+  total: number;
 }
 
 /** Backend returns { query, count, results[] } for search */
@@ -29,29 +25,29 @@ export interface BackendSearchResult {
   results: BackendRawSearchLead[];
 }
 
-/** Lead fields as returned by the backend (camelCase) */
+/** Lead fields as returned by the backend (snake_case - stored in SQLite/Supabase) */
 export interface BackendLead {
   id: string;
-  businessName: string;
+  business_name: string;
   email: string | null;
   phone: string | null;
-  websiteUrl: string | null;
+  website_url: string | null;
   address: string | null;
   city: string | null;
   country: string;
   category: string | null;
   rating: number | null;
-  reviewCount: number;
-  hotScore: number;
-  readinessFlags: string[];
+  review_count: number;
+  hot_score: number;
+  readiness_flags: string[];
   status: string;
   source: string;
   notes: string | null;
   tags: string[];
   metadata: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-  lastContacted: string | null;
+  created_at: string;
+  updated_at: string;
+  last_contacted: string | null;
 }
 
 /** A raw search result from SerpAPI (before it becomes a Lead) */
@@ -74,26 +70,26 @@ export interface BackendRawSearchLead {
 /** Single lead from GET /leads/:id */
 export interface BackendLeadDetail {
   id: string;
-  businessName: string;
+  business_name: string;
   email: string | null;
   phone: string | null;
-  websiteUrl: string | null;
+  website_url: string | null;
   address: string | null;
   city: string | null;
   country: string;
   category: string | null;
   rating: number | null;
-  reviewCount: number;
-  hotScore: number;
-  readinessFlags: string[];
+  review_count: number;
+  hot_score: number;
+  readiness_flags: string[];
   status: string;
   source: string;
   notes: string | null;
   tags: string[];
   metadata: Record<string, unknown>;
-  createdAt: string;
-  updatedAt: string;
-  lastContacted: string | null;
+  created_at: string;
+  updated_at: string;
+  last_contacted: string | null;
 }
 
 /** Pipeline activity response */
@@ -132,11 +128,11 @@ export interface BackendKPI {
 function mapBackendLead(raw: BackendLead): Lead {
   return {
     id: raw.id,
-    business_name: raw.businessName,
+    business_name: raw.business_name,
     contact_name: undefined,
     email: raw.email ?? undefined,
     phone: raw.phone ?? undefined,
-    website_url: raw.websiteUrl ?? undefined,
+    website_url: raw.website_url ?? undefined,
     address: raw.address ?? undefined,
     city: raw.city ?? undefined,
     country: raw.country,
@@ -149,19 +145,19 @@ function mapBackendLead(raw: BackendLead): Lead {
     facebook_url: undefined,
     instagram_url: undefined,
     twitter_handle: undefined,
-    has_website: !!raw.websiteUrl,
+    has_website: !!raw.website_url,
     rating: raw.rating ?? undefined,
-    review_count: raw.reviewCount,
-    hot_score: raw.hotScore,
-    readiness_flags: raw.readinessFlags,
+    review_count: raw.review_count,
+    hot_score: raw.hot_score,
+    readiness_flags: raw.readiness_flags,
     status: raw.status as Lead["status"],
     source: raw.source as Lead["source"],
     notes: raw.notes ?? undefined,
     tags: raw.tags,
     metadata: raw.metadata,
-    created_at: raw.createdAt,
-    updated_at: raw.updatedAt,
-    last_contacted: raw.lastContacted ?? undefined,
+    created_at: raw.created_at,
+    updated_at: raw.updated_at,
+    last_contacted: raw.last_contacted ?? undefined,
     sequence_ended: undefined,
   };
 }
@@ -218,9 +214,10 @@ export const api = {
       request<BackendSearchResult>("/search/google-maps", {
         method: "POST",
         body: JSON.stringify({
-          businessType: params.query,
+          query: params.query,
           location: params.location,
           maxResults: Math.min(params.maxResults ?? 50, 50),
+          noWebsite: params.noWebsite ?? false,
         }),
       }),
   },
@@ -323,12 +320,9 @@ export const api = {
   // ── KPI / Dashboard ──
   kpi: {
     get: async (): Promise<DashboardKPI> => {
-      // The backend doesn't have a dedicated KPI endpoint yet.
-      // Fetch lead list to compute totals.
-      const res = await api.leads.list({ limit: 1 }); // just need total
-      const total = res.pagination.total;
+      const res = await api.leads.list({ limit: 1 });
+      const total = res.total;
 
-      // For now derive simple KPIs — extend when backend adds /kpi endpoint
       return {
         total_leads: total,
         contacted_this_week: 0,

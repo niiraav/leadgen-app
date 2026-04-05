@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/router";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -13,45 +13,23 @@ import {
   ChevronRight,
   Zap,
 } from "lucide-react";
-import { useUIStore } from "@/stores/ui";
 import { useState } from "react";
 
 const navItems = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    exact: true,
-  },
-  {
-    label: "Search",
-    href: "/search/google-maps",
-    icon: Search,
-  },
-  {
-    label: "Leads",
-    href: "/leads",
-    icon: Users,
-  },
-  {
-    label: "Pipeline",
-    href: "/pipeline",
-    icon: Columns3,
-  },
-  {
-    label: "Sequences",
-    href: "/sequences",
-    icon: Mail,
-  },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Search", href: "/search/google-maps", icon: Search },
+  { label: "Leads", href: "/leads", icon: Users },
+  { label: "Pipeline", href: "/pipeline", icon: Columns3 },
+  { label: "Sequences", href: "/sequences", icon: Mail },
 ];
 
 export function Sidebar() {
-  const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
 
   const isActive = (href: string) => {
-    if (pathname === href) return true;
-    if (href !== "/dashboard" && pathname?.startsWith(href)) return true;
+    if (router.pathname === href) return true;
+    if (href !== "/dashboard" && router.pathname?.startsWith(href)) return true;
     return false;
   };
 
@@ -62,7 +40,6 @@ export function Sidebar() {
         collapsed ? "w-[72px]" : "w-64"
       )}
     >
-      {/* Logo */}
       <div className="flex items-center h-16 px-4 border-b border-border/40">
         {collapsed ? (
           <div className="mx-auto">
@@ -71,14 +48,11 @@ export function Sidebar() {
         ) : (
           <div className="flex items-center gap-2.5">
             <Zap className="w-6 h-6 text-blue" />
-            <span className="font-bold text-lg text-text tracking-tight">
-              LeadGen
-            </span>
+            <span className="font-bold text-lg text-text tracking-tight">LeadGen</span>
           </div>
         )}
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 py-3 px-2 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -101,7 +75,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Collapse toggle */}
       <div className="p-2 border-t border-border/40">
         <button
           onClick={() => setCollapsed(!collapsed)}

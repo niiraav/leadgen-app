@@ -23,7 +23,7 @@ const createLeadSchema = z.object({
   city: z.string().optional(),
   country: z.string().optional(),
   category: z.string().optional(),
-  rating: z.number().optional(),
+  rating: z.number().nullable().optional(),
   review_count: z.number().optional(),
   hot_score: z.number().optional(),
   readiness_flags: z.array(z.string()).optional(),
@@ -203,6 +203,65 @@ router.delete('/:id', async (c) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Leads DELETE /:id] Error:', message);
     return c.json({ error: 'Failed to delete lead', details: message }, 500);
+  }
+});
+
+// ─── POST /leads/batch ───────────────────────────────────────────────────────
+// Used by the search page and CSV import to bulk-add leads
+
+const batchLeadSchema = z.array(createLeadSchema);
+
+router.post('/batch', async (c) => {
+  try {
+    const body = await c.req.json();
+    const leads = body.leads || body;
+    
+    if (!Array.isArray(leads)) {
+      return c.json({ error: 'Expected array of leads or { leads: [...] }' }, 400);
+    }
+
+    let imported = 0;
+    for (const raw of leads) {
+      const parsed = createLeadSchema.safeParse(raw);
+      if (!parsed.success) continue;
+      
+      const data = parsed.data;
+      try {
+        const result = await createLead({
+          business_name: data.business_name,
+          email: data.email || null,
+          phone: data.phone || null,
+          website_url: data.website_url || null,
+          address: data.address || null,
+          city: data.city || null,
+          country: data.country || null,
+          category: data.category || null,
+          rating: data.rating ?? null,
+          review_count: data.review_count ?? 0,
+          hot_score: data.hot_score ?? 0,
+          readiness_flags: data.readiness_flags ?? [],
+          status: data.status,
+          source: data.source,
+          notes: data.notes || null,
+          tags: data.tags ?? [],
+          metadata: (data.metadata ?? {}) as Record<string, JsonValue>,
+        });
+        await createActivity({
+          lead_id: result.id,
+          type: 'created',
+          description: `Lead created via ${data.source}`,
+        });
+        imported++;
+      } catch (err) {
+        console.warn('[Batch] Failed to insert lead:', err);
+      }
+    }
+
+    return c.json({ imported });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Leads POST /batch] Error:', message);
+    return c.json({ error: 'Batch create failed', details: message }, 500);
   }
 });
 

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { LeadCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,18 +56,18 @@ export default function LeadsPage() {
 
       const mapped = result.data.map((l) => ({
         id: String(l.id),
-        name: l.businessName || "Unknown",
+        name: l.business_name || "Unknown",
         title: l.category || "",
         company: l.city || l.country || "",
         email: l.email || "",
         location: [l.city, l.country].filter(Boolean).join(", "),
-        hotScore: l.hotScore,
+        hotScore: l.hot_score,
         status: l.status,
-        addedAt: new Date(l.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        addedAt: new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
 
       setLeads(mapped);
-      setTotalCount(result.pagination.total);
+      setTotalCount(result.total);
       setCurrentPage(1);
       setLoading(false);
     } catch (err: any) {

@@ -1,21 +1,39 @@
-// Load .env file
+// Load .env file first
 import { config } from 'dotenv';
 import { resolve } from 'path';
 config({ path: resolve(process.cwd(), '.env') });
 
 import { serve } from '@hono/node-server';
+import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import app from './routes/index';
 
-const PORT = parseInt(process.env.PORT || '3002', 10);
-const HOST = process.env.HOST || '0.0.0.0';
+// Create the main app and apply CORS BEFORE any routes
+const app = new Hono();
 
-// CORS middleware
-app.use('/*', cors({
-  origin: process.env.CORS_ORIGIN || '*',
+// CORS middleware - applied FIRST, before all routes
+app.use('*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
 }));
+
+// Mount route modules
+import leadsRouter from './routes/leads';
+import searchRouter from './routes/search';
+import aiEmailRouter from './routes/ai-email';
+import pipelineRouter from './routes/pipeline';
+import sequencesRouter from './routes/sequences';
+import importRouter from './routes/import';
+
+app.route('/leads', leadsRouter);
+app.route('/search', searchRouter);
+app.route('/leads', aiEmailRouter);
+app.route('/pipeline', pipelineRouter);
+app.route('/sequences', sequencesRouter);
+app.route('/import', importRouter);
+
+// Health check
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // Error handler
 app.onError((err, c) => {
@@ -25,6 +43,9 @@ app.onError((err, c) => {
 
 // Not found handler
 app.notFound((c) => c.json({ error: 'Not Found' }, 404));
+
+const PORT = parseInt(process.env.PORT || '3001', 10);
+const HOST = process.env.HOST || '0.0.0.0';
 
 serve({
   fetch: app.fetch,

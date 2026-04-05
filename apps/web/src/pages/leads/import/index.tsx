@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useCallback, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import Papa from "papaparse";

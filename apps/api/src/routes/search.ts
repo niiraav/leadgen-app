@@ -66,12 +66,11 @@ router.post('/google-maps', async (c) => {
       leads = leads.filter((l) => !l.website_url);
     }
 
-    const response: { leads: typeof leads; total: number } = {
-      leads,
-      total: leads.length,
-    };
-
-    return c.json(response);
+    return c.json({
+      query: `${query} in ${location}`,
+      count: leads.length,
+      results: leads,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error during search';
     console.error(`[Search] Error: ${message}`);

@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useEffect, useCallback } from "react";
 import { KPICard } from "@/components/ui/card";
 import { Users, Mail, MessageSquare, ArrowRight, TrendingUp } from "lucide-react";
@@ -58,11 +56,11 @@ export default function DashboardPage() {
       const leadsResult = await api.leads.list({ limit: 4 });
       const mappedLeads = leadsResult.data.map((l) => ({
         id: l.id,
-        name: l.businessName,
+        name: l.business_name,
         company: l.city ?? "",
         status: l.status,
-        score: l.hotScore,
-        date: l.createdAt.slice(0, 10),
+        score: l.hot_score,
+        date: l.created_at.slice(0, 10),
       }));
 
       setData({

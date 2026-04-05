@@ -3,9 +3,8 @@ module.exports = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-  darkMode: "class",
   theme: {
     extend: {
       colors: {
@@ -25,15 +24,9 @@ module.exports = {
         red: "var(--red)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)"],
-      },
-      borderRadius: {
-        sm: "var(--radius-sm)",
-        md: "var(--radius-md)",
-        lg: "var(--radius-lg)",
-        xl: "var(--radius-xl)",
-        full: "var(--radius-full)",
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },
   },
+  plugins: [],
 };
