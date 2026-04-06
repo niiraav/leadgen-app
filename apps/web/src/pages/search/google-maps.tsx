@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { Search, MapPin, Loader2, Check, Plus, X, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
 
 const QUICK_TYPES = [
@@ -108,10 +109,18 @@ export default function SearchGoogleMaps() {
     setResults([]);
     setResultsHeader(null);
     try {
-      const data = await fetch("/api/search/google-maps", {
+      // Call backend directly with auth token (proxy file is corrupted in sandbox)
+      const supabase = createBrowserSupabaseClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) throw new Error("Not authenticated");
+
+      const data = await fetch("http://localhost:3001/search/google-maps", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + accessToken,
+        },
         body: JSON.stringify({
           query: businessType,
           location,
