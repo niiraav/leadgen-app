@@ -17,14 +17,30 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(pageProps.user?.email ?? null);
 
+  // Fix #1: Check session on mount (prevents blank nav on login/refresh)
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
-    supabase.auth.onAuthStateChange((_, session) => setUserEmail(session?.user?.email ?? null));
+    // Immediately check session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.email && !isAuthPage()) {
+        setUserEmail(session.user.email);
+      }
+    });
+    // Listen for session changes
+    supabase.auth.onAuthStateChange((_, session) => {
+      if (session?.user?.email && !isAuthPage()) {
+        setUserEmail(session.user.email);
+      } else {
+        setUserEmail(null);
+      }
+    });
   }, []);
 
-  const isAuthPage = router.pathname.startsWith("/auth") || (pageProps as any).__authPage === true;
+  const isAuthPage = () => {
+    return router.pathname.startsWith("/auth") || (pageProps as any).__authPage === true;
+  };
 
-  if (isAuthPage) {
+  if (isAuthPage()) {
     return (
       <QueryClientProvider client={queryClient}>
         <UndoProvider>
@@ -38,19 +54,12 @@ export default function App({ Component, pageProps }: AppProps) {
     <QueryClientProvider client={queryClient}>
       <UndoProvider>
         <div className="min-h-screen flex bg-bg">
-          {/* Sidebar: desktop only */}
           {userEmail && <Sidebar />}
-
           <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-64" : ""}`}>
-            {/* TopBar: all screen sizes, shows title on mobile */}
             {userEmail && <TopBar userEmail={userEmail} />}
-
-            {/* Page content: bottom padding for bottom nav on mobile */}
             <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6 overflow-y-auto">
               <Component {...pageProps} />
             </main>
-
-            {/* BottomNav: mobile only */}
             {userEmail && <BottomNav />}
           </div>
         </div>

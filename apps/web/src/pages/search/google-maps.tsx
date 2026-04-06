@@ -108,8 +108,24 @@ export default function SearchGoogleMaps() {
     setResults([]);
     setResultsHeader(null);
     try {
-      const data = await api.leads.searchGoogleMaps(businessType, location, radiusKm);
-      const scoredResults = (data.results || []).map((r: any) => ({
+      const data = await fetch("/api/search/google-maps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          query: businessType,
+          location,
+          maxResults: 50,
+          ...Object.fromEntries(Object.entries(filters).map(([k, v]) => [k, v])),
+        }),
+      });
+      if (!data.ok) {
+        const err = await data.json().catch(() => ({}));
+        throw new Error(err.error || err.message || `Search failed (${data.status})`);
+      }
+      const dataJson = await data.json();
+      const results = dataJson.results || dataJson.leads || dataJson.data || [];
+      const scoredResults = results.map((r: any) => ({
         title: r.business_name || "Unknown",
         address: r.address || "",
         rating: r.rating || null,
