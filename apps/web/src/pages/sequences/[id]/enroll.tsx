@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import { api } from "@/lib/api";
 import { ArrowLeft, Check, Loader2, Search as SearchIcon, UserPlus } from "lucide-react";
 import Link from "next/link";
 
@@ -31,7 +32,7 @@ export default function EnrollPage() {
     setLoading(true);
     Promise.all([
       fetch(`/api/sequences/${seqId}`, { credentials: "include" }).then((r) => r.json()),
-      fetch(`/api/leads?limit=500`, { credentials: "include" }).then((r) => r.json()),
+      api.leads.list({ limit: 500 }),
     ]).then(([seq, leadsRes]) => {
       setSeqName(seq.name);
       const available = (leadsRes.data ?? []).filter(

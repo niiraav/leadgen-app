@@ -2,7 +2,7 @@ import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Play, Pause, Eye, ArrowRight, Loader2 } from "lucide-react";
+import { Plus, Play, Pause, Eye, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface Sequence {
@@ -18,6 +18,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -37,6 +38,17 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
   }, []);
 
   useEffect(() => { fetchSequences(); }, [fetchSequences]);
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await fetch(`/api/sequences/${deleteId}`, { method: "DELETE", credentials: "include" });
+      setDeleteId(null);
+      await fetchSequences();
+    } catch (err) {
+      console.error("Failed to delete sequence:", err);
+    }
+  };
 
   const handleToggleSequence = async (seqId: string, action: "pause" | "resume") => {
     setActionLoading(seqId);
@@ -155,19 +167,60 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                 </div>
               </div>
 
-              <Link
-                href={`/sequences/${seq.id}/enroll`}
-                className="btn btn-primary text-xs py-1.5 h-8 self-center"
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-                Enroll Leads
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/sequences/${seq.id}/enroll`}
+                  className="btn btn-secondary text-xs py-1.5 h-8 self-center"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                  Enroll Leads
+                </Link>
+                <button
+                  onClick={() => setDeleteId(seq.id)}
+                  className="rounded-full p-2 text-red/60 hover:text-red hover:bg-red/5 transition-colors"
+                  title="Delete sequence"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </Card>
         ))}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-surface rounded-xl border border-border/60 p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-text">Delete sequence?</h3>
+                <p className="text-xs text-text-muted mt-0.5">This will also delete all steps and enrollments.</p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end mt-6">
+              <button
+                onClick={() => setDeleteId(null)}
+                className="btn btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="btn bg-red hover:bg-red/90 text-white text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 export const getServerSideProps = withAuth();

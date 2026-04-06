@@ -9,8 +9,8 @@ import Link from "next/link";
 interface SequenceStep {
   id: string;
   step_order: number;
-  subject: string;
-  body: string;
+  subject_template: string;
+  body_template: string;
   delay_days: number;
 }
 
@@ -71,7 +71,7 @@ export default function SequenceDetailPage() {
         s.id === editing && editForm ? { ...editForm } : s
       );
 
-      const res = await fetch(`/api/sequencedetail/${seqId}`, {
+      const res = await fetch(`/api/sequences/${seqId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -172,16 +172,16 @@ export default function SequenceDetailPage() {
                   <label className="block text-xs font-medium text-text-muted mb-1">Subject</label>
                   <input
                     type="text"
-                    value={editForm.subject}
-                    onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
+                    value={editForm.subject_template}
+                    onChange={(e) => setEditForm({ ...editForm, subject_template: e.target.value })}
                     className="input"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-text-muted mb-1">Body</label>
                   <textarea
-                    value={editForm.body}
-                    onChange={(e) => setEditForm({ ...editForm, body: e.target.value })}
+                    value={editForm.body_template}
+                    onChange={(e) => setEditForm({ ...editForm, body_template: e.target.value })}
                     className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
                     rows={5}
                   />
@@ -200,8 +200,8 @@ export default function SequenceDetailPage() {
               </div>
             ) : (
               <div>
-                <p className="text-sm font-medium text-text mb-1">{step.subject}</p>
-                <p className="text-sm text-text-muted whitespace-pre-wrap">{step.body}</p>
+                <p className="text-sm font-medium text-text mb-1">{step.subject_template}</p>
+                <p className="text-sm text-text-muted whitespace-pre-wrap">{step.body_template}</p>
                 <p className="text-xs text-text-faint mt-2">
                   Send {step.delay_days === 0 ? "immediately" : `after ${step.delay_days} day(s)`}
                 </p>

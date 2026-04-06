@@ -32,6 +32,7 @@ export type AIEmailGenerationRequest = {
   tone: string;
   purpose: string;
   customInstructions?: string;
+  recontact?: boolean;
 };
 
 export type AIEmailResponse = {
@@ -44,11 +45,20 @@ export async function generateEmailWithAI({
   tone,
   purpose,
   customInstructions,
+  recontact,
 }: AIEmailGenerationRequest): Promise<AIEmailResponse> {
-  const systemPrompt = `You are a professional cold email writer for a B2B lead generation agency.
+  const basePrompt = `You are a professional cold email writer for a B2B lead generation agency.
 Write personalized, concise outreach emails.
 Always return valid JSON with "subject" and "body" fields.
 No markdown, no code fences — just raw JSON.`;
+
+  const systemPrompt = recontact
+    ? basePrompt + `\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.
+Use a completely different angle than a typical first-contact email.
+Keep it SHORT (4-5 sentences max). Be direct and respectful.
+Do NOT reference previous emails or mention that they didn't reply.
+Use a friendly, casual tone. End with a simple yes/no question to lower friction.`
+    : basePrompt;
 
   const leadDescription = [
     `Business: ${lead.business_name}`,
@@ -74,7 +84,7 @@ ${customInstructions ? `Additional instructions: ${customInstructions}` : ''}
 Return ONLY a JSON object with "subject" and "body" keys. Make the email personalized to this business.`;
 
   const response = await openai.chat.completions.create({
-    model: 'qwen/qwen-2.5-72b-instruct',
+    model: 'google/gemma-2-9b-it',
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
@@ -90,7 +100,20 @@ Return ONLY a JSON object with "subject" and "body" keys. Make the email persona
   }
 
   try {
-    const parsed = JSON.parse(content) as AIEmailResponse;
+    // Extract JSON from response — model may wrap in markdown code blocks
+    let jsonStr = content;
+    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1].trim();
+    }
+
+    // Also try to find JSON if there's extra text
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
+    }
+
+    const parsed = JSON.parse(jsonStr) as AIEmailResponse;
 
     if (!parsed.subject || !parsed.body) {
       throw new Error('Missing subject or body in AI response');

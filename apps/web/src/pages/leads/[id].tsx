@@ -1,10 +1,7 @@
 import { withAuth } from "@/lib/auth";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { useRouter } from "next/router";
-import { api } from "@/lib/api";
-import type { Lead, LeadActivity } from "@leadgen/shared";
 import { Card } from "@/components/ui/card";
-import { HotScoreBadge, Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
+import { HotScoreBadge } from "@/components/ui/badge";
 import {
   Mail,
   Phone,
@@ -20,10 +17,18 @@ import {
   Clock,
   AlertCircle,
   Pencil,
-  Pencil,
+  ChevronDown,
   X,
-  ArrowUp,
+  ArrowLeft,
+  Archive,
+  Trash2,
 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/router";
+import { api } from "@/lib/api";
+import type { Lead, LeadActivity } from "@leadgen/shared";
+
+// ─── Fallback subjects/body ─────────────────────────────────────────────────
 
 const FALLBACK_SUBJECTS = (lead?: Pick<Lead, "business_name" | "category" | "city">) => [
   lead ? `Quick question about ${lead.business_name}'s lead generation` : "Introduction from LeadGen",
@@ -46,7 +51,15 @@ Best,
 LeadGen | Smart Lead Generation`;
 };
 
-export default function LeadProfilePage() {
+const EMAIL_STATUS_BADGE: Record<string, { label: string; className: string; tooltip: string }> = {
+  valid:     { label: "Valid",       className: "text-green",   tooltip: "Email address verified and deliverable" },
+  invalid:   { label: "Invalid",     className: "text-red",     tooltip: "Email address does not exist" },
+  "catch-all": { label: "Catch-all", className: "text-amber",   tooltip: "Domain accepts all emails, deliverability uncertain" },
+  unknown:   { label: "Unknown",     className: "text-text-faint", tooltip: "Could not verify email" },
+  spamtrap:  { label: "Spamtrap",    className: "text-red",     tooltip: "This email is a known spam trap" },
+};
+
+export default function LeadProfilePage({ user }: { user?: { id: string; email: string } }) {
   const router = useRouter();
   const leadId = router.query.id as string;
 
@@ -66,73 +79,23 @@ export default function LeadProfilePage() {
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [sequencesDropdown, setSequencesDropdown] = useState(false);
-  const [sequences, setSequences] = useState<Array<{ id: string; name: string }>>([]);
 
   // Edit state
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ email: "", phone: "", website_url: "", city: "", category: "", address: "", notes: "" });
   const [saving, setSaving] = useState(false);
 
+  // Sequence enrollment
+  const [sequencesDropdown, setSequencesDropdown] = useState(false);
+  const [sequences, setSequences] = useState<Array<{ id: string; name: string }>>([]);
+
+  // Email verification
+  const [verifying, setVerifying] = useState(false);
+
   const hasEmail = !!(lead?.email && lead.email.trim().length > 0);
-
-  const startEditing = () => {
-    setEditForm({
-      email: lead?.email ?? "",
-      phone: lead?.phone ?? "",
-      website_url: lead?.website_url ?? "",
-      city: lead?.city ?? "",
-      category: lead?.category ?? "",
-      address: lead?.address ?? "",
-      notes: lead?.notes ?? "",
-    });
-    setEditing(true);
-  };
-
-  const cancelEditing = () => {
-    setEditing(false);
-  };
-
-  const saveEdit = async () => {
-    if (!lead) return;
-    setSaving(true);
-    try {
-      const updates: Record<string, unknown> = {};
-
-      // Send changed fields (empty string to clear, string value to set)
-      const emailVal = editForm.email.trim();
-      if (emailVal !== (lead.email ?? "")) updates.email = emailVal;
-
-      const phoneVal = editForm.phone.trim();
-      if (phoneVal !== (lead.phone ?? "")) updates.phone = phoneVal;
-
-      const websiteVal = editForm.website_url.trim();
-      if (websiteVal !== (lead.website_url ?? "")) updates.website_url = websiteVal;
-
-      const cityVal = editForm.city.trim();
-      if (cityVal !== (lead.city ?? "")) updates.city = cityVal;
-
-      const categoryVal = editForm.category.trim();
-      if (categoryVal !== (lead.category ?? "")) updates.category = categoryVal;
-
-      const addressVal = editForm.address.trim();
-      if (addressVal !== (lead.address ?? "")) updates.address = addressVal;
-
-      const notesVal = editForm.notes.trim();
-      if (notesVal !== (lead.notes ?? "")) updates.notes = notesVal;
-
-      if (Object.keys(updates).length > 0) {
-        await api.leads.update(leadId, updates);
-        setLead((prev) => prev ? { ...prev, ...updates } : null);
-      }
-      setEditing(false);
-    } catch (err: any) {
-      console.error("[LeadProfile] Failed to save:", err.message);
-      setError(err.message || "Failed to save changes");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const canSend = hasEmail && lead?.email_status !== "invalid" && lead?.email_status !== "spamtrap";
+  const emailBadge = lead?.email_status && EMAIL_STATUS_BADGE[lead.email_status];
+  const isRecontact = router.query.action === "compose";
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -141,7 +104,7 @@ export default function LeadProfilePage() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Fetch available sequences for enrollment
+  // Fetch available sequences
   useEffect(() => {
     fetch("/api/sequences", { credentials: "include" })
       .then((r) => r.json())
@@ -176,6 +139,8 @@ export default function LeadProfilePage() {
         if (!cancelled) {
           setLead(data);
           setEmailSubject(`Quick question about ${data.business_name}'s lead generation`);
+          // Sync notes
+          setEditForm((prev) => ({ ...prev, notes: data.notes ?? "" }));
 
           try {
             const actRes = await api.pipeline.getActivity(leadId);
@@ -196,8 +161,109 @@ export default function LeadProfilePage() {
     return () => { cancelled = true; };
   }, [leadId]);
 
+  // Auto-open AI composer for recontact
+  useEffect(() => {
+    if (!isRecontact || !lead) return;
+    // Small delay to ensure render is complete
+    const timer = setTimeout(() => {
+      setActiveTab("compose");
+      handleAISuggest(true);
+      // Scroll to composer
+      const el = document.getElementById("email-composer");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [isRecontact, lead]);
+
+  // ── Edit helpers ──
+  const startEditing = () => {
+    setEditForm({
+      email: lead?.email ?? "",
+      phone: lead?.phone ?? "",
+      website_url: lead?.website_url ?? "",
+      city: lead?.city ?? "",
+      category: lead?.category ?? "",
+      address: lead?.address ?? "",
+      notes: lead?.notes ?? "",
+    });
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+  };
+
+  const saveEdit = async () => {
+    if (!lead) return;
+    setSaving(true);
+    try {
+      const updates: Record<string, unknown> = {};
+
+      const emailVal = editForm.email.trim();
+      if (emailVal !== (lead.email ?? "")) updates.email = emailVal;
+      const phoneVal = editForm.phone.trim();
+      if (phoneVal !== (lead.phone ?? "")) updates.phone = phoneVal;
+      const websiteVal = editForm.website_url.trim();
+      if (websiteVal !== (lead.website_url ?? "")) updates.website_url = websiteVal;
+      const cityVal = editForm.city.trim();
+      if (cityVal !== (lead.city ?? "")) updates.city = cityVal;
+      const categoryVal = editForm.category.trim();
+      if (categoryVal !== (lead.category ?? "")) updates.category = categoryVal;
+      const addressVal = editForm.address.trim();
+      if (addressVal !== (lead.address ?? "")) updates.address = addressVal;
+      const notesVal = editForm.notes.trim();
+      if (notesVal !== (lead.notes ?? "")) updates.notes = notesVal;
+
+      if (Object.keys(updates).length > 0) {
+        await api.leads.update(leadId, updates);
+        setLead((prev) => prev ? { ...prev, ...updates } : null);
+      }
+      setEditing(false);
+    } catch (err: any) {
+      console.error("[LeadProfile] Failed to save:", err.message);
+      setError(err.message || "Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveNotes = async (value: string) => {
+    if (!lead) return;
+    const trimmed = value.trim();
+    if (trimmed === (lead.notes ?? "")) return;
+    setSaving(true);
+    try {
+      await api.leads.update(leadId, { notes: trimmed || undefined });
+      setLead((prev) => prev ? { ...prev, notes: trimmed || undefined } : null);
+    } catch (err: any) {
+      console.error("[LeadProfile] Failed to save notes:", err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Email verification ──
+  const verifyEmail = async () => {
+    if (!lead?.email) return;
+    setVerifying(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/verify-email`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setLead((prev) => prev ? { ...prev, email_status: data.email_status } : null);
+      }
+    } catch (err) {
+      console.error("Failed to verify email:", err);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   // ── AI Suggest ──
-  const handleAISuggest = async () => {
+  const handleAISuggest = async (recontact = false) => {
     if (!lead) return;
     setEmailLoading(true);
     setEmailError(null);
@@ -205,7 +271,9 @@ export default function LeadProfilePage() {
     try {
       const result = await api.ai.composeEmail(lead.id, {
         tone: "professional",
-        purpose: "Introduction and outreach for lead generation automation",
+        purpose: recontact ? "Re-engagement — they did not reply to previous outreach" : "Introduction and outreach for lead generation automation",
+        customInstructions: recontact ? "Short, direct, different angle. No reference to previous emails." : undefined,
+        recontact,
       });
 
       const body = result.email.body;
@@ -247,16 +315,14 @@ export default function LeadProfilePage() {
 
   // ── Send via mailto ──
   const handleSend = async () => {
-    if (!lead || !draftEmail || !hasEmail) return;
+    if (!lead || !draftEmail || !canSend) return;
 
     const subject = subjectOptions[selectedSubjectIdx] ?? emailSubject;
     const body = draftEmail;
 
-    // 1. Open mailto:
     const mailtoUri = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailtoUri;
 
-    // 2. Update lead status to 'contacted' if still 'new' (with activity note)
     if (lead.status === "new") {
       try {
         await api.pipeline.updateStatus(leadId, "contacted", `Email sent: ${subject}`);
@@ -270,7 +336,7 @@ export default function LeadProfilePage() {
     setTimeout(() => setEmailSent(false), 4000);
   };
 
-  // ── Copy fallback for mobile ──
+  // ── Mobile copy ──
   const handleCopyFull = () => {
     const subject = subjectOptions[selectedSubjectIdx] ?? emailSubject;
     const text = `Subject: ${subject}\n\n${draftEmail}`;
@@ -332,9 +398,7 @@ export default function LeadProfilePage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className="capitalize">
-            {lead.status}
-          </Badge>
+          <Badge className="capitalize">{lead.status}</Badge>
           <div className="relative">
             <button
               onClick={() => setSequencesDropdown(!sequencesDropdown)}
@@ -490,11 +554,31 @@ export default function LeadProfilePage() {
                       <div className="flex items-center gap-3 text-sm">
                         <Mail className="w-4 h-4 text-text-faint shrink-0" />
                         <span className="text-text">{lead.email}</span>
+                        {emailBadge && (
+                          <span className={`text-xs ${emailBadge.className}`} title={emailBadge.tooltip}>
+                            {EMAIL_STATUS_BADGE[lead.email_status || ""]?.label === "Valid"
+                              ? "✓"
+                              : emailBadge.label === "Invalid"
+                              ? "✗"
+                              : emailBadge.label === "Catch-all"
+                              ? "⚠"
+                              : "?"}
+                          </span>
+                        )}
+                        {hasEmail && (
+                          <button
+                            onClick={verifyEmail}
+                            disabled={verifying}
+                            className="text-xs text-blue hover:underline disabled:opacity-50"
+                          >
+                            {verifying ? <Loader2 className="w-3 h-3 inline animate-spin" /> : "Verify"}
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-3 text-sm">
                         <AlertCircle className="w-4 h-4 text-red shrink-0" />
-                        <span className="text-xs text-text-muted">No email — enrich this lead first</span>
+                        <span className="text-xs text-text-muted">No email — add one below</span>
                       </div>
                     )}
                     {lead.phone && (
@@ -518,7 +602,7 @@ export default function LeadProfilePage() {
                       </div>
                     )}
                     {!lead.email && !lead.phone && !lead.website_url && (
-                      <p className="text-xs text-text-faint italic">Click the pencil icon above to add contact info</p>
+                      <p className="text-xs text-text-faint italic">Click pencil to add contact info</p>
                     )}
                   </>
                 )}
@@ -562,18 +646,48 @@ export default function LeadProfilePage() {
             </div>
           </Card>
 
-          {lead.notes && (
-            <Card>
-              <div className="p-4">
-                <h3 className="text-sm font-semibold text-text">Notes</h3>
-                <p className="text-sm text-text-muted mt-2">{lead.notes}</p>
+          {/* Notes card — always visible, auto-saves */}
+          <Card>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text flex items-center gap-2">Notes</h3>
+                {saving && (
+                  <span className="text-xs text-text-muted flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Saving...
+                  </span>
+                )}
               </div>
-            </Card>
-          )}
+              <textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
+                onBlur={() => saveNotes(editForm.notes)}
+                placeholder="Add notes about this lead..."
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none min-h-[120px]"
+              />
+              <p className="text-xs text-text-faint mt-1.5">Auto-saves when you click away</p>
+            </div>
+          </Card>
         </div>
 
         {/* Email Composer */}
-        <div className="lg:col-span-2 space-y-4">
+        <div id="email-composer" className="lg:col-span-2 space-y-4">
+          {isRecontact && (
+            <div className="rounded-xl border border-amber/20 bg-amber/5 p-4 flex items-start gap-3">
+              <span className="text-lg">💡</span>
+              <div>
+                <p className="text-sm text-amber font-medium">Re-engaging a cold lead</p>
+                <p className="text-xs text-amber/80 mt-0.5">Try a different angle — shorter, more direct, no reference to previous outreach</p>
+              </div>
+            </div>
+          )}
+
+          {lead.email_status === "catch-all" && (
+            <div className="rounded-xl border border-amber/20 bg-amber/5 p-3 text-xs text-amber">
+              ⚠️ This email is catch-all — it may not reach a real inbox
+            </div>
+          )}
+
           {/* Tabs */}
           <div className="flex items-center gap-1 bg-surface-2 rounded-full p-1 w-fit">
             <button
@@ -602,7 +716,6 @@ export default function LeadProfilePage() {
 
           {activeTab === "compose" && (
             <Card className="p-0 overflow-hidden">
-              {/* Header */}
               <div className="p-4 border-b border-border/40">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-text flex items-center gap-2">
@@ -610,7 +723,7 @@ export default function LeadProfilePage() {
                     AI Email Composer
                   </h3>
                   <button
-                    onClick={handleAISuggest}
+                    onClick={() => handleAISuggest(isRecontact)}
                     disabled={emailLoading}
                     className="btn btn-secondary text-xs py-1.5 h-8"
                   >
@@ -632,7 +745,6 @@ export default function LeadProfilePage() {
                   <div className="text-xs text-red mb-2">{emailError}</div>
                 )}
 
-                {/* Subject line chips */}
                 {subjectOptions.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {subjectOptions.map((subj, idx) => (
@@ -655,7 +767,6 @@ export default function LeadProfilePage() {
                 )}
               </div>
 
-              {/* Subject input */}
               <div className="px-4 pt-3">
                 <input
                   type="text"
@@ -663,7 +774,6 @@ export default function LeadProfilePage() {
                   value={emailSubject}
                   onChange={(e) => {
                     setEmailSubject(e.target.value);
-                    // If user edits the subject field, sync with chips
                     const matchIdx = subjectOptions.indexOf(e.target.value);
                     if (matchIdx >= 0) setSelectedSubjectIdx(matchIdx);
                   }}
@@ -671,7 +781,6 @@ export default function LeadProfilePage() {
                 />
               </div>
 
-              {/* Email Body */}
               <div className="px-4 pb-3 pt-1">
                 <textarea
                   ref={textareaRef}
@@ -683,7 +792,6 @@ export default function LeadProfilePage() {
                 />
               </div>
 
-              {/* Footer Actions */}
               <div className="px-4 py-3 bg-surface-2 border-t border-border/40 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <button
@@ -701,8 +809,6 @@ export default function LeadProfilePage() {
                   <span className="text-xs text-text-faint">
                     {draftEmail.split(/\s+/).filter(Boolean).length} words
                   </span>
-
-                  {/* Mobile copy fallback button */}
                   {isMobile && !copied && (
                     <button
                       onClick={handleCopyFull}
@@ -715,20 +821,19 @@ export default function LeadProfilePage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* No email tooltip / disabled state */}
-                  {!hasEmail ? (
+                  {!canSend ? (
                     <div className="relative group">
                       <button
                         disabled
                         className="btn btn-primary text-xs py-1.5 h-8 opacity-50 cursor-not-allowed"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        No email address
+                        {!hasEmail ? "No email" : "Email invalid"}
                       </button>
                       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48">
                         <div className="text-xs text-text bg-surface border border-border rounded-lg px-3 py-2 shadow-lg">
                           <AlertCircle className="w-3 h-3 inline mr-1 text-red" />
-                          No email address — enrich this lead first
+                          {!hasEmail ? "No email address — enrich this lead first" : "Email marked invalid — cannot send outreach"}
                         </div>
                         <div className="w-2 h-2 bg-surface border-r border-b border-border rotate-45 mx-auto -mt-1" />
                       </div>
@@ -779,7 +884,6 @@ export default function LeadProfilePage() {
                 <div className="p-8 text-center">
                   <MessageSquare className="w-8 h-8 text-text-faint mx-auto mb-2" />
                   <p className="text-sm text-text-muted">No activity yet</p>
-                  <p className="text-xs text-text-faint mt-1">Activity will appear here as you interact with this lead</p>
                 </div>
               )}
             </Card>

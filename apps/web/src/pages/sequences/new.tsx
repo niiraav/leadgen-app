@@ -1,13 +1,13 @@
 import { withAuth } from "@/lib/auth";
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { ArrowLeft, Plus, Trash2, ArrowUp, ArrowDown, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Check, Play } from "lucide-react";
 import Link from "next/link";
 
 interface Step {
   step_order: number;
-  subject: string;
-  body: string;
+  subject_template: string;
+  body_template: string;
   delay_days: number;
 }
 
@@ -15,15 +15,16 @@ export default function NewSequencePage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [steps, setSteps] = useState<Step[]>([
-    { step_order: 1, subject: "", body: "", delay_days: 0 },
+    { step_order: 1, subject_template: "", body_template: "", delay_days: 0 },
   ]);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const addStep = () => {
     setSteps((prev) => [
       ...prev,
-      { step_order: prev.length + 1, subject: "", body: "", delay_days: 1 },
+      { step_order: prev.length + 1, subject_template: "", body_template: "", delay_days: 1 },
     ]);
   };
 
@@ -51,7 +52,7 @@ export default function NewSequencePage() {
       setError("Sequence name is required");
       return;
     }
-    if (steps.some((s) => !s.subject.trim() || !s.body.trim())) {
+    if (steps.some((s) => !s.subject_template.trim() || !s.body_template.trim())) {
       setError("Each step needs a subject and body");
       return;
     }
@@ -72,13 +73,41 @@ export default function NewSequencePage() {
       }
 
       const data = await res.json();
-      router.push(`/sequences/${data.id}`);
+      setSavedId(data.id);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setSaving(false);
     }
   };
+
+  if (savedId) {
+    return (
+      <div className="space-y-6 max-w-4xl">
+        <div className="card text-center py-16">
+          <div className="mx-auto w-12 h-12 rounded-full bg-green/10 flex items-center justify-center mb-4">
+            <Check className="w-6 h-6 text-green" />
+          </div>
+          <h2 className="text-lg font-bold text-text mb-2">Sequence created!</h2>
+          <p className="text-sm text-text-muted mb-6">
+            &quot;{name}&quot; is ready. Enroll leads to start automated outreach.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link
+              href={`/sequences/${savedId}`}
+              className="btn btn-primary"
+            >
+              <Play className="w-4 h-4" />
+              Activate &amp; Enroll
+            </Link>
+            <Link href="/sequences" className="btn btn-secondary">
+              Back to Sequences
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -144,8 +173,8 @@ export default function NewSequencePage() {
                 <label className="block text-xs font-medium text-text-muted mb-1.5">Subject</label>
                 <input
                   type="text"
-                  value={step.subject}
-                  onChange={(e) => updateStep(idx, "subject", e.target.value)}
+                  value={step.subject_template}
+                  onChange={(e) => updateStep(idx, "subject_template", e.target.value)}
                   placeholder="Email subject line..."
                   className="input"
                 />
@@ -153,8 +182,8 @@ export default function NewSequencePage() {
               <div>
                 <label className="block text-xs font-medium text-text-muted mb-1.5">Body</label>
                 <textarea
-                  value={step.body}
-                  onChange={(e) => updateStep(idx, "body", e.target.value)}
+                  value={step.body_template}
+                  onChange={(e) => updateStep(idx, "body_template", e.target.value)}
                   placeholder="Email body..."
                   className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
                   rows={6}

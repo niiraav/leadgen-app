@@ -9,8 +9,8 @@ const router = new Hono();
 
 const stepSchema = z.object({
   step_order: z.number().min(1),
-  subject: z.string().min(1, 'Subject is required'),
-  body: z.string().min(1, 'Body is required'),
+  subject_template: z.string().min(1, 'Subject is required'),
+  body_template: z.string().min(1, 'Body is required'),
   delay_days: z.number().min(0).default(0),
 });
 
@@ -122,8 +122,8 @@ router.post('/', async (c) => {
       const stepsData = steps.map((s) => ({
         sequence_id: sequence.id,
         step_order: s.step_order,
-        subject: s.subject,
-        body: s.body,
+        subject_template: s.subject_template,
+        body_template: s.body_template,
         delay_days: s.delay_days,
       }));
 
@@ -390,6 +390,31 @@ router.post('/:id/resume', async (c) => {
     return c.json({ message: 'Sequence resumed' });
   } catch (err: any) {
     return c.json({ error: 'Failed to resume sequence', details: err.message }, 500);
+  }
+});
+
+
+// ─── DELETE /sequences/:id ─────────────────────────────────────────────────
+
+router.delete('/:id', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+
+    // Delete enrollments first (cascade should handle steps)
+    await supabaseAdmin.from('sequence_enrollments').delete().eq('sequence_id', id);
+    await supabaseAdmin.from('sequence_steps').delete().eq('sequence_id', id);
+
+    const { error } = await supabaseAdmin
+      .from('sequences')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return c.json({ message: 'Sequence deleted' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to delete sequence', details: err.message }, 500);
   }
 });
 

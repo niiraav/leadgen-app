@@ -12,11 +12,20 @@ interface FrontendLead {
   title: string;
   company: string;
   email: string;
+  emailStatus: string;
   location: string;
   hotScore: number;
   status: string;
   addedAt: string;
 }
+
+const EMAIL_STATUS_OPTIONS = [
+  { value: "", label: "All Emails" },
+  { value: "valid", label: "✓ Verified" },
+  { value: "invalid", label: "✗ Invalid" },
+  { value: "catch-all", label: "⚠️ Catch-all" },
+  { value: "unverified", label: "Unverified" },
+];
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Status" },
@@ -32,6 +41,7 @@ const STATUS_OPTIONS = [
 export default function LeadsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [emailStatusFilter, setEmailStatusFilter] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "score" | "date">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
@@ -40,6 +50,7 @@ export default function LeadsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [verifyingAll, setVerifyingAll] = useState(false);
 
   const pageSize = 5;
 
@@ -55,12 +66,18 @@ export default function LeadsPage() {
         sortOrder,
       });
 
-      const mapped = result.data.map((l) => ({
+      const filteredData = result.data.filter((l) => {
+        if (!emailStatusFilter) return true;
+        return l.email_status === emailStatusFilter;
+      });
+
+      const mapped = filteredData.map((l) => ({
         id: String(l.id),
         name: l.business_name || "Unknown",
         title: l.category || "",
         company: l.city || l.country || "",
         email: l.email || "",
+        emailStatus: l.email_status || "unverified",
         location: [l.city, l.country].filter(Boolean).join(", "),
         hotScore: l.hot_score,
         status: l.status,
@@ -151,6 +168,31 @@ export default function LeadsPage() {
           ))}
         </select>
 
+        <select
+          value={emailStatusFilter}
+          onChange={(e) => {
+            setEmailStatusFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="h-10 px-3 text-xs rounded-full bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20 cursor-pointer"
+        >
+          {EMAIL_STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+
+        <button
+          onClick={verifyAllUnverified}
+          disabled={verifyingAll}
+          className="btn btn-ghost text-xs py-1.5 h-10 text-blue disabled:opacity-50"
+          title="Verify all unverified lead emails"
+        >
+          {verifyingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
+          Verify All
+        </button>
+
         <button
           onClick={() => {
             if (sortBy === "name") { setSortBy("date"); setSortOrder("desc"); }
@@ -174,7 +216,33 @@ export default function LeadsPage() {
           </div>
         ) : leads.length > 0 ? (
           leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} />
+            <div key={lead.id} className="flex items-center gap-2">
+              <LeadCard lead={lead} />
+              {lead.email && (
+                <div className="shrink-0 py-2 pr-2">
+                  {lead.emailStatus === "valid" && (
+                    <span className="inline-flex items-center gap-1 text-xs text-green">
+                      <Check className="w-3 h-3" />
+                    </span>
+                  )}
+                  {lead.emailStatus === "invalid" && (
+                    <span className="inline-flex items-center gap-1 text-xs text-red" title="Invalid email">
+                      <AlertCircle className="w-3 h-3" />
+                    </span>
+                  )}
+                  {lead.emailStatus === "catch-all" && (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber" title="Catch-all email">
+                      ⚠️
+                    </span>
+                  )}
+                  {(!lead.emailStatus || lead.emailStatus === "unverified") && (
+                    <span className="inline-flex items-center gap-1 text-xs text-text-faint" title="Unverified email">
+                      <Mail className="w-3 h-3" />
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           ))
         ) : (
           <div className="card text-center py-12">

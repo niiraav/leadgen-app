@@ -273,4 +273,128 @@ router.post('/batch', async (c) => {
   }
 });
 
+// ─── POST /leads/:id/ai-email ─────────────────────────────────────────────
+
+const aiEmailSchema = z.object({
+  tone: z.enum(['professional', 'friendly', 'casual', 'persuasive']).default('professional'),
+  purpose: z.string().min(1).max(200),
+  customInstructions: z.string().max(500).optional(),
+  recontact: z.boolean().optional(),
+});
+
+router.post('/:id/ai-email', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+    const body = await c.req.json();
+    const parsed = aiEmailSchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    }
+    const lead = await getLeadById(userId, id);
+    if (!lead) return c.json({ error: 'Lead not found' }, 404);
+    const { generateEmailWithAI } = await import('../services/ai-email');
+    const emailData = await generateEmailWithAI({
+      lead: {
+        business_name: lead.business_name,
+        email: lead.email ?? undefined,
+        phone: lead.phone ?? undefined,
+        website_url: lead.website_url ?? undefined,
+        category: lead.category ?? undefined,
+        city: lead.city ?? undefined,
+        country: lead.country ?? undefined,
+        rating: lead.rating ?? undefined,
+      },
+      tone: parsed.data.tone,
+      purpose: parsed.data.purpose,
+      customInstructions: parsed.data.customInstructions,
+      recontact: parsed.data.recontact,
+    });
+    return c.json({ lead_id: id, email: emailData });
+  } catch (error: any) {
+    return c.json({ error: 'Failed to generate email', details: error.message }, 500);
+  }
+});
+
+// ─── POST /leads/:id/verify-email ─────────────────────────────────────────
+
+const ZEROBOUNCE_API_KEY = process.env.ZEROBOUNCE_API_KEY || 'c3065885f1404e199200f5dc49d0f757';
+
+router.post('/:id/verify-email', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+    const { data: lead } = await supabaseAdmin
+      .from('leads')
+      .select('email')
+      .eq('id', id).eq('user_id', userId).maybeSingle();
+    if (!lead) return c.json({ error: 'Lead not found' }, 404);
+    if (!lead.email) return c.json({ error: 'No email address on this lead' }, 400);
+    const url = `https://api.zerobounce.net/v2/validate?api_key=${ZEROBOUNCE_API_KEY}&email=${encodeURIComponent(lead.email)}&ip_address=`;
+    const resp = await fetch(url);
+    const zbResult = (await resp.json()) as Record<string, any>;
+    const status = zbResult.status || 'unknown';
+    await supabaseAdmin.from('leads').update({
+      email_status: status,
+      email_status_checked_at: new Date().toISOString(),
+    }).eq('id', id).eq('user_id', userId);
+    await createActivity(userId, {
+      lead_id: id, type: 'email_verified',
+      description: `Email verified: ${status}`,
+    });
+    return c.json({ email_status: status, lead_id: id });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to verify email', details: err.message }, 500);
+  }
+});
+
+// ─── POST /leads/verify-batch ────────────────────────────────────────────
+
+router.post('/verify-batch', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const body = await c.req.json();
+    const leadIds = body.lead_ids as string[];
+    if (!Array.isArray(leadIds)) return c.json({ error: 'lead_ids array required' }, 400);
+    let queued = 0, skipped = 0;
+    for (const leadId of leadIds) {
+      try {
+        const { data: lead } = await supabaseAdmin
+          .from('leads').select('id, email, email_status')
+          .eq('id', leadId).eq('user_id', userId).maybeSingle();
+        if (!lead?.email || lead.email_status === 'valid') { skipped++; continue; }
+        const url = `https://api.zerobounce.net/v2/validate?api_key=${ZEROBOUNCE_API_KEY}&email=${encodeURIComponent(lead.email)}&ip_address=`;
+        const resp = await fetch(url);
+        const zbResult = (await resp.json()) as Record<string, any>;
+        const status = zbResult.status || 'unknown';
+        await supabaseAdmin.from('leads').update({
+          email_status: status, email_status_checked_at: new Date().toISOString(),
+        }).eq('id', leadId);
+        await createActivity(userId, { lead_id: leadId, type: 'email_verified', description: `Bulk verified: ${status}` });
+        queued++;
+      } catch { skipped++; }
+      if (leadIds.indexOf(leadId) < leadIds.length - 1) await new Promise(r => setTimeout(r, 50));
+    }
+    return c.json({ queued, skipped });
+  } catch (err: any) {
+    return c.json({ error: 'Batch verify failed', details: err.message }, 500);
+  }
+});
+
+// ─── POST /leads/:id/archive ────────────────────────────────────────────
+
+router.post('/:id/archive', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+    const { data } = await supabaseAdmin.from('leads').update({
+      status: 'archived', updated_at: new Date().toISOString(),
+    }).eq('id', id).eq('user_id', userId).select('id').maybeSingle();
+    if (!data) return c.json({ error: 'Not found' }, 404);
+    return c.json({ message: 'Lead archived' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to archive lead', details: err.message }, 500);
+  }
+});
+
 export default router;
