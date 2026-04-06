@@ -75,7 +75,7 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -91,16 +91,16 @@ export default function PipelinePage() {
       </div>
 
       {loading ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-none">
           {statusOptions.map((col) => (
-            <div key={col.id} className="min-w-[300px] max-w-[300px] flex-shrink-0">
+            <div key={col.id} className="min-w-[280px] md:min-w-[300px] max-w-[300px] flex-shrink-0">
               <div className="h-20 rounded-xl border border-border/40 animate-pulse mb-3" />
               <div className="h-32 rounded-xl bg-surface-2 animate-pulse" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none">
+        <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-none">
           {statusOptions.map((col) => {
             const leadsInCol = leads.filter((l) => l.status === col.id);
 

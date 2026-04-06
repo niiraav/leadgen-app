@@ -260,7 +260,7 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
       <div className="flex items-start gap-3">
         <AlertTriangle className="w-5 h-5 text-amber shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <h4 className="text-sm font-medium text-text truncate">{lead.business_name}</h4>
             <span className="text-xs text-text-faint capitalize">{lead.status}</span>
           </div>
@@ -377,9 +377,9 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {loading ? (
           <>
             <SkeletonCard />

@@ -2,6 +2,7 @@ import "@/globals.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/topbar";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { UndoProvider } from "@/components/ui/undo-banner";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
@@ -26,7 +27,9 @@ export default function App({ Component, pageProps }: AppProps) {
   if (isAuthPage) {
     return (
       <QueryClientProvider client={queryClient}>
-        <UndoProvider><Component {...pageProps} /></UndoProvider>
+        <UndoProvider>
+          <Component {...pageProps} />
+        </UndoProvider>
       </QueryClientProvider>
     );
   }
@@ -35,10 +38,20 @@ export default function App({ Component, pageProps }: AppProps) {
     <QueryClientProvider client={queryClient}>
       <UndoProvider>
         <div className="min-h-screen flex bg-bg">
+          {/* Sidebar: desktop only */}
           {userEmail && <Sidebar />}
-          <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "ml-64" : ""}`}>
+
+          <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-64" : ""}`}>
+            {/* TopBar: all screen sizes, shows title on mobile */}
             {userEmail && <TopBar userEmail={userEmail} />}
-            <main className="flex-1 p-6"><Component {...pageProps} /></main>
+
+            {/* Page content: bottom padding for bottom nav on mobile */}
+            <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6 overflow-y-auto">
+              <Component {...pageProps} />
+            </main>
+
+            {/* BottomNav: mobile only */}
+            {userEmail && <BottomNav />}
           </div>
         </div>
       </UndoProvider>
