@@ -385,6 +385,20 @@ export const api = {
     return request("/analytics/pipeline-health");
   },
 
+  // ── Profile ──────────────────────────────────────────────────────
+  profile: {
+    get: () => request<any>("/profile"),
+    patch: (data: Record<string, unknown>) =>
+      request<any>("/profile", { method: "PATCH", body: JSON.stringify(data) }),
+    completeness: () =>
+      request<{ score: number; missing: string[]; next_prompt: any }>("/profile/completeness"),
+    generateUsp: (data: Record<string, unknown>) =>
+      request<{ pitches: string[] }>("/profile/generate-usp", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  },
+
   // ── Utility: map raw search leads to frontend-friendly shape ──────────────
   mapSearchResult(backendResult: BackendSearchResult) {
     return backendResult.results.map((r, idx) => ({

@@ -3,6 +3,8 @@ import { KPICard, Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import OnboardingModal from "@/components/onboarding/onboarding-modal";
+import { api } from "@/lib/api";
 import {
   Users,
   Mail,

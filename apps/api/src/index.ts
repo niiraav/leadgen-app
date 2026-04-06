@@ -28,6 +28,7 @@ app.use('/import/*', authMiddleware);
 app.use('/kpi/*', authMiddleware);
 app.use('/dead-leads/*', authMiddleware);
 app.use('/analytics/*', authMiddleware);
+app.use('/profile/*', authMiddleware);
 
 // Mount route modules
 import leadsRouter from './routes/leads';
@@ -36,6 +37,7 @@ import pipelineRouter from './routes/pipeline';
 import sequencesRouter from './routes/sequences';
 import importRouter from './routes/import';
 import analyticsRouter from './routes/analytics';
+import profileRouter from './routes/profile';
 
 app.route('/leads', leadsRouter);
 app.route('/search', searchRouter);
@@ -43,6 +45,7 @@ app.route('/pipeline', pipelineRouter);
 app.route('/sequences', sequencesRouter);
 app.route('/import', importRouter);
 app.route('/analytics', analyticsRouter);
+app.route('/profile', profileRouter);
 
 // KPI endpoint
 import { getKPI, getUserId } from './db';
