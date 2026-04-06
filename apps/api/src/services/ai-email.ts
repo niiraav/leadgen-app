@@ -69,22 +69,19 @@ Write personalized, concise outreach emails.
 Always return valid JSON with "subject" and "body" fields.
 No markdown, no code fences — just raw JSON.`;
 
-  const profileData = (request as any).profile || {};
-  const profileContextArr: string[] = [];
-  if (profileData.usp) profileContextArr.push('Your pitch: "' + profileData.usp + '"');
-  if (profileData.services && profileData.services.length > 0) profileContextArr.push('Services: ' + profileData.services.join(', '));
-  if (profileData.signoff) profileContextArr.push('Sign off: "' + profileData.signoff + '"');
-  if (profileData.cta) profileContextArr.push('CTA: ' + profileData.cta);
-  if (profileData.calendly) profileContextArr.push('Calendly: ' + profileData.calendly);
-  if (profileData.linkedin) profileContextArr.push('LinkedIn: ' + profileData.linkedin);
-  const profileContext = profileContextArr.join('\n');
+  // Build profile context for the prompt
+  const p = (request as any).profile || {};
+  const ctx: string[] = [];
+  if (p.usp) ctx.push('Your pitch: "' + p.usp + '"');
+  if (p.services && p.services.length) ctx.push('Services: ' + p.services.join(', '));
+  if (p.signoff) ctx.push('Sign off: "' + p.signoff + '"');
+  if (p.cta) ctx.push('CTA: ' + p.cta);
+  if (p.calendly) ctx.push('Calendly: ' + p.calendly);
+  if (p.linkedin) ctx.push('LinkedIn: ' + p.linkedin);
+  const profileBlock = ctx.length ? '\nSender profile:\n' + ctx.join('\n') : '';
 
-    profile.cta ? `Preferred CTA: ${profile.cta}` : null,\n    profile.calendly ? `Include your Calendly link at the end when suggesting a call: ${profile.calendly}` : null,\n    profile.linkedin ? `Include your LinkedIn at the end: ${profile.linkedin}` : null,\n  ].filter(Boolean).join('\\n');\n\n  const systemPrompt = recontact
-    ? basePrompt + `\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.
-Use a completely different angle than a typical first-contact email.
-Keep it SHORT (4-5 sentences max). Be direct and respectful.
-Do NOT reference previous emails or mention that they didn't reply.
-Use a friendly, casual tone. End with a simple yes/no question to lower friction.`
+  const systemPrompt = recontact
+    ? basePrompt + '\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.\nUse a completely different angle than a typical first-contact email.\nKeep it SHORT (4-5 sentences max). Be direct and respectful.\nDo NOT reference previous emails or mention that they didn\'t reply.\nUse a friendly, casual tone. End with a simple yes/no question to lower friction.'
     : basePrompt;
 
   const leadDescription = [
@@ -99,13 +96,11 @@ Use a friendly, casual tone. End with a simple yes/no question to lower friction
     .filter(Boolean)
     .join('\n');
 
-  const profileContextBlock = profileContext ? `\\nYou represent the sender with this profile:\\n${profileContext}` : '';
-
   const userPrompt = `Write a cold email with the following parameters:
 
 Lead details:
 ${leadDescription}
-${profileContextBlock}
+${profileBlock}
 
 Tone: ${tone}
 Purpose: ${purpose}
