@@ -14,7 +14,7 @@ import {
   Zap,
   Settings,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -28,6 +28,14 @@ const navItems = [
 export function Sidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Inform page content of sidebar width via CSS variable
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      collapsed ? "72px" : "256px"
+    );
+  }, [collapsed]);
 
   const isActive = (href: string) => {
     if (router.pathname === href) return true;
