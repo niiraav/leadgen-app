@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { LeadCard } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { api, BackendPaginatedLeads } from "@/lib/api";
-import { Search, ArrowUpDown, Download, Plus, UserPlus, Loader2 } from "lucide-react";
+import { Search, ArrowUpDown, Download, Plus, UserPlus, Loader2, Mail } from "lucide-react";
 import Link from "next/link";
 
 interface FrontendLead {
@@ -90,13 +90,46 @@ export default function LeadsPage() {
       setLoading(false);
     } catch (err: any) {
       console.warn("[Leads] API unreachable:", err.message);
-      // Mock fallback via mockLeads — do nothing, show empty with hint
+    console.warn("[Leads] API unreachable:", err.message);
       setLeads([]);
       setTotalCount(0);
       setLoading(false);
       setError(`Unable to reach API server. Is the backend running? (${err.message})`);
     }
-  }, [statusFilter, searchTerm, sortBy, sortOrder]);
+  }, [statusFilter, searchTerm, sortBy, sortOrder, emailStatusFilter]);
+
+  const verifyAllUnverified = async () => {
+    if (verifyingAll) return;
+    setVerifyingAll(true);
+    try {
+      const result = await api.leads.list({ limit: 500 });
+      const unverified = result.data
+        .filter((l) => !l.email_status || l.email_status === "unverified")
+        .filter((l) => l.email);
+
+      if (unverified.length === 0) {
+        setVerifyingAll(false);
+        return;
+      }
+
+      const res = await fetch("/api/leads/verify-batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ lead_ids: unverified.map((l: any) => l.id) }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Verification: ${data.queued} leads, skipped: ${data.skipped}`);
+        fetchLeads();
+      }
+    } catch (err) {
+      console.error("Failed to verify all:", err);
+    } finally {
+      setVerifyingAll(false);
+    }
+  };
 
   useEffect(() => {
     fetchLeads();

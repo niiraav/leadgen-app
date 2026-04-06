@@ -10,6 +10,7 @@ import {
   batchCreateLeads,
   type JsonValue,
   getUserId,
+  supabaseAdmin,
 } from '../db';
 
 const router = new Hono();
@@ -381,6 +382,20 @@ router.post('/verify-batch', async (c) => {
   }
 });
 
+
+// ─── GET /leads/credits/zerobounce ────────────────────────────────────────
+
+router.get('/credits/zerobounce', async (c) => {
+  try {
+    const ZEROBOUNCE_API_KEY = process.env.ZEROBOUNCE_API_KEY || 'c3065885f1404e199200f5dc49d0f757';
+    const res = await fetch(`https://api.zerobounce.net/v2/getcredits?api_key=${ZEROBOUNCE_API_KEY}`);
+    const data = (await res.json()) as Record<string, any>;
+    return c.json({ credits: parseInt(data.credits || '0', 10) });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to fetch credits', details: err.message }, 500);
+  }
+});
+
 // ─── POST /leads/:id/archive ────────────────────────────────────────────
 
 router.post('/:id/archive', async (c) => {
@@ -394,6 +409,23 @@ router.post('/:id/archive', async (c) => {
     return c.json({ message: 'Lead archived' });
   } catch (err: any) {
     return c.json({ error: 'Failed to archive lead', details: err.message }, 500);
+  }
+});
+
+// ─── POST /dead-leads/:id/resolve ────────────────────────────────────────
+
+router.post('/dead-leads/:id/resolve', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+    await supabaseAdmin
+      .from('lead_activities')
+      .update({ resolved: true })
+      .eq('id', id)
+      .eq('user_id', userId);
+    return c.json({ message: 'Resolved' });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to resolve', details: err.message }, 500);
   }
 });
 
