@@ -15,32 +15,27 @@ const queryClient = new QueryClient({
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [userEmail, setUserEmail] = useState<string | null>(pageProps.user?.email ?? null);
+  const isAuthPage =
+    router.pathname.startsWith("/auth") || (pageProps as any).__authPage === true;
 
-  // Fix #1: Check session on mount (prevents blank nav on login/refresh)
+  const [userEmail, setUserEmail] = useState<string | null>(
+    pageProps.user?.email ?? null
+  );
+
+  // Check session immediately on mount + listen for changes
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
-    // Immediately check session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user?.email && !isAuthPage()) {
-        setUserEmail(session.user.email);
-      }
+      if (session?.user?.email) setUserEmail(session.user.email);
     });
-    // Listen for session changes
-    supabase.auth.onAuthStateChange((_, session) => {
-      if (session?.user?.email && !isAuthPage()) {
-        setUserEmail(session.user.email);
-      } else {
-        setUserEmail(null);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.email) setUserEmail(session.user.email);
+      else setUserEmail(null);
     });
+    return () => subscription.unsubscribe();
   }, []);
 
-  const isAuthPage = () => {
-    return router.pathname.startsWith("/auth") || (pageProps as any).__authPage === true;
-  };
-
-  if (isAuthPage()) {
+  if (isAuthPage) {
     return (
       <QueryClientProvider client={queryClient}>
         <UndoProvider>
