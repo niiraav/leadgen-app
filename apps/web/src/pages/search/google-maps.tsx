@@ -253,7 +253,7 @@ export default function SearchGoogleMaps() {
       const accessToken = session?.access_token;
       if (!accessToken) throw new Error("Not authenticated");
 
-      const res = await fetch("http://localhost:3001/search/google-maps/add-lead", {
+      const res = await fetch("http://localhost:3001/leads", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -302,7 +302,7 @@ export default function SearchGoogleMaps() {
         const accessToken = session?.access_token;
         if (!accessToken) throw new Error("Not authenticated");
 
-        const res = await fetch("http://localhost:3001/search/google-maps/add-lead", {
+        const res = await fetch("http://localhost:3001/leads", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
