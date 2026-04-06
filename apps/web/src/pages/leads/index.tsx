@@ -42,23 +42,21 @@ export default function LeadsPage() {
   const [verifyingAll, setVerifyingAll] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const offsetRef = useRef(0);
   const loadingRef = useRef(false);
   const filtersRef = useRef({ statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm });
   const observerRef = useRef<HTMLDivElement>(null);
   const fetchKeyRef = useRef(0);
-
-  const PAGE_SIZE = 20;
+  const cursorRef = useRef<string | null>(null);
 
   useEffect(() => {
     filtersRef.current = { statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm };
   }, [statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm]);
 
-  // Stable fetch — uses refs, no deps, never recreated
+  // Stable fetch — cursor-based, uses refs, no deps, never recreated
   const doFetch = useCallback(async (reset = false) => {
-    if (loadingRef.current) return;
+    if (loadingRef.current) return false;
     loadingRef.current = true;
-    const currentOffset = reset ? 0 : offsetRef.current;
+    const cursor = reset ? null : cursorRef.current;
     const f = filtersRef.current;
 
     if (reset) {
@@ -70,14 +68,16 @@ export default function LeadsPage() {
     setError(null);
 
     try {
-      const result = await api.leads.list({
+      const params: any = {
         limit: PAGE_SIZE,
-        offset: currentOffset,
         status: f.statusFilter || undefined,
         search: f.searchTerm || undefined,
         sortField: f.sortBy === "name" ? "business_name" : f.sortBy === "score" ? "hot_score" : "created_at",
         sortOrder: f.sortOrder,
-      });
+      };
+      if (cursor) params.cursor = cursor;
+
+      const result = await api.leads.list(params);
       const filteredData = result.data.filter((l: any) => {
         if (!f.emailStatusFilter) return true;
         return l.email_status === f.emailStatusFilter;
@@ -94,16 +94,20 @@ export default function LeadsPage() {
         status: l.status,
         addedAt: new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
+
       if (reset) {
         setLeads(mapped);
       } else {
         setLeads((prev) => [...prev, ...mapped]);
       }
+
       setTotalCount(result.total);
-      setHasMore(mapped.length === PAGE_SIZE);
-      offsetRef.current = currentOffset + mapped.length;
+      setHasMore(mapped.length === PAGE_SIZE && result.nextCursor != null);
+      cursorRef.current = result.nextCursor || null;
+      return true;
     } catch (err: any) {
       setError(`Unable to reach API server. (${err.message.split("\n")[0]})`);
+      return false;
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -112,18 +116,18 @@ export default function LeadsPage() {
   }, []);
 
   const triggerRefetch = useCallback(() => {
-    offsetRef.current = 0;
+    cursorRef.current = null;
     fetchKeyRef.current += 1;
     doFetch(true);
   }, [doFetch]);
 
-  // Mount: fetch once
+  // Mount: fetch first batch
   useEffect(() => {
     doFetch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Filter changes: skip first mount run, refetch on subsequent changes
+  // Refetch on filter change: skip first mount run
   useEffect(() => {
     if (fetchKeyRef.current === 0) {
       fetchKeyRef.current = 1;
@@ -132,19 +136,21 @@ export default function LeadsPage() {
     triggerRefetch();
   }, [statusFilter, emailStatusFilter, sortBy, sortOrder, triggerRefetch]);
 
-  // Intersection observer for lazy loading
+  // Intersection observer — attached only after initial mount fetch is done (!loading)
   useEffect(() => {
+    if (loading) return;
+    if (!observerRef.current) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
           doFetch();
         }
       },
-      { rootMargin: "400px" }
+      { rootMargin: "300px" }
     );
-    if (observerRef.current) observer.observe(observerRef.current);
+    observer.observe(observerRef.current);
     return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore, doFetch]);
+  }, [hasMore, loading, loadingMore]);
 
   const verifyAllUnverified = async () => {
     if (verifyingAll) return;
