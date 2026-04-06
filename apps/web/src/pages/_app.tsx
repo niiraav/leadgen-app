@@ -17,7 +17,8 @@ const queryClient = new QueryClient({
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const isAuthPage = router.pathname.startsWith("/auth") || (pageProps as any).__authPage === true;
-
+  
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(
     pageProps.user?.email ?? null
   );
@@ -26,6 +27,7 @@ export default function App({ Component, pageProps }: AppProps) {
     const supabase = createBrowserSupabaseClient();
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user?.email) setUserEmail(session.user.email);
+      setSessionChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user?.email) setUserEmail(session.user.email);
@@ -43,6 +45,15 @@ export default function App({ Component, pageProps }: AppProps) {
           </ProfileProvider>
         </UndoProvider>
       </QueryClientProvider>
+    );
+  }
+
+  // Show nothing while checking session on first visit after login
+  if (!sessionChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="w-8 h-8 border-2 border-blue/30 border-t-blue rounded-full animate-spin" />
+      </div>
     );
   }
 
