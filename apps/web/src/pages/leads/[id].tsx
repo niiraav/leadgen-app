@@ -22,10 +22,6 @@ import {
   ArrowLeft,
   Archive,
   Trash2,
-  ExternalLink,
-  Loader2,
-  Check,
-  Copy,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
