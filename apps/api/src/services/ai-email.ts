@@ -61,7 +61,7 @@ Use a friendly, casual tone. End with a simple yes/no question to lower friction
     : basePrompt;
 
   const leadDescription = [
-    `Business: ${lead.business_name}`,
+    `Business: ${cleanBusinessName(lead.business_name)}`,
     lead.category ? `Category: ${lead.category}` : '',
     lead.city ? `Location: ${lead.city}${lead.country ? `, ${lead.country}` : ''}` : '',
     lead.rating ? `Rating: ${lead.rating}/5` : '',
@@ -127,7 +127,7 @@ Return ONLY a JSON object with "subject" and "body" keys. Make the email persona
     // If JSON parsing fails, return raw content as body
     console.warn('[AI Email] Failed to parse JSON response, falling back to raw content');
     return {
-      subject: `Outreach to ${lead.business_name}`,
+      subject: `Outreach to ${cleanBusinessName(lead.business_name)}`,
       body: content,
     };
   }

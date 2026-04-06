@@ -24,6 +24,44 @@ type SerpApiPlace = {
   service_options?: { online_appointments?: boolean };
 };
 
+
+/**
+ * SerpAPI titles are dirty: "24/7 ☎️LONDON CITY ROOFING ⭐⭐⭐⭐⭐| ROOFERS WEST"
+ * This extracts just the actual business name.
+ */
+function cleanBusinessName(raw: string): string {
+  let name = raw;
+
+  // 1. Take the first part before any pipe separator
+  name = name.split('|')[0].trim();
+
+  // 2. Strip emojis and unicode symbols (everything outside basic Latin + common punct)
+  //    Keep: A-Z, a-z, 0-9, spaces, dots, hyphens, ampersand, apostrophe, slash, comma
+  name = name.replace(/[^\w\s.\-',/&\$#@()]/gu, '').trim();
+
+  // 3. Remove 24/7, 24hr, 24-hour style open-times from the name
+  name = name.replace(/\b(24\/7|24h|24\s*hr|24\s*hours?)\b/gi, '').trim();
+
+  // 4. Remove leading/trailing punctuation leftovers
+  name = name.replace(/^[^\w]+|[^\w]+$/g, '').trim();
+
+  // 5. Collapse multiple spaces
+  name = name.replace(/\s{2,}/g, ' ').trim();
+
+  // 6. Remove the category repetition if it starts/ends with the same word as the service
+  //    e.g. "ROOFERS LONDON" → just keep if it's not purely the service keyword repeated
+  //    We just cap at 60 chars to prevent keyword-stuffed names
+  if (name.length > 60) {
+    // Take first 60 chars and end at word boundary
+    name = name.substring(0, 60).replace(/\s+\S*$/, '').trim();
+  }
+
+  // 7. Title case
+  name = name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return name || 'Unknown Business';
+}
+
 export async function serpApiSearch({
   businessType,
   location,
@@ -71,7 +109,7 @@ export async function serpApiSearch({
     const addressParts = place.address?.split(',').map((s) => s.trim()) ?? [];
 
     return {
-      business_name: place.title || 'Unknown Business',
+      business_name: cleanBusinessName(place.title),
       phone: place.phone || undefined,
       website_url: place.website || undefined,
       address: place.address || undefined,
