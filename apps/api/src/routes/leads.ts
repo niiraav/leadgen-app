@@ -280,6 +280,12 @@ const aiEmailSchema = z.object({
   purpose: z.string().min(1).max(200),
   customInstructions: z.string().max(500).optional(),
   recontact: z.boolean().optional(),
+  profile_usp: z.string().optional(),
+  profile_services: z.array(z.string()).optional(),
+  profile_signoff: z.string().optional(),
+  profile_cta: z.string().optional(),
+  profile_calendly: z.string().optional(),
+  profile_linkedin: z.string().optional(),
 });
 
 router.post('/:id/ai-email', async (c) => {
@@ -295,6 +301,14 @@ router.post('/:id/ai-email', async (c) => {
     const emailData = await generateEmailWithAI({
       lead: { business_name: lead.business_name, email: lead.email ?? undefined, phone: lead.phone ?? undefined, website_url: lead.website_url ?? undefined, category: lead.category ?? undefined, city: lead.city ?? undefined, country: lead.country ?? undefined, rating: lead.rating ?? undefined } as any,
       tone: parsed.data.tone, purpose: parsed.data.purpose, customInstructions: parsed.data.customInstructions, recontact: parsed.data.recontact,
+      profile: {
+        usp: parsed.data.profile_usp || null,
+        services: parsed.data.profile_services || [],
+        signoff: parsed.data.profile_signoff || null,
+        cta: parsed.data.profile_cta || null,
+        calendly: parsed.data.profile_calendly || null,
+        linkedin: parsed.data.profile_linkedin || null,
+      } as any,
     });
     return c.json({ lead_id: id, email: emailData });
   } catch (e: any) { return c.json({ error: 'Failed to generate email', details: e.message }, 500); }

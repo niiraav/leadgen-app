@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import OnboardingModal from "@/components/onboarding/onboarding-modal";
-import { api } from "@/lib/api";
+import { useProfile } from "@/contexts/profile-context";
 import {
   Users,
   Mail,
@@ -305,6 +305,16 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
   const [deadLeads, setDeadLeads] = useState<DeadLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const { profile, refreshProfile, updateProfile, generateUsp } = useProfile();
+
+  // Show onboarding on first visit (step 0), or if previously completed but no profile
+  useEffect(() => {
+    if (profile && profile.onboarding_step === 0) {
+      setShowOnboarding(true);
+    }
+  }, [profile]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -554,6 +564,15 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
           </div>
         )}
       </div>
+
+      {/* Onboarding Modal */}
+      {showOnboarding && profile && (
+        <OnboardingModal
+          initialProfile={profile as unknown as Record<string, unknown>}
+          onComplete={() => { setShowOnboarding(false); refreshProfile(); }}
+          onSkip={() => { updateProfile({ onboarding_step: -1 }); setShowOnboarding(false); refreshProfile(); }}
+        />
+      )}
     </div>
   );
 }

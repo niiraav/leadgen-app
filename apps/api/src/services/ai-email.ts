@@ -33,6 +33,14 @@ export type AIEmailGenerationRequest = {
   purpose: string;
   customInstructions?: string;
   recontact?: boolean;
+  profile?: {
+    usp?: string | null;
+    services?: string[];
+    signoff?: string | null;
+    cta?: string | null;
+    calendly?: string | null;
+    linkedin?: string | null;
+  };
 };
 
 export type AIEmailResponse = {
@@ -40,19 +48,38 @@ export type AIEmailResponse = {
   body: string;
 };
 
-export async function generateEmailWithAI({
-  lead,
-  tone,
-  purpose,
-  customInstructions,
-  recontact,
-}: AIEmailGenerationRequest): Promise<AIEmailResponse> {
+export function cleanBusinessName(raw: string): string {
+  let name = raw;
+  name = name.split('|')[0].trim();
+  name = name.replace(/[^\w\s.\-',/&\$#@()]/gu, '').trim();
+  name = name.replace(/\b(24\/7|24h|24\s*hr|24\s*hours?)\b/gi, '').trim();
+  name = name.replace(/^[^\w]+|[^\w]+$/g, '').trim();
+  name = name.replace(/\s{2,}/g, ' ').trim();
+  if (name.length > 60) {
+    name = name.substring(0, 60).replace(/\s+\S*$/, '').trim();
+  }
+  name = name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return name || 'Unknown Business';
+}
+
+export async function generateEmailWithAI(request: AIEmailGenerationRequest): Promise<AIEmailResponse> {
+  const { lead, tone, purpose, customInstructions, recontact, profile } = request;
   const basePrompt = `You are a professional cold email writer for a B2B lead generation agency.
 Write personalized, concise outreach emails.
 Always return valid JSON with "subject" and "body" fields.
 No markdown, no code fences — just raw JSON.`;
 
-  const systemPrompt = recontact
+  const profileData = (request as any).profile || {};
+  const profileContextArr: string[] = [];
+  if (profileData.usp) profileContextArr.push('Your pitch: "' + profileData.usp + '"');
+  if (profileData.services && profileData.services.length > 0) profileContextArr.push('Services: ' + profileData.services.join(', '));
+  if (profileData.signoff) profileContextArr.push('Sign off: "' + profileData.signoff + '"');
+  if (profileData.cta) profileContextArr.push('CTA: ' + profileData.cta);
+  if (profileData.calendly) profileContextArr.push('Calendly: ' + profileData.calendly);
+  if (profileData.linkedin) profileContextArr.push('LinkedIn: ' + profileData.linkedin);
+  const profileContext = profileContextArr.join('\n');
+
+    profile.cta ? `Preferred CTA: ${profile.cta}` : null,\n    profile.calendly ? `Include your Calendly link at the end when suggesting a call: ${profile.calendly}` : null,\n    profile.linkedin ? `Include your LinkedIn at the end: ${profile.linkedin}` : null,\n  ].filter(Boolean).join('\\n');\n\n  const systemPrompt = recontact
     ? basePrompt + `\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.
 Use a completely different angle than a typical first-contact email.
 Keep it SHORT (4-5 sentences max). Be direct and respectful.
@@ -72,10 +99,13 @@ Use a friendly, casual tone. End with a simple yes/no question to lower friction
     .filter(Boolean)
     .join('\n');
 
+  const profileContextBlock = profileContext ? `\\nYou represent the sender with this profile:\\n${profileContext}` : '';
+
   const userPrompt = `Write a cold email with the following parameters:
 
 Lead details:
 ${leadDescription}
+${profileContextBlock}
 
 Tone: ${tone}
 Purpose: ${purpose}

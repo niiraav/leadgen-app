@@ -5,6 +5,8 @@ import { useRouter } from "next/router";
 import { Search, MapPin, Loader2, Check, Plus, X } from "lucide-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import Link from "next/link";
+import { useProfile } from "@/contexts/profile-context";
+import { TargetAreaNudge } from "@/components/nudges/profile-nudges";
 
 /* ------------------------------------------------------------------ */
 /*  Quick Types – emoji chips that populate the business type input    */
@@ -75,6 +77,8 @@ interface SearchResult {
 /* ------------------------------------------------------------------ */
 export default function SearchGoogleMaps() {
   const router = useRouter();
+  const { showNudge, profile, refreshProfile, markNudgeSeen } = useProfile();
+  const [showGeoNudge, setShowGeoNudge] = useState(true);
 
   /* ---------- state ----------- */
   const [businessType, setBusinessType] = useState("");

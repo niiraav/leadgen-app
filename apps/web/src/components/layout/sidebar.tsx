@@ -12,6 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -21,6 +22,7 @@ const navItems = [
   { label: "Leads", href: "/leads", icon: Users },
   { label: "Pipeline", href: "/pipeline", icon: Columns3 },
   { label: "Sequences", href: "/sequences", icon: Mail },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {

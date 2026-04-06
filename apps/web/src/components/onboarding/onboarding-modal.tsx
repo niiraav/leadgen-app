@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
+import { useProfile } from "@/contexts/profile-context";
 import { Loader2, Check, X, Sparkles, RotateCw } from "lucide-react";
 import {
   SERVICE_CATEGORIES,
@@ -9,47 +10,40 @@ import {
 } from "@/lib/services";
 
 interface Props {
-  onNext: (step: number, data: Record<string, unknown>) => Promise<void>;
-  onGenerateUsp: (data: Record<string, unknown>) => Promise<{ pitches: string[] }>;
+  initialProfile: Record<string, unknown>;
   onComplete: () => void;
   onSkip: () => void;
-  initialData: Record<string, unknown>;
 }
 
-export default function OnboardingModal({
-  onNext,
-  onGenerateUsp,
-  onComplete,
-  onSkip,
-  initialData,
-}: Props) {
+export default function OnboardingModal({ initialProfile, onComplete, onSkip }: Props) {
+  const { updateProfile, generateUsp } = useProfile();
   const [step, setStep] = useState(() => {
-    const s = initialData.onboarding_step as number;
+    const s = (initialProfile.onboarding_step || 0) as number;
     return s > 0 && s < 3 ? s : 1;
   });
 
   // Step 1 state
-  const [fullName, setFullName] = useState(initialData.full_name as string || "");
-  const [companyName, setCompanyName] = useState(initialData.company_name as string || "");
-  const [role, setRole] = useState(initialData.role as string || "");
+  const [fullName, setFullName] = useState(initialProfile.full_name as string || "");
+  const [companyName, setCompanyName] = useState(initialProfile.company_name as string || "");
+  const [role, setRole] = useState(initialProfile.role as string || "");
 
   // Step 2 state
   const [selectedServices, setSelectedServices] = useState<string[]>(
-    (initialData.services as string[]) || []
+    (initialProfile.services as string[]) || []
   );
   const [customServices, setCustomServices] = useState<string[]>(
-    (initialData.custom_services as string[]) || []
+    (initialProfile.custom_services as string[]) || []
   );
   const [customInput, setCustomInput] = useState("");
 
   // Step 3 state
-  const [tone, setTone] = useState(initialData.tone as string || "professional");
-  const [usp, setUsp] = useState(initialData.usp as string || "");
+  const [tone, setTone] = useState(initialProfile.tone as string || "professional");
+  const [usp, setUsp] = useState(initialProfile.usp as string || "");
   const [signoffStyle, setSignoffStyle] = useState(
-    initialData.signoff_style as string || "Best regards"
+    initialProfile.signoff_style as string || "Best regards"
   );
   const [ctaPreference, setCtaPreference] = useState(
-    initialData.cta_preference as string || "reply_email"
+    initialProfile.cta_preference as string || "reply_email"
   );
   const [uspGenerating, setUspGenerating] = useState(false);
   const [uspPitches, setUspPitches] = useState<string[]>([]);
@@ -60,7 +54,7 @@ export default function OnboardingModal({
   const handleNextStep1 = async () => {
     if (!fullName.trim() || !companyName.trim() || !role) return;
     setSubmitting(true);
-    await onNext(1, { full_name: fullName.trim(), company_name: companyName.trim(), role });
+    await updateProfile({ full_name: fullName.trim(), company_name: companyName.trim(), role });
     setSubmitting(false);
     setStep(2);
   };
@@ -68,14 +62,14 @@ export default function OnboardingModal({
   const handleNextStep2 = async () => {
     if (selectedServices.length === 0 && customServices.length === 0) return;
     setSubmitting(true);
-    await onNext(2, { services: selectedServices, custom_services: customServices, onboarding_step: 2 });
+    await updateProfile({ services: selectedServices, custom_services: customServices, onboarding_step: 2 });
     setSubmitting(false);
     setStep(3);
   };
 
   const handleComplete = async () => {
     setSubmitting(true);
-    await onNext(3, {
+    await updateProfile({
       usp, tone, signoff_style: signoffStyle,
       cta_preference: ctaPreference,
       onboarding_step: 3,
@@ -88,7 +82,7 @@ export default function OnboardingModal({
   const handleGenerateUsp = async () => {
     setUspGenerating(true);
     try {
-      const result = await onGenerateUsp({
+      const result = await generateUsp({
         company_name: companyName,
         role,
         services: selectedServices,
@@ -199,7 +193,7 @@ export default function OnboardingModal({
                 </div>
               </div>
               <div className="flex items-center justify-between pt-4">
-                <button onClick={onSkip} className="text-sm text-text-muted hover:text-text underline min-h-[44px] px-2">
+                <button onClick={async () => { await updateProfile({ onboarding_step: -1 }); onSkip(); }} className="text-sm text-text-muted hover:text-text underline min-h-[44px] px-2">
                   Skip for now
                 </button>
                 <button
