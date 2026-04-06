@@ -36,6 +36,7 @@ export type AIEmailGenerationRequest = {
   profile?: {
     usp?: string | null;
     services?: string[];
+    full_name?: string | null;
     signoff?: string | null;
     cta?: string | null;
     calendly?: string | null;
@@ -48,10 +49,11 @@ export type AIEmailResponse = {
   body: string;
 };
 
+// Remove emojis, keyword stuffing, 24/7 etc. from business names
 export function cleanBusinessName(raw: string): string {
   let name = raw;
   name = name.split('|')[0].trim();
-  name = name.replace(/[^\w\s.\-',/&\$#@()]/gu, '').trim();
+  name = name.replace(/[^\w\s.\-',\/&$#@()]/g, '').trim();
   name = name.replace(/\b(24\/7|24h|24\s*hr|24\s*hours?)\b/gi, '').trim();
   name = name.replace(/^[^\w]+|[^\w]+$/g, '').trim();
   name = name.replace(/\s{2,}/g, ' ').trim();
@@ -62,64 +64,78 @@ export function cleanBusinessName(raw: string): string {
   return name || 'Unknown Business';
 }
 
+function joinLines(strings: string[]): string {
+  return strings.filter(Boolean).join('\n');
+}
+
 export async function generateEmailWithAI(request: AIEmailGenerationRequest): Promise<AIEmailResponse> {
   const { lead, tone, purpose, customInstructions, recontact, profile } = request;
-  const basePrompt = `You are a professional cold email writer for a B2B lead generation agency.
-Write personalized, concise outreach emails.
-Always return valid JSON with "subject" and "body" fields.
-No markdown, no code fences — just raw JSON.
 
-RULES FOR GREETING:
-- Start with a greeting that references the lead's company name, e.g. "Hi [Company] team," or "Hello at [Company],".
-- NEVER use placeholders like [Name], [First Name], [Recipient], or [Company Manager].
-- If no company name is available, use "Hi there,".
+  // Build profile context — NO template literals to avoid corruption
+  const p = (profile as any) || {};
+  const signoff = p.signoff || 'Best regards';
+  const senderName = p.full_name || '';
 
-RULES FOR SIGN-OFF:
-- Use the exact sign-off provided in the sender profile below.
-- Follow it with the sender's real name from the sender profile.
-- NEVER use [Your Name], [Your Company], or any placeholder.`;
+  const profileLines: string[] = [];
+  if (p.usp) profileLines.push('Pitch: ' + p.usp);
+  if (p.services && p.services.length > 0) profileLines.push('Services: ' + p.services.join(', '));
+  if (p.calendly) profileLines.push('Calendly link: ' + p.calendly);
+  if (p.linkedin) profileLines.push('LinkedIn: ' + p.linkedin);
+  profileLines.push('Sign off email with: ' + signoff);
+  if (senderName) profileLines.push('Sender full name: ' + senderName);
 
-  // Build profile context for the prompt
-  const p = (request as any).profile || {};
-  const ctx: string[] = [];
-  if (p.usp) ctx.push('Pitch: ' + p.usp);
-  if (p.services && p.services.length) ctx.push('Services: ' + p.services.join(', '));
-  if (p.calendly) ctx.push('Calendly link: ' + p.calendly);
-  if (p.linkedin) ctx.push('LinkedIn: ' + p.linkedin);
-  const profileBlock = ctx.length ? '\nSender profile:\n' + ctx.join('\n') + '\nSign off: ' + (p.signoff || 'Best regards') + '\nSender name: ' + (p.full_name || '') : '';
+  const profileBlock = profileLines.length > 0 ? joinLines(['', 'Sender profile:', ...profileLines]) : '';
 
-  const systemPrompt = recontact
-    ? basePrompt + '\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.\nUse a completely different angle than a typical first-contact email.\nKeep it SHORT (4-5 sentences max). Be direct and respectful.\nDo NOT reference previous emails or mention that they didn\'t reply.\nUse a friendly, casual tone. End with a simple yes/no question to lower friction.'
-    : basePrompt;
+  // Lead info
+  const leadLines: string[] = [
+    'Business: ' + cleanBusinessName(lead.business_name),
+  ];
+  if (lead.category) leadLines.push('Category: ' + lead.category);
+  if (lead.city) leadLines.push('Location: ' + lead.city + (lead.country ? ', ' + lead.country : ''));
+  if (lead.rating) leadLines.push('Rating: ' + lead.rating + '/5');
+  if (lead.website_url) leadLines.push('Website: ' + lead.website_url);
+  if (lead.email) leadLines.push('Email: ' + lead.email);
+  if (lead.phone) leadLines.push('Phone: ' + lead.phone);
 
-  const leadDescription = [
-    `Business: ${cleanBusinessName(lead.business_name)}`,
-    lead.category ? `Category: ${lead.category}` : '',
-    lead.city ? `Location: ${lead.city}${lead.country ? `, ${lead.country}` : ''}` : '',
-    lead.rating ? `Rating: ${lead.rating}/5` : '',
-    lead.website_url ? `Website: ${lead.website_url}` : '',
-    lead.email ? `Email: ${lead.email}` : '',
-    lead.phone ? `Phone: ${lead.phone}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
+  const leadDescription = joinLines(leadLines);
 
-  const userPrompt = `Write a cold email with the following parameters:
+  // System prompt — NO template literals, all string concatenation
+  let basePrompt = 'You are a professional cold email writer for a B2B lead generation agency.\n';
+  basePrompt += 'Write personalized, concise outreach emails.\n';
+  basePrompt += 'Always return valid JSON with "subject" and "body" fields.\n';
+  basePrompt += 'No markdown, no code fences — just raw JSON.\n\n';
+  basePrompt += 'STRICT RULES:\n';
+  basePrompt += '1. GREETING: Use "Hi ' + cleanBusinessName(lead.business_name) + ' team," or "Hello at ' + cleanBusinessName(lead.business_name) + ',."\n';
+  basePrompt += '   NEVER use placeholders like [Name], [First Name], [Company], [Your Name].\n';
+  basePrompt += '   If you don\'t know the company name, use "Hi there,".\n';
+  basePrompt += '2. SIGN-OFF: Use the exact sign-off provided in the sender profile.\n';
+  basePrompt += '   If a sender name is provided, put it on a new line after the sign-off comma.\n';
+  basePrompt += '   Example: "Best regards,\\nJohn Smith"\n';
+  basePrompt += '   NEVER use [Your Name] or any placeholder.\n';
+  basePrompt += '3. Keep the email under 120 words.\n';
+  basePrompt += '4. One clear call-to-action only.\n';
+  basePrompt += '5. Never use: leverage, synergy, empower, solutions, cutting-edge, seamless.';
 
-Lead details:
-${leadDescription}
-${profileBlock}
+  if (recontact) {
+    basePrompt += '\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.';
+    basePrompt += '\nUse a completely different angle. Keep it SHORT (4-5 sentences max).';
+    basePrompt += '\nDo NOT reference previous emails. Use friendly casual tone. End with a simple yes/no question.';
+  }
 
-Tone: ${tone}
-Purpose: ${purpose}
-${customInstructions ? `Additional instructions: ${customInstructions}` : ''}
-
-Return ONLY a JSON object with "subject" and "body" keys. Make the email personalized to this business.`;
+  // User prompt — NO template literals
+  let userPrompt = 'Write a cold email with the following parameters:\n\n';
+  userPrompt += 'Lead details:\n' + leadDescription + '\n';
+  if (profileBlock) userPrompt += profileBlock + '\n';
+  userPrompt += '\nTone: ' + tone + '\n';
+  userPrompt += 'Purpose: ' + purpose + '\n';
+  if (customInstructions) userPrompt += 'Additional instructions: ' + customInstructions + '\n';
+  userPrompt += '\nReturn ONLY a JSON object with "subject" and "body" keys. '
+    + 'Make the email personalized to this business.';
 
   const response = await openai.chat.completions.create({
     model: 'google/gemma-2-9b-it',
     messages: [
-      { role: 'system', content: systemPrompt },
+      { role: 'system', content: basePrompt },
       { role: 'user', content: userPrompt },
     ],
     response_format: { type: 'json_object' },
@@ -127,65 +143,57 @@ Return ONLY a JSON object with "subject" and "body" keys. Make the email persona
     temperature: 0.7,
   });
 
-  const content = response.choices[0]?.message?.content;
-  if (!content) {
+  const rawContent = response.choices[0]?.message?.content;
+  if (!rawContent) {
     throw new Error('Empty response from AI model');
   }
 
   try {
-    // Extract JSON from response — model may wrap in markdown code blocks
-    let jsonStr = content;
-    const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+    // Extract JSON — model may wrap in markdown code blocks or add extra text
+    let jsonStr = rawContent;
+    const codeBlockMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       jsonStr = codeBlockMatch[1].trim();
-    }
-
-    // Also try to find JSON if there's extra text
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[0];
+    } else {
+      const first = jsonStr.indexOf('{');
+      const last = jsonStr.lastIndexOf('}');
+      if (first !== -1 && last > first) {
+        jsonStr = jsonStr.substring(first, last + 1);
+      }
     }
 
     const parsed = JSON.parse(jsonStr) as AIEmailResponse;
-
     if (!parsed.subject || !parsed.body) {
       throw new Error('Missing subject or body in AI response');
     }
-
-    return {
-      subject: parsed.subject,
-      body: parsed.body,
-    };
+    return { subject: parsed.subject, body: parsed.body };
   } catch (parseError) {
-    // If JSON parsing fails, return raw content as body
-    console.warn('[AI Email] Failed to parse JSON response, falling back to raw content');
+    console.warn('[AI Email] Failed to parse JSON, falling back to raw content');
     return {
-      subject: `Outreach to ${cleanBusinessName(lead.business_name)}`,
-      body: content,
+      subject: 'Outreach to ' + cleanBusinessName(lead.business_name),
+      body: rawContent,
     };
   }
 }
 
 export async function classifyReply(replyText: string) {
-  const systemPrompt = `You are a sales assistant classifying cold email replies.
-Classify the reply into exactly one of these categories:
-INTERESTED, NOT_NOW, UNSUBSCRIBE, WARM, NEUTRAL
-
-Rules:
-INTERESTED — asking about pricing, next steps, wants more info
-NOT_NOW — timing issue, currently busy, try later
-UNSUBSCRIBE — remove me, stop emailing, not interested at all
-WARM — positive but vague, open to conversation
-NEUTRAL — unclear, could be anything
-
-Return ONLY valid JSON, no markdown, no code fences:
-{"classification":"CATEGORY","reasoning":"brief explanation"}`;
+  const systemPrompt = 'You are a sales assistant classifying cold email replies.\n'
+    + 'Classify the reply into exactly one of these categories:\n'
+    + 'INTERESTED, NOT_NOW, UNSUBSCRIBE, WARM, NEUTRAL\n\n'
+    + 'Rules:\n'
+    + 'INTERESTED — asking about pricing, next steps, wants more info\n'
+    + 'NOT_NOW — timing issue, currently busy, try later\n'
+    + 'UNSUBSCRIBE — remove me, stop emailing, not interested at all\n'
+    + 'WARM — positive but vague, open to conversation\n'
+    + 'NEUTRAL — unclear, could be anything\n\n'
+    + 'Return ONLY valid JSON, no markdown, no code fences:\n'
+    + '{"classification":"CATEGORY","reasoning":"brief explanation"}';
 
   const response = await openai.chat.completions.create({
     model: 'google/gemma-2-9b-it',
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Reply text: ${replyText.slice(0, 1000)}` },
+      { role: 'user', content: 'Reply text: ' + replyText.slice(0, 1000)},
     ],
     response_format: { type: 'json_object' },
     max_tokens: 256,
@@ -207,30 +215,3 @@ Return ONLY valid JSON, no markdown, no code fences:
     reasoning: parsed.reasoning || '',
   };
 }
-
-
-// ====== SPRINT 4a PIPELINE AUTOMATION — learnings ======
-//
-// Common Issues Encountered:
-//
-// 1. Template Literal Corruption — patching .ts files can corrupt
-//    template literals with ? and backtick characters.
-//    Pattern: const token=sessio...ken;
-//    Fix:  const token = session?.access_token;
-//    Rule: Always verify head -10 of patched API files.
-//
-// 2. Route 44s from wrong mount prefix — routes in leads.ts
-//    mount under /leads, so /analytics/pipeline-health becomes
-//    /leads/analytics/pipeline-health (wrong). Move to analytics.ts.
-//
-// 3. Python scripts need 'import os' explicitly — not auto-imported.
-//    Scripts using os.path or os.makedirs must include it.
-//
-// 4. Supabase REST API caches schema for ~30s after ALTER TABLE.
-//    PGRST204 errors right after migration = just wait.
-//
-// 5. OpenRouter JSON mode: gemma-2-9b-it wraps JSON in code blocks.
-//    Always strip with regex before JSON.parse.
-//
-// 6. Zod z.string().optional().or(z.literal('')) accepts '' but not null.
-//    Send empty strings to clear fields, never null.
