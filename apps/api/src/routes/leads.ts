@@ -282,6 +282,7 @@ const aiEmailSchema = z.object({
   recontact: z.boolean().optional(),
   profile_usp: z.string().optional(),
   profile_services: z.array(z.string()).optional(),
+  profile_full_name: z.string().optional(),
   profile_signoff: z.string().optional(),
   profile_cta: z.string().optional(),
   profile_calendly: z.string().optional(),
@@ -304,6 +305,7 @@ router.post('/:id/ai-email', async (c) => {
       profile: {
         usp: parsed.data.profile_usp || null,
         services: parsed.data.profile_services || [],
+        full_name: parsed.data.profile_full_name || null,
         signoff: parsed.data.profile_signoff || null,
         cta: parsed.data.profile_cta || null,
         calendly: parsed.data.profile_calendly || null,

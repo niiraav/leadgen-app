@@ -67,18 +67,26 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
   const basePrompt = `You are a professional cold email writer for a B2B lead generation agency.
 Write personalized, concise outreach emails.
 Always return valid JSON with "subject" and "body" fields.
-No markdown, no code fences — just raw JSON.`;
+No markdown, no code fences — just raw JSON.
+
+RULES FOR GREETING:
+- Start with a greeting that references the lead's company name, e.g. "Hi [Company] team," or "Hello at [Company],".
+- NEVER use placeholders like [Name], [First Name], [Recipient], or [Company Manager].
+- If no company name is available, use "Hi there,".
+
+RULES FOR SIGN-OFF:
+- Use the exact sign-off provided in the sender profile below.
+- Follow it with the sender's real name from the sender profile.
+- NEVER use [Your Name], [Your Company], or any placeholder.`;
 
   // Build profile context for the prompt
   const p = (request as any).profile || {};
   const ctx: string[] = [];
-  if (p.usp) ctx.push('Your pitch: "' + p.usp + '"');
+  if (p.usp) ctx.push('Pitch: ' + p.usp);
   if (p.services && p.services.length) ctx.push('Services: ' + p.services.join(', '));
-  if (p.signoff) ctx.push('Sign off: "' + p.signoff + '"');
-  if (p.cta) ctx.push('CTA: ' + p.cta);
-  if (p.calendly) ctx.push('Calendly: ' + p.calendly);
+  if (p.calendly) ctx.push('Calendly link: ' + p.calendly);
   if (p.linkedin) ctx.push('LinkedIn: ' + p.linkedin);
-  const profileBlock = ctx.length ? '\nSender profile:\n' + ctx.join('\n') : '';
+  const profileBlock = ctx.length ? '\nSender profile:\n' + ctx.join('\n') + '\nSign off: ' + (p.signoff || 'Best regards') + '\nSender name: ' + (p.full_name || '') : '';
 
   const systemPrompt = recontact
     ? basePrompt + '\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.\nUse a completely different angle than a typical first-contact email.\nKeep it SHORT (4-5 sentences max). Be direct and respectful.\nDo NOT reference previous emails or mention that they didn\'t reply.\nUse a friendly, casual tone. End with a simple yes/no question to lower friction.'

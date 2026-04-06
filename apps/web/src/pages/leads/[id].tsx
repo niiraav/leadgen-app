@@ -269,12 +269,26 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     setEmailError(null);
 
     try {
-      const result = await api.ai.composeEmail(lead.id, {
+      const { useProfile } = await import("@/contexts/profile-context");
+      // Access the profile from the context via window-level store
+      const profile = await fetch("/api/profile", { credentials: "include" })
+        .then(r => r.ok ? r.json() : {});
+
+      const params: any = {
         tone: "professional",
         purpose: recontact ? "Re-engagement — they did not reply to previous outreach" : "Introduction and outreach for lead generation automation",
         customInstructions: recontact ? "Short, direct, different angle. No reference to previous emails." : undefined,
         recontact,
-      });
+      };
+      if (profile?.usp) params.profile_usp = profile.usp;
+      if (profile?.services) params.profile_services = profile.services;
+      if (profile?.full_name) params.profile_full_name = profile.full_name;
+      if (profile?.signoff_style) params.profile_signoff = profile.signoff_style;
+      if (profile?.cta_preference) params.profile_cta = profile.cta_preference;
+      if (profile?.calendly_link) params.profile_calendly = profile.calendly_link;
+      if (profile?.linkedin_url) params.profile_linkedin = profile.linkedin_url;
+
+      const result = await api.ai.composeEmail(lead.id, params);
 
       const body = result.email.body;
       const subjects: string[] = [];
