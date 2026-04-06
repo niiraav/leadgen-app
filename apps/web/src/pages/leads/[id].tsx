@@ -22,6 +22,10 @@ import {
   ArrowLeft,
   Archive,
   Trash2,
+  ExternalLink,
+  Loader2,
+  Check,
+  Copy,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
@@ -77,6 +81,19 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
   const [activities, setActivities] = useState<LeadActivity[]>([]);
+
+  // — Enrichment state —
+  const [enrichLoading, setEnrichLoading] = useState(false);
+  const [showOwnerEdit, setShowOwnerEdit] = useState(false);
+  const [ownerName, setOwnerName] = useState(lead?.owner_name || "");
+  const [ownerFirstName, setOwnerFirstName] = useState(lead?.owner_first_name || "");
+  const [socialEditing, setSocialEditing] = useState<string | null>(null);
+  const [socialValues, setSocialValues] = useState<Record<string, string>>({
+    facebook_url: lead?.facebook_url || "",
+    linkedin_url: lead?.linkedin_url || "",
+    instagram_url: lead?.instagram_url || "",
+  });
+  const [savingSocial, setSavingSocial] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -357,6 +374,69 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+
+  // ── Enrichment Handlers ──
+  const handleEnrich = async () => {
+    if (!lead) return;
+    setEnrichLoading(true);
+    try {
+      const result = await api.enrich.enrichLead(leadId);
+      if (result.success) {
+        setOwnerName(result.owner_name || "");
+        setOwnerFirstName(result.owner_first_name || "");
+        setLead((prev) => prev ? {
+          ...prev,
+          owner_name: result.owner_name || prev.owner_name,
+          owner_first_name: result.owner_first_name || prev.owner_first_name,
+          enriched_at: result.enriched_at,
+        } : null);
+      }
+    } catch (err: any) {
+      // Show error toast or message
+      console.error("Enrichment failed:", err);
+    } finally {
+      setEnrichLoading(false);
+    }
+  };
+
+  const handleSaveOwner = async () => {
+    if (!lead) return;
+    try {
+      await api.enrich.updateSocialLinks(leadId, {
+        owner_name: ownerName || undefined,
+        owner_first_name: ownerFirstName || undefined,
+      });
+      setLead((prev) => prev ? {
+        ...prev,
+        owner_name: ownerName || null,
+        owner_first_name: ownerFirstName || null,
+        owner_name_source: "manual",
+      } : null);
+      setShowOwnerEdit(false);
+    } catch (err: any) {
+      console.error("Failed to save owner name:", err);
+    }
+  };
+
+  const handleSaveSocial = async () => {
+    if (!lead) return;
+    setSavingSocial(true);
+    try {
+      await api.enrich.updateSocialLinks(leadId, socialValues);
+      setLead((prev) => prev ? {
+        ...prev,
+        facebook_url: socialValues.facebook_url || null,
+        linkedin_url: socialValues.linkedin_url || null,
+        instagram_url: socialValues.instagram_url || null,
+      } : null);
+      setSocialEditing(null);
+    } catch (err: any) {
+      console.error("Failed to save social links:", err);
+    } finally {
+      setSavingSocial(false);
+    }
   };
 
   if (loading) {
@@ -902,6 +982,221 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               )}
             </Card>
           )}
+
+        {/* Profile Section — GMB URL, Social Links, Owner Info */}
+        <Card>
+          <h3 className="text-sm font-semibold text-text px-4 pt-4 mb-2">Profile & Enrichment</h3>
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            {/* LEFT: Google Maps + Social Links */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Google Maps</h4>
+                {lead?.gmb_url ? (
+                  <a href={lead.gmb_url} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-blue hover:underline">
+                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 2a4.5 4.5 0 00-3.18 7.68L10 13l3.18-3.32A4.5 4.5 0 0010 2z" />
+                    </svg>
+                    View on Google Maps
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                ) : (
+                  <p className="text-sm text-text-muted">Not available</p>
+                )}
+              </div>
+
+              <div>
+                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Social Links</h4>
+                <div className="space-y-2">
+                  {/* Facebook */}
+                  {socialEditing === "facebook_url" ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={socialValues.facebook_url || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, facebook_url: e.target.value }))}
+                        placeholder="https://facebook.com/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
+                      />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.facebook_url ? (
+                    <a href={lead.facebook_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-blue hover:underline">
+                      <span className="text-blue-600 font-bold text-xs">f</span>
+                      Facebook <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("facebook_url")}
+                      className="text-xs text-text-faint hover:text-blue underline">
+                      + Add Facebook
+                    </button>
+                  )}
+
+                  {/* LinkedIn */}
+                  {socialEditing === "linkedin_url" ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={socialValues.linkedin_url || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, linkedin_url: e.target.value }))}
+                        placeholder="https://linkedin.com/in/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
+                      />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.linkedin_url ? (
+                    <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-blue hover:underline">
+                      <span className="text-[#0077b5] font-bold text-xs">in</span>
+                      LinkedIn <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("linkedin_url")}
+                      className="text-xs text-text-faint hover:text-blue underline">
+                      + Add LinkedIn
+                    </button>
+                  )}
+
+                  {/* Instagram */}
+                  {socialEditing === "instagram_url" ? (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        value={socialValues.instagram_url || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, instagram_url: e.target.value }))}
+                        placeholder="https://instagram.com/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
+                      />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.instagram_url ? (
+                    <a href={lead.instagram_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-blue hover:underline">
+                      <span className="text-[#e1306c] font-bold text-xs">ig</span>
+                      Instagram <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("instagram_url")}
+                      className="text-xs text-text-faint hover:text-blue underline">
+                      + Add Instagram
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* CENTER: Owner Info */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Owner Info</h4>
+                {showOwnerEdit ? (
+                  <div className="space-y-2">
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">Full name</label>
+                      <input
+                        value={ownerName}
+                        onChange={(e) => setOwnerName(e.target.value)}
+                        placeholder="e.g. John Smith"
+                        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">First name</label>
+                      <input
+                        value={ownerFirstName}
+                        onChange={(e) => setOwnerFirstName(e.target.value)}
+                        placeholder="e.g. John"
+                        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={handleSaveOwner}
+                        className="btn btn-primary text-xs py-0.5 h-6 min-h-[24px]">
+                        Save
+                      </button>
+                      <button onClick={() => setShowOwnerEdit(false)}
+                        className="text-xs text-text-muted hover:text-text underline">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : lead?.owner_name || lead?.owner_first_name ? (
+                  <div>
+                    <p className="text-sm text-text font-medium">
+                      {lead.owner_first_name || lead.owner_name}
+                    </p>
+                    {lead.owner_name_source && (
+                      <span className="inline-flex items-center gap-1 text-xs text-text-faint mt-0.5">
+                        {lead.owner_name_source === "gmb_reviews" ? "📍 Found in GMB Reviews" : "✏️ Entered manually"}
+                      </span>
+                    )}
+                    <button onClick={() => setShowOwnerEdit(true)}
+                      className="text-xs text-blue hover:underline ml-2">
+                      Edit
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-text-faint">Unknown</p>
+                    {lead?.data_id ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <button onClick={handleEnrich} disabled={enrichLoading}
+                          className="text-xs text-blue hover:underline flex items-center gap-1">
+                          {enrichLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "✨"}
+                          {enrichLoading ? "Finding..." : "Auto-find owner name"}
+                        </button>
+                        <button onClick={() => setShowOwnerEdit(true)}
+                          className="text-xs text-text-muted hover:text-text underline">
+                          or add manually
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setShowOwnerEdit(true)}
+                        className="text-xs text-blue hover:underline mt-1">
+                        ✏️ Add manually
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT: Enrichment Info */}
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Enrichment</h4>
+                {lead?.enriched_at ? (
+                  <p className="text-xs text-text-faint">
+                    Last enriched: {new Date(lead.enriched_at).toLocaleDateString()}
+                  </p>
+                ) : (
+                  <p className="text-xs text-text-faint">Not yet enriched</p>
+                )}
+                {lead?.data_id && !lead?.owner_name && (
+                  <button onClick={handleEnrich} disabled={enrichLoading}
+                    className="mt-2 btn btn-ghost text-xs py-0.5 h-6 min-h-[24px]">
+                    {enrichLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                    {enrichLoading ? "Extracting..." : "Extract owner from reviews"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </Card>
         </div>
       </div>
     </div>

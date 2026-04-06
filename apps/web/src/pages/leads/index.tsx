@@ -4,6 +4,7 @@ import { LeadCard } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { Search, ArrowUpDown, Download, Plus, UserPlus, Loader2, Mail, Check, X, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 
 const PAGE_SIZE = 20;
 
@@ -297,6 +298,27 @@ export default function LeadsPage() {
                   {(!lead.emailStatus || lead.emailStatus === "unverified") && (
                     <span className="inline-flex items-center gap-1 text-xs text-text-faint" title="Unverified email"><Mail className="w-3 h-3" /></span>
                   )}
+              {/* Enrichment Indicators */}
+              <div className="shrink-0 py-2 flex items-center gap-1.5">
+                {lead.gmb_url && (
+                  <button onClick={() => window.open(lead.gmb_url, "_blank", "noopener,noreferrer")}
+                    className="text-xs p-0.5 hover:scale-110 transition-transform" title="View on Google Maps">
+                    📍
+                  </button>
+                )}
+                {lead.owner_name && (
+                  <span className="text-xs" title={`Owner: ${lead.owner_name}`}>👤</span>
+                )}
+                {lead.facebook_url && (
+                  <button onClick={() => window.open(lead.facebook_url, "_blank", "noopener,noreferrer")}
+                    className="text-xs text-[#1877f2] font-bold hover:scale-110 transition-transform p-0.5"
+                    title="Facebook">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
                 </div>
               )}
             </div>

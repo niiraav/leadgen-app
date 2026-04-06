@@ -119,6 +119,9 @@ export async function serpApiSearch({
       rating: place.rating || undefined,
       review_count: place.reviews || 0,
       source: 'serpapi' as const,
+      place_id: place.place_id || null,
+      data_id: place.data_id || null,
+      gmb_reviews_url: place.reviews_link || null,
     };
   });
 

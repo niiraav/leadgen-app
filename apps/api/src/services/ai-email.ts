@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { applyUkCorrections } from '../lib/uk-corrections';
 
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -37,6 +38,7 @@ export type AIEmailGenerationRequest = {
     usp?: string | null;
     services?: string[];
     full_name?: string | null;
+    owner_first_name?: string | null;
     signoff?: string | null;
     cta?: string | null;
     calendly?: string | null;
@@ -75,6 +77,7 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
   const p = (profile as any) || {};
   const signoff = p.signoff || 'Best regards';
   const senderName = p.full_name || '';
+  const ownerFirstName = p.owner_first_name || null;
 
   const profileLines: string[] = [];
   if (p.usp) profileLines.push('Pitch: ' + p.usp);
@@ -166,7 +169,7 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
     if (!parsed.subject || !parsed.body) {
       throw new Error('Missing subject or body in AI response');
     }
-    return { subject: parsed.subject, body: parsed.body };
+    return { subject: applyUkCorrections(parsed.subject), body: applyUkCorrections(parsed.body) };
   } catch (parseError) {
     console.warn('[AI Email] Failed to parse JSON, falling back to raw content');
     return {

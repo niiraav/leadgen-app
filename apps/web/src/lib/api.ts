@@ -322,6 +322,25 @@ export const api = {
       }),
   },
 
+  // ── Lead Enrichment ──
+  enrich: {
+    enrichLead: (leadId: string) =>
+      request<{ success: boolean; owner_name: string | null; owner_first_name: string | null; enriched_at: string }>(
+        `/leads/${leadId}/enrich`,
+        { method: "POST" }
+      ),
+    updateSocialLinks: (leadId: string, data: Record<string, unknown>) =>
+      request<Record<string, unknown>>(`/leads/${leadId}/social-links`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    backfillGmbUrls: () =>
+      request<{ updated: number; skipped: number; fallback_used: number }>(
+        "/leads/admin/backfill-gmb-urls",
+        { method: "POST" }
+      ),
+  },
+
   // ── Import ──
   import: {
     csv: (rows: Record<string, unknown>[]) =>

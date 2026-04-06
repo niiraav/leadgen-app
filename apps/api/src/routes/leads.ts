@@ -287,6 +287,7 @@ const aiEmailSchema = z.object({
   profile_cta: z.string().optional(),
   profile_calendly: z.string().optional(),
   profile_linkedin: z.string().optional(),
+  owner_first_name: z.string().optional(),
 });
 
 router.post('/:id/ai-email', async (c) => {
@@ -310,6 +311,7 @@ router.post('/:id/ai-email', async (c) => {
         cta: parsed.data.profile_cta || null,
         calendly: parsed.data.profile_calendly || null,
         linkedin: parsed.data.profile_linkedin || null,
+        owner_first_name: parsed.data.owner_first_name || null,
       } as any,
     });
     return c.json({ lead_id: id, email: emailData });
