@@ -143,4 +143,50 @@ router.get('/dead-leads', async (c) => {
   }
 });
 
+// ─── GET /analytics/pipeline-health ─────────────────────────────────────
+
+router.get('/pipeline-health', async (c) => {
+  try {
+    const userId = getUserId(c);
+
+    const [{ count: staleCount }, { count: uncontactedCount }, { count: activeSequences }] = await Promise.all([
+      supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('is_stale', true),
+      supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'new').lt('created_at', new Date(Date.now() - 7 * 86400000).toISOString()),
+      supabaseAdmin.from('sequence_enrollments').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'active'),
+    ]);
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { count: wonThisMonth } = await supabaseAdmin.from('leads').select('*', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('status', 'won').gte('updated_at', monthStart);
+
+    const { count: totalLeads } = await supabaseAdmin.from('leads').select('*', { count: 'exact', head: true }).eq('user_id', userId);
+
+    const conversionRate = totalLeads && totalLeads > 0 ? ((wonThisMonth ?? 0) / totalLeads * 100) : 0;
+
+    let score = 100;
+    score -= Math.min((staleCount ?? 0) * 2, 30);
+    score -= Math.min((uncontactedCount ?? 0) * 3, 20);
+    score += Math.min((activeSequences ?? 0) * 5, 20);
+
+    const insights: string[] = [];
+    if (staleCount && staleCount > 0) insights.push(`You have ${staleCount} leads with no activity in 2+ weeks`);
+    if (uncontactedCount && uncontactedCount > 0) insights.push(`${uncontactedCount} leads are awaiting initial contact`);
+    if (conversionRate > 0) insights.push(`Your win rate this month is ${conversionRate.toFixed(1)}%`);
+    if (insights.length === 0) insights.push('Your pipeline looks healthy — keep it up!');
+
+    return c.json({
+      health_score: Math.max(0, Math.min(100, score)),
+      stale_count: staleCount ?? 0,
+      uncontacted_count: uncontactedCount ?? 0,
+      active_sequences: activeSequences ?? 0,
+      won_this_month: wonThisMonth ?? 0,
+      conversion_rate: parseFloat(conversionRate.toFixed(1)),
+      insights,
+    });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to compute health', details: err.message }, 500);
+  }
+});
+
 export default router;

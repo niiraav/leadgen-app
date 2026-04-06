@@ -9,23 +9,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   const { id } = req.query as { id?: string };
-  const { activity_id } = req.body as { activity_id?: string };
-
-  // Archive the lead
-  await fetch("http://localhost:3001/leads/" + id, {
-    method: "PATCH",
+  const url = "http://localhost:3001/leads/" + id + "/archive";
+  const resp = await fetch(url, {
+    method: "POST",
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-    body: JSON.stringify({ status: "archived" }),
+    body: JSON.stringify(req.body),
   });
-
-  // Resolve the activity
-  if (activity_id) {
-    await fetch("http://localhost:3001/leads/dead-leads/" + activity_id + "/resolve", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-      body: JSON.stringify({ resolved: true }),
-    }).catch(() => {});
-  }
-
-  res.status(200).json({ message: "Lead archived" });
+  const json = await resp.json().catch(() => ({}));
+  res.status(resp.status).json(json);
 }

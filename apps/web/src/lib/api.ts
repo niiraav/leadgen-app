@@ -346,7 +346,46 @@ export const api = {
     },
   },
 
-  // ── Utility: map raw search leads to frontend-friendly shape ──
+  // ── Reply Classification ───────────────────────────────────────────
+  classifyReply: async (leadId: string, replyText: string) => {
+    const res = await request<{
+      classification: string;
+      suggested_stage: string;
+      reasoning: string;
+      previous_status: string;
+      auto_moved: boolean;
+      re_engage_after?: string;
+    }>(`/leads/${leadId}/classify-reply`, {
+      method: "POST",
+      body: JSON.stringify({ reply_text: replyText }),
+    });
+    return res;
+  },
+
+  // Undo a status auto-change
+  undoStatus: async (leadId: string, revert_to: string) => {
+    return request(`/leads/${leadId}/undo-status`, {
+      method: "POST",
+      body: JSON.stringify({ revert_to }),
+    });
+  },
+
+  // Stale leads (returns stale leads from the /leads/stale endpoint)
+  staleLeads: async () => {
+    const res = await request<any>("/leads/stale?limit=5");
+    return res.leads ?? [];
+  },
+
+  // Pipeline health
+  pipelineHealth: async (): Promise<{
+    health_score: number; stale_count: number; uncontacted_count: number;
+    active_sequences: number; won_this_month: number; conversion_rate: number;
+    insights: string[];
+  }> => {
+    return request("/analytics/pipeline-health");
+  },
+
+  // ── Utility: map raw search leads to frontend-friendly shape ──────────────
   mapSearchResult(backendResult: BackendSearchResult) {
     return backendResult.results.map((r, idx) => ({
       id: `search-${idx}`,

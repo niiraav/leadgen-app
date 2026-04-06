@@ -132,3 +132,72 @@ Return ONLY a JSON object with "subject" and "body" keys. Make the email persona
     };
   }
 }
+
+export async function classifyReply(replyText: string) {
+  const systemPrompt = `You are a sales assistant classifying cold email replies.
+Classify the reply into exactly one of these categories:
+INTERESTED, NOT_NOW, UNSUBSCRIBE, WARM, NEUTRAL
+
+Rules:
+INTERESTED — asking about pricing, next steps, wants more info
+NOT_NOW — timing issue, currently busy, try later
+UNSUBSCRIBE — remove me, stop emailing, not interested at all
+WARM — positive but vague, open to conversation
+NEUTRAL — unclear, could be anything
+
+Return ONLY valid JSON, no markdown, no code fences:
+{"classification":"CATEGORY","reasoning":"brief explanation"}`;
+
+  const response = await openai.chat.completions.create({
+    model: 'google/gemma-2-9b-it',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Reply text: ${replyText.slice(0, 1000)}` },
+    ],
+    response_format: { type: 'json_object' },
+    max_tokens: 256,
+    temperature: 0.3,
+  });
+
+  const raw = response.choices[0]?.message?.content;
+  if (!raw) throw new Error('Empty response from AI model');
+
+  let jsonStr = raw;
+  const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim();
+  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+  if (jsonMatch) jsonStr = jsonMatch[0];
+
+  const parsed = JSON.parse(jsonStr) as { classification: string; reasoning: string };
+  return {
+    classification: (parsed.classification || 'NEUTRAL').toUpperCase(),
+    reasoning: parsed.reasoning || '',
+  };
+}
+
+
+// ====== SPRINT 4a PIPELINE AUTOMATION — learnings ======
+//
+// Common Issues Encountered:
+//
+// 1. Template Literal Corruption — patching .ts files can corrupt
+//    template literals with ? and backtick characters.
+//    Pattern: const token=sessio...ken;
+//    Fix:  const token = session?.access_token;
+//    Rule: Always verify head -10 of patched API files.
+//
+// 2. Route 44s from wrong mount prefix — routes in leads.ts
+//    mount under /leads, so /analytics/pipeline-health becomes
+//    /leads/analytics/pipeline-health (wrong). Move to analytics.ts.
+//
+// 3. Python scripts need 'import os' explicitly — not auto-imported.
+//    Scripts using os.path or os.makedirs must include it.
+//
+// 4. Supabase REST API caches schema for ~30s after ALTER TABLE.
+//    PGRST204 errors right after migration = just wait.
+//
+// 5. OpenRouter JSON mode: gemma-2-9b-it wraps JSON in code blocks.
+//    Always strip with regex before JSON.parse.
+//
+// 6. Zod z.string().optional().or(z.literal('')) accepts '' but not null.
+//    Send empty strings to clear fields, never null.
