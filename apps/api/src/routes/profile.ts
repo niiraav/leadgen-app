@@ -44,7 +44,7 @@ router.get('/', async (c) => {
   try {
     const userId = getUserId(c);
     const { data: profile, error } = await supabaseAdmin
-      .from('users').select('*').eq('id', userId).single();
+      .from('profiles').select('*').eq('id', userId).single();
     if (error || !profile) return c.json({ error: 'Profile not found' }, 404);
 
     const { score, missing } = calcCompleteness(profile);
@@ -77,7 +77,7 @@ router.patch('/', async (c) => {
     }
 
     const { data: profile, error } = await supabaseAdmin
-      .from('users').select('*').eq('id', userId).single();
+      .from('profiles').select('*').eq('id', userId).single();
     if (error || !profile) return c.json({ error: 'Profile not found' }, 404);
 
     // Merge defaults so completeness calc works
@@ -86,7 +86,7 @@ router.patch('/', async (c) => {
     const { score } = calcCompleteness(merged);
 
     const { data: updated } = await supabaseAdmin
-      .from('users').update(updates).eq('id', userId).select().single();
+      .from('profiles').update(updates).eq('id', userId).select().single();
 
     (updated as any).profile_score = score;
     return c.json(updated);
@@ -101,7 +101,7 @@ router.get('/completeness', async (c) => {
   try {
     const userId = getUserId(c);
     const { data: profile } = await supabaseAdmin
-      .from('users').select('*').eq('id', userId).single();
+      .from('profiles').select('*').eq('id', userId).single();
     if (!profile) return c.json({ error: 'Not found' }, 404);
 
     const { score, missing } = calcCompleteness(profile);
