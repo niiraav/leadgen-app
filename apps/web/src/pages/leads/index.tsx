@@ -35,7 +35,6 @@ export default function LeadsPage() {
 
   const [leads, setLeads] = useState<any[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -43,56 +42,46 @@ export default function LeadsPage() {
   const [verifyingAll, setVerifyingAll] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  const offsetRef = useRef(0);
+  const loadingRef = useRef(false);
+  const filtersRef = useRef({ statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm });
   const observerRef = useRef<HTMLDivElement>(null);
-  const loadedRef = useRef(false);
+  const fetchKeyRef = useRef(0);
 
-  const buildQuery = useCallback(() => {
-    const params = new URLSearchParams();
-    params.set("limit", String(PAGE_SIZE));
-    params.set("offset", String(offset));
-    if (statusFilter) params.set("status", statusFilter);
-    if (searchTerm) params.set("search", searchTerm);
-    const fieldMap = { name: "business_name", score: "hot_score", date: "created_at" };
-    params.set("sortField", fieldMap[sortBy]);
-    params.set("sortOrder", sortOrder);
-    return params.toString();
-  }, [offset, statusFilter, searchTerm, sortBy, sortOrder]);
+  const PAGE_SIZE = 20;
 
-  const fetchLeads = useCallback(async (reset = false) => {
-    const newOffset = reset ? 0 : offset;
+  useEffect(() => {
+    filtersRef.current = { statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm };
+  }, [statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm]);
+
+  // Stable fetch — uses refs, no deps, never recreated
+  const doFetch = useCallback(async (reset = false) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    const currentOffset = reset ? 0 : offsetRef.current;
+    const f = filtersRef.current;
+
     if (reset) {
       setLoading(true);
-      setOffset(0);
       setLeads([]);
-      setHasMore(true);
     } else {
       setLoadingMore(true);
     }
     setError(null);
-    try {
-      const params = new URLSearchParams();
-      params.set("limit", String(PAGE_SIZE));
-      params.set("offset", String(newOffset));
-      if (statusFilter) params.set("status", statusFilter);
-      if (searchTerm) params.set("search", searchTerm);
-      const fieldMap = { name: "business_name", score: "hot_score", date: "created_at" };
-      params.set("sortField", fieldMap[sortBy]);
-      params.set("sortOrder", sortOrder);
 
+    try {
       const result = await api.leads.list({
         limit: PAGE_SIZE,
-        status: statusFilter || undefined,
-        search: searchTerm || undefined,
-        sortField: fieldMap[sortBy],
-        sortOrder,
+        offset: currentOffset,
+        status: f.statusFilter || undefined,
+        search: f.searchTerm || undefined,
+        sortField: f.sortBy === "name" ? "business_name" : f.sortBy === "score" ? "hot_score" : "created_at",
+        sortOrder: f.sortOrder,
       });
-
-      // Client-side email filter (server doesn't support it)
       const filteredData = result.data.filter((l: any) => {
-        if (!emailStatusFilter) return true;
-        return l.email_status === emailStatusFilter;
+        if (!f.emailStatusFilter) return true;
+        return l.email_status === f.emailStatusFilter;
       });
-
       const mapped = filteredData.map((l: any) => ({
         id: String(l.id),
         name: l.business_name || "Unknown",
@@ -105,45 +94,57 @@ export default function LeadsPage() {
         status: l.status,
         addedAt: new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
       }));
-
       if (reset) {
         setLeads(mapped);
       } else {
         setLeads((prev) => [...prev, ...mapped]);
       }
-
       setTotalCount(result.total);
       setHasMore(mapped.length === PAGE_SIZE);
-      setOffset(newOffset + mapped.length);
+      offsetRef.current = currentOffset + mapped.length;
     } catch (err: any) {
-      setError(`Unable to reach API server. Is the backend running? (${err.message.split("\n")[0]})`);
+      setError(`Unable to reach API server. (${err.message.split("\n")[0]})`);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      loadingRef.current = false;
     }
-  }, [statusFilter, searchTerm, sortBy, sortOrder, emailStatusFilter, offset]);
+  }, []);
 
+  const triggerRefetch = useCallback(() => {
+    offsetRef.current = 0;
+    fetchKeyRef.current += 1;
+    doFetch(true);
+  }, [doFetch]);
+
+  // Mount: fetch once
   useEffect(() => {
-    if (loadedRef.current) {
-      loadedRef.current = false; // prevent double-fetch
-    } else {
-      fetchLeads(true);
+    doFetch(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Filter changes: skip first mount run, refetch on subsequent changes
+  useEffect(() => {
+    if (fetchKeyRef.current === 0) {
+      fetchKeyRef.current = 1;
+      return;
     }
-  }, [fetchLeads]);
+    triggerRefetch();
+  }, [statusFilter, emailStatusFilter, sortBy, sortOrder, triggerRefetch]);
 
   // Intersection observer for lazy loading
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
-          fetchLeads();
+          doFetch();
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: "400px" }
     );
     if (observerRef.current) observer.observe(observerRef.current);
     return () => observer.disconnect();
-  }, [fetchLeads, hasMore, loading, loadingMore]);
+  }, [hasMore, loading, loadingMore, doFetch]);
 
   const verifyAllUnverified = async () => {
     if (verifyingAll) return;
@@ -167,7 +168,7 @@ export default function LeadsPage() {
       });
 
       if (res.ok) {
-        fetchLeads(true);
+        triggerRefetch();
       }
     } finally {
       setVerifyingAll(false);
@@ -200,7 +201,7 @@ export default function LeadsPage() {
       {error && (
         <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red">
           {error}
-          <button onClick={() => fetchLeads(true)} className="ml-3 underline hover:no-underline">Retry</button>
+          <button onClick={() => triggerRefetch()} className="ml-3 underline hover:no-underline">Retry</button>
         </div>
       )}
 
@@ -212,8 +213,8 @@ export default function LeadsPage() {
             type="text"
             placeholder="Search leads..."
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setOffset(0); setLeads([]); setHasMore(true); }}
-            onKeyDown={(e) => e.key === "Enter" && fetchLeads(true)}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") triggerRefetch(); }}
             className="input pl-9 w-full"
           />
         </div>
@@ -221,7 +222,7 @@ export default function LeadsPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setOffset(0); setLeads([]); setHasMore(true); }}
+            onChange={(e) => setStatusFilter(e.target.value)}
             className="h-9 px-3 text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20 cursor-pointer min-h-[36px]"
           >
             {STATUS_OPTIONS.map((opt) => (
@@ -231,7 +232,7 @@ export default function LeadsPage() {
 
           <select
             value={emailStatusFilter}
-            onChange={(e) => { setEmailStatusFilter(e.target.value); setOffset(0); setLeads([]); setHasMore(true); }}
+            onChange={(e) => setEmailStatusFilter(e.target.value)}
             className="h-9 px-3 text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20 cursor-pointer min-h-[36px]"
           >
             {EMAIL_STATUS_OPTIONS.map((opt) => (
@@ -324,7 +325,7 @@ export default function LeadsPage() {
       )}
 
       {/* ─── Add Lead Modal ─── */}
-      {showAddModal && <AddLeadModal onClose={() => setShowAddModal(false)} onAdded={() => { fetchLeads(true); setShowAddModal(false); }} />}
+      {showAddModal && <AddLeadModal onClose={() => setShowAddModal(false)} onAdded={() => { triggerRefetch(); setShowAddModal(false); }} />}
     </div>
   );
 }
