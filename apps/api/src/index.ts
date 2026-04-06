@@ -40,6 +40,7 @@ import analyticsRouter from './routes/analytics';
 import profileRouter from './routes/profile';
 import enrichmentRouter from './routes/enrichment';
 
+app.route('/leads', enrichmentRouter);
 app.route('/leads', leadsRouter);
 app.route('/search', searchRouter);
 app.route('/pipeline', pipelineRouter);
@@ -47,7 +48,6 @@ app.route('/sequences', sequencesRouter);
 app.route('/import', importRouter);
 app.route('/analytics', analyticsRouter);
 app.route('/profile', profileRouter);
-app.route('/leads', enrichmentRouter);
 
 // KPI endpoint
 import { getKPI, getUserId } from './db';

@@ -96,7 +96,7 @@ router.post('/google-maps', async (c) => {
     // Apply filters
     if (filterNoWebsite) leads = leads.filter((l) => !l.website_url);
     if (min_rating) leads = leads.filter((l) => (l.rating || 0) >= min_rating);
-    if (max_reviews) leads = leads.filter((l) => (l.reviews_count || 0) <= max_reviews);
+    if (max_reviews) leads = leads.filter((l) => (l.review_count || 0) <= max_reviews);
     if (no_social) leads = leads.filter((l) => !(l as any).social_profiles || (Array.isArray((l as any).social_profiles) && (l as any).social_profiles.length === 0));
 
     // Sort by hot_score descending
