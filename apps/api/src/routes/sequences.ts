@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { getUserId, supabaseAdmin, createActivity } from '../db';
 import { schedulerQueue, deadLeadQueue } from '../services/sequence-scheduler';
+import { enforceFeatureGate, enforceCredits, EnforcementError } from '../lib/billing/enforce';
+import { incrementUsage } from '../lib/usage';
 
 const router = new Hono();
 
@@ -95,6 +97,13 @@ router.get('/:id', async (c) => {
 router.post('/', async (c) => {
   try {
     const userId = getUserId(c);
+
+    // ── Feature gate: sequences require growth plan ──
+    const gate = await enforceFeatureGate(userId, 'sequences');
+    if (!gate.allowed) {
+      return c.json({ error: gate.upgradeRequired, upgrade_required: true }, 402);
+    }
+
     const body = await c.req.json();
     const parsed = createSequenceSchema.safeParse(body);
 
@@ -188,11 +197,29 @@ router.post('/:id/enroll', async (c) => {
   try {
     const userId = getUserId(c);
     const sequenceId = c.req.param('id');
+
+    // ── Feature gate: sequences require growth plan ──
+    const gate = await enforceFeatureGate(userId, 'sequences');
+    if (!gate.allowed) {
+      return c.json({ error: gate.upgradeRequired, upgrade_required: true }, 402);
+    }
+
     const body = await c.req.json();
     const parsed = enrollSchema.safeParse(body);
 
     if (!parsed.success) {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    }
+
+    // ── Credit enforcement: check sequence contact limit ──
+    try {
+      await enforceCredits(userId, 'sequence_contact', parsed.data.lead_ids.length);
+    } catch (err) {
+      if (err instanceof EnforcementError) {
+        const status = err.upgradeRequired ? 402 : 403;
+        return c.json({ error: err.message, upgrade_required: err.upgradeRequired, limit: err.limit, remaining: err.remaining }, status);
+      }
+      throw err;
     }
 
     // Verify sequence exists
@@ -253,6 +280,11 @@ router.post('/:id/enroll', async (c) => {
         type: 'sequence_enrolled',
         description: 'Enrolled in sequence',
       });
+    }
+
+    // ── Increment usage for enrolled contacts ──
+    if (enrolled > 0) {
+      try { await incrementUsage(userId, 'leads_count', enrolled); } catch {}
     }
 
     return c.json({ enrolled });

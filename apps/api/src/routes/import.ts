@@ -7,6 +7,8 @@ import {
   getUserId,
   type JsonValue,
 } from '../db';
+import { enforceCredits, EnforcementError } from '../lib/billing/enforce';
+import { incrementUsage } from '../lib/usage';
 
 const router = new Hono();
 
@@ -26,6 +28,17 @@ router.post('/csv', async (c) => {
 
     if (!Array.isArray(leads)) {
       return c.json({ error: 'leads array is required' }, 400);
+    }
+
+    // ── Credit enforcement: check lead limit for batch import ──
+    try {
+      await enforceCredits(userId, 'lead', leads.length);
+    } catch (err) {
+      if (err instanceof EnforcementError) {
+        const status = err.upgradeRequired ? 402 : 403;
+        return c.json({ error: err.message, upgrade_required: err.upgradeRequired, limit: err.limit, remaining: err.remaining }, status);
+      }
+      throw err;
     }
 
     let imported = 0;
@@ -80,6 +93,11 @@ router.post('/csv', async (c) => {
       } catch (err) {
         console.warn('[Import] Failed to insert lead:', err);
       }
+    }
+
+    // ── Increment usage for successfully imported leads ──
+    if (imported > 0) {
+      try { await incrementUsage(userId, 'leads_count', imported); } catch {}
     }
 
     return c.json({ imported }, 200);

@@ -34,6 +34,7 @@ export type AIEmailGenerationRequest = {
   purpose: string;
   customInstructions?: string;
   recontact?: boolean;
+  bio?: string;
   profile?: {
     usp?: string | null;
     services?: string[];
@@ -71,7 +72,7 @@ function joinLines(strings: string[]): string {
 }
 
 export async function generateEmailWithAI(request: AIEmailGenerationRequest): Promise<AIEmailResponse> {
-  const { lead, tone, purpose, customInstructions, recontact, profile } = request;
+  const { lead, tone, purpose, customInstructions, recontact, bio, profile } = request;
 
   // Build profile context — NO template literals to avoid corruption
   const p = (profile as any) || {};
@@ -99,6 +100,7 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
   if (lead.website_url) leadLines.push('Website: ' + lead.website_url);
   if (lead.email) leadLines.push('Email: ' + lead.email);
   if (lead.phone) leadLines.push('Phone: ' + lead.phone);
+  if (bio) leadLines.push('Bio: ' + bio);
 
   const leadDescription = joinLines(leadLines);
 

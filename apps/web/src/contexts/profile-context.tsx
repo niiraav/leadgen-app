@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { api } from "@/lib/api";
 
 export interface UserProfile {
@@ -21,13 +21,18 @@ export interface UserProfile {
   sales_cycle_days: number;
   onboarding_step: number;
   profile_complete: boolean;
-  profile_score?: number;
-  average_deal_value: number | null;
-  calendly_link: string | null;
+  average_deal_size: string | null;
+  custom_stages: string[] | null;
   linkedin_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  calendly_link: string | null;
+  // Sprint 8: Billing fields
+  plan?: string | null;
+  subscription_status?: string | null;
+  subscription_ends_at?: string | null;
+  stripe_customer_id?: string | null;
 }
-
-export type NudgeTrigger = "on_search" | "on_email" | "on_sequence" | "on_win" | "on_stale";
 
 export interface SeenNudges {
   on_search?: boolean;
@@ -37,10 +42,27 @@ export interface SeenNudges {
   on_stale?: boolean;
 }
 
+export type NudgeTrigger = "on_search" | "on_email" | "on_sequence" | "on_win" | "on_stale";
+
+export interface BillingStatus {
+  plan: string;
+  status: string;
+  label: string;
+  limit: number;
+  searches_per_month: number;
+  email_verifications: number;
+  ai_emails_per_month: number;
+  sequence_limit: number;
+  subscription_ends_at: string | null;
+}
+
 interface ProfileContextValue {
   profile: UserProfile | null;
   loading: boolean;
+  billingStatus: BillingStatus | null;
+  billingLoading: boolean;
   refreshProfile: () => Promise<void>;
+  refreshBilling: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   generateUsp: (data: Record<string, unknown>) => Promise<{ pitches: string[] }>;
   seenNudges: SeenNudges;
@@ -58,7 +80,9 @@ export function useProfile() {
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [billingLoading, setBillingLoading] = useState(false);
   // In-memory nudge tracking — lost on refresh, per session
   const [seenNudges, setSeenNudges] = useState<SeenNudges>({});
 
@@ -66,12 +90,32 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     try {
       const data = await api.profile.get();
       setProfile(data);
-    } catch {
-      // not logged in or no profile yet
+    } catch (err: any) {
+      // Ignore 401 / auth errors — user may not be logged in yet
+      if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
+        setProfile(null);
+        return;
+      }
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Billing is fetched lazily — only when a page that needs it calls refreshBilling()
+  const refreshBilling = useCallback(async () => {
+    if (billingStatus) return; // already loaded
+    setBillingLoading(true);
+    try {
+      // Sync from Stripe first to ensure latest state
+      await api.billing.sync().catch(() => {});
+      const bs = (await api.billing.status()) as unknown as BillingStatus;
+      setBillingStatus(bs);
+    } catch {
+      // billing not available yet (e.g. migration not run)
+    } finally {
+      setBillingLoading(false);
+    }
+  }, [billingStatus]);
 
   const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
     try {
@@ -112,10 +156,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     refreshProfile();
   }, [refreshProfile]);
 
+  // Stabilize context value to prevent cascading re-renders in all consumers
+  const contextValue = useMemo<ProfileContextValue>(() => ({
+    profile, loading, refreshProfile, refreshBilling, updateProfile, generateUsp,
+    seenNudges, markNudgeSeen, showNudge, billingStatus, billingLoading,
+  }), [profile, loading, refreshProfile, refreshBilling, updateProfile, generateUsp,
+    seenNudges, markNudgeSeen, showNudge, billingStatus, billingLoading]);
+
   return (
-    <ProfileContext.Provider
-      value={{ profile, loading, refreshProfile, updateProfile, generateUsp, seenNudges, markNudgeSeen, showNudge }}
-    >
+    <ProfileContext.Provider value={contextValue}>
       {children}
     </ProfileContext.Provider>
   );

@@ -1,0 +1,226 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Star, Plus, X, Check, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface SavedFilter {
+  id: string;
+  name: string;
+  filters: Record<string, unknown>;
+}
+
+interface SavedFiltersProps {
+  filters: SavedFilter[];
+  currentFilters: Record<string, unknown>;
+  onApply: (filters: Record<string, unknown>) => void;
+  onSave: (name: string, filters: Record<string, unknown>) => void;
+}
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+export function SavedFilters({
+  filters,
+  currentFilters,
+  onApply,
+  onSave,
+}: SavedFiltersProps) {
+  const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState<SavedFilter[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Use passed filters (parent manages state)
+  const displayFilters = filters.length > 0 ? filters : saved;
+
+  useEffect(() => {
+    if (open) {
+      fetchSaved();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (showSaveInput && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [showSaveInput]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("keydown", onEscape);
+    return () => {
+      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("keydown", onEscape);
+    };
+  }, [open]);
+
+  const fetchSaved = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/saved-filters`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSaved(data ?? []);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    try {
+      await onSave(trimmed, currentFilters);
+      setNewName("");
+      setShowSaveInput(false);
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await fetch(`${API}/saved-filters/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      setSaved((prev) => prev.filter((f) => f.id !== id));
+    } catch {}
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <button
+        onClick={() => setOpen(!open)}
+        className={cn(
+          "flex items-center gap-1.5 h-9 px-3 rounded-full text-xs border transition-colors",
+          open
+            ? "bg-amber/10 border-amber text-amber"
+            : "bg-surface-2 border-border text-text-muted hover:text-text hover:border-border-strong"
+        )}
+        title="Saved filters"
+      >
+        <Star className={cn("w-3.5 h-3.5", open && "fill-amber")} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-60 bg-surface border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+          <div className="p-2 border-b border-border/40">
+            <h4 className="text-xs font-semibold text-text-faint uppercase tracking-wider px-2 py-1">
+              Saved Filters
+            </h4>
+          </div>
+
+          <div className="max-h-48 overflow-y-auto">
+            {loading ? (
+              <div className="p-3 space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-7 bg-surface-2 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : displayFilters.length === 0 ? (
+              <p className="p-3 text-xs text-text-faint text-center">
+                No saved filters yet
+              </p>
+            ) : (
+              displayFilters.map((filter) => (
+                <div
+                  key={filter.id}
+                  className="flex items-center gap-1 px-2 py-1.5 hover:bg-surface-2 group/row"
+                >
+                  <button
+                    onClick={() => {
+                      onApply(filter.filters);
+                      setOpen(false);
+                    }}
+                    className="flex-1 text-left text-sm text-text truncate hover:text-blue"
+                  >
+                    {filter.name}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(filter.id)}
+                    className="opacity-0 group-hover/row:opacity-100 text-text-faint hover:text-red transition-opacity"
+                    title="Delete"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="border-t border-border/40 p-2">
+            {showSaveInput ? (
+              <div className="flex items-center gap-1">
+                <input
+                  ref={inputRef}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSave();
+                    if (e.key === "Escape") {
+                      setNewName("");
+                      setShowSaveInput(false);
+                    }
+                  }}
+                  placeholder="Filter name..."
+                  className="flex-1 h-7 text-xs bg-surface-2 border border-border rounded px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+                />
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !newName.trim()}
+                  className="text-xs p-1 rounded hover:bg-surface-2 disabled:opacity-40"
+                >
+                  {saving ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5 text-green" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setNewName("");
+                    setShowSaveInput(false);
+                  }}
+                  className="text-xs p-1 rounded hover:bg-surface-2 text-text-faint"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowSaveInput(true)}
+                className="flex items-center gap-1 text-xs text-text-muted hover:text-text w-full py-1.5 px-2 rounded"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Save current filters
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

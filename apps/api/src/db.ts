@@ -158,10 +158,15 @@ export async function getLeadById(userId: string, id: string) {
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
+function generateReplyToken(): string {
+  return crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+}
+
 export async function createLead(userId: string, values: any) {
   const insertData = {
     user_id: userId,
     ...values,
+    reply_token: values.reply_token || generateReplyToken(),
     readiness_flags: values.readiness_flags ?? [],
     tags: values.tags ?? [],
     metadata: values.metadata ?? {},

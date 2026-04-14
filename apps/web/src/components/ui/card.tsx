@@ -79,6 +79,8 @@ interface KPICardProps extends React.HTMLAttributes<HTMLDivElement> {
   change?: string;
   changeType?: "positive" | "negative" | "neutral";
   icon?: React.ReactNode;
+  subtitle?: string;
+  color?: string;
 }
 
 export function KPICard({

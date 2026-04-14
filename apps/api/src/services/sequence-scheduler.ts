@@ -3,6 +3,7 @@
 import { Queue, Worker, Job, RedisConnection } from 'bullmq';
 import IORedis from 'ioredis';
 import { supabaseAdmin, createActivity } from '../db';
+import { sendOutreachEmail } from '../lib/email/send';
 
 // ─── Redis Connection ──────────────────────────────────────────────────────
 
@@ -111,8 +112,56 @@ export function startSequenceWorker() {
       await createActivity(enrollment.user_id, {
         lead_id: enrollment.lead_id,
         type: 'email_due',
-        description: `Email due: "${step.subject}" (step ${step_order})`,
+        description: `Email due: "${step.subject_template}" (step ${step_order})`,
       });
+
+      // 4b. Send the email via Mailgun
+      const { data: lead } = await supabaseAdmin
+        .from('leads')
+        .select('email, business_name, reply_token')
+        .eq('id', enrollment.lead_id)
+        .maybeSingle();
+
+      if (lead?.email) {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('full_name, user_email, company_name')
+          .eq('id', enrollment.user_id)
+          .maybeSingle();
+
+        const fromName = (profile as any)?.full_name || 'Team';
+        const fromEmail = (profile as any)?.user_email || process.env.MAILGUN_FROM_EMAIL || '';
+
+        try {
+          await sendOutreachEmail({
+            to: lead.email,
+            fromName,
+            fromEmail,
+            subject: step.subject_template,
+            html: step.body_template,
+            text: step.body_template,
+            leadId: enrollment.lead_id,
+            replyToken: (lead as any)?.reply_token || '',
+            enrolmentId: enrollment_id,
+            sequenceStepId: (step as any).id,
+            userId: enrollment.user_id,
+            stepNumber: step_order,
+          });
+
+          await createActivity(enrollment.user_id, {
+            lead_id: enrollment.lead_id,
+            type: 'email_sent',
+            description: `Email sent: "${step.subject_template}" (step ${step_order})`,
+          });
+        } catch (err) {
+          console.error('[Sequence Worker] Failed to send email:', err);
+          await createActivity(enrollment.user_id, {
+            lead_id: enrollment.lead_id,
+            type: 'email_failed',
+            description: `Email failed: "${step.subject_template}" (step ${step_order})`,
+          });
+        }
+      }
 
       // 5. Update enrollment
       const delayMs = step.delay_days * 86400000;

@@ -334,6 +334,10 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
         setDeadLeads(deadData.leads ?? []);
       }
     } catch (err: any) {
+      if (err.message?.includes("401")) {
+        window.location.href = "/auth/login";
+        return;
+      }
       console.error("[Dashboard] Failed to load:", err.message);
       setError(err.message);
     } finally {

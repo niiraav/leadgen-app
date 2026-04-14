@@ -2,7 +2,7 @@
 import type { GetServerSideProps, GetServerSidePropsContext } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase";
 
-export function withAuth<T>(getProps?: GetServerSideProps<T>): GetServerSideProps<T> {
+export function withAuth<T extends Record<string, any>>(getProps?: GetServerSideProps<T>): GetServerSideProps<T> {
   return async (ctx: GetServerSidePropsContext) => {
     const { req, res } = ctx;
     const supabase = createServerSupabaseClient(req, res);

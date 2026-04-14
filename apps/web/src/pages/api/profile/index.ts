@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { data: { session } } = await supabase.auth.getSession();
   
   // Fix for corrupted token in sandbox
-  const token = session.access_token;
+  const token = session?.access_token;
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {

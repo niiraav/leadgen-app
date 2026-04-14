@@ -1,232 +1,229 @@
 import { withAuth } from "@/lib/auth";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { LeadCard } from "@/components/ui/card";
-import { api } from "@/lib/api";
-import { Search, ArrowUpDown, Download, Plus, UserPlus, Loader2, Mail, Check, X, AlertCircle } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api, UpgradeRequiredError, mapBackendLead } from "@/lib/api";
+import { Search, ArrowUpDown, Download, Plus, UserPlus, X } from "lucide-react";
 import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { LeadsTable, type LeadsTableRow } from "@/components/leads/LeadsTable";
+import UpgradePrompt from "@/components/ui/upgrade-prompt";
 
 const PAGE_SIZE = 20;
-
-const EMAIL_STATUS_OPTIONS = [
-  { value: "", label: "All Emails" },
-  { value: "valid", label: "✓ Verified" },
-  { value: "invalid", label: "✗ Invalid" },
-  { value: "catch-all", label: "⚠️ Catch-all" },
-  { value: "unverified", label: "Unverified" },
-];
 
 const STATUS_OPTIONS = [
   { value: "", label: "All Status" },
   { value: "new", label: "New" },
   { value: "contacted", label: "Contacted" },
-  { value: "qualified", label: "Qualified" },
-  { value: "proposal_sent", label: "Proposal Sent" },
-  { value: "converted", label: "Won" },
-  { value: "lost", label: "Lost" },
+  { value: "replied", label: "Replied" },
+  { value: "interested", label: "Interested" },
+  { value: "closed", label: "Won" },
+  { value: "not_interested", label: "Lost" },
   { value: "archived", label: "Archived" },
 ];
 
 export default function LeadsPage() {
+
+  const queryClient = useQueryClient();
+
+  // Sprint 8: Bulk selection
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [emailStatusFilter, setEmailStatusFilter] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "score" | "date">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
-  const [leads, setLeads] = useState<any[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [verifyingAll, setVerifyingAll] = useState(false);
+  const [upgradeError, setUpgradeError] = useState<Error | string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [lists, setLists] = useState<{ id: string; name: string; count: number; color: string }[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [activeListId, setActiveListId] = useState<string | null>(null);
 
-  const loadingRef = useRef(false);
-  const filtersRef = useRef({ statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm });
-  const observerRef = useRef<HTMLDivElement>(null);
-  const fetchKeyRef = useRef(0);
-  const cursorRef = useRef<string | null>(null);
+  // React Query: leads list — cached, deduplicated, no double-fetch
+  const leadsQueryKey = useMemo(() => ["leads", { statusFilter, sortBy, sortOrder, searchTerm, activeListId }],
+    [statusFilter, sortBy, sortOrder, searchTerm, activeListId]);
 
-  useEffect(() => {
-    filtersRef.current = { statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm };
-  }, [statusFilter, emailStatusFilter, sortBy, sortOrder, searchTerm]);
-
-  // Stable fetch — cursor-based, uses refs, no deps, never recreated
-  const doFetch = useCallback(async (reset = false) => {
-    if (loadingRef.current) return false;
-    loadingRef.current = true;
-    const cursor = reset ? null : cursorRef.current;
-    const f = filtersRef.current;
-
-    if (reset) {
-      setLoading(true);
-      setLeads([]);
-    } else {
-      setLoadingMore(true);
-    }
-    setError(null);
-
-    try {
+  const leadsQuery = useQuery({
+    queryKey: leadsQueryKey,
+    queryFn: async () => {
       const params: any = {
         limit: PAGE_SIZE,
-        status: f.statusFilter || undefined,
-        search: f.searchTerm || undefined,
-        sortField: f.sortBy === "name" ? "business_name" : f.sortBy === "score" ? "hot_score" : "created_at",
-        sortOrder: f.sortOrder,
+        status: statusFilter || undefined,
+        search: searchTerm || undefined,
+        sortField: sortBy === "name" ? "business_name" : sortBy === "score" ? "hot_score" : "created_at",
+        sortOrder,
       };
-      if (cursor) params.cursor = cursor;
 
       const result = await api.leads.list(params);
-      const filteredData = result.data.filter((l: any) => {
-        if (!f.emailStatusFilter) return true;
-        return l.email_status === f.emailStatusFilter;
-      });
-      const mapped = filteredData.map((l: any) => ({
+
+      // Pre-populate individual lead caches so detail page doesn't re-fetch
+      for (const raw of result.data) {
+        const mapped = mapBackendLead(raw);
+        queryClient.setQueryData(["lead", String(raw.id)], mapped);
+      }
+      let data = result.data;
+
+      // Filter by list if active
+      if (activeListId) {
+        data = data.filter((l: any) => l.list_id === activeListId);
+      }
+
+      const mapped: LeadsTableRow[] = data.map((l: any) => ({
         id: String(l.id),
-        name: l.business_name || "Unknown",
-        title: l.category || "",
-        company: l.city || l.country || "",
-        email: l.email || "",
-        emailStatus: l.email_status || "unverified",
-        location: [l.city, l.country].filter(Boolean).join(", "),
-        hotScore: l.hot_score,
+        business_name: l.business_name || "Unknown",
+        category: l.category || null,
+        city: l.city || null,
+        country: l.country || "GB",
+        rating: l.rating ?? null,
+        review_count: l.review_count ?? 0,
+        website_url: l.website_url ?? null,
+        phone: l.phone ?? null,
+        email: l.email ?? null,
+        email_status: l.email_status ?? null,
+        contact_email: l.contact_email ?? null,
+        contact_full_name: l.contact_full_name ?? null,
+        contact_enrichment_status: l.contact_enrichment_status ?? null,
+        domain: l.domain ?? null,
+        linkedin_url: l.linkedin_url ?? null,
+        facebook_url: l.facebook_url ?? null,
+        instagram_url: l.instagram_url ?? null,
+        twitter_handle: l.twitter_handle ?? null,
         status: l.status,
-        addedAt: new Date(l.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        hot_score: l.hot_score ?? 0,
+        list_id: l.list_id ?? null,
+        source: l.source ?? "search",
+        notes: l.notes ?? null,
+        created_at: l.created_at,
       }));
 
-      if (reset) {
-        setLeads(mapped);
-      } else {
-        setLeads((prev) => [...prev, ...mapped]);
-      }
+      return { leads: mapped, total: result.total };
+    },
+    staleTime: 30_000,
+  });
 
-      setTotalCount(result.total);
-      setHasMore(mapped.length === PAGE_SIZE && result.nextCursor != null);
-      cursorRef.current = result.nextCursor || null;
-      return true;
-    } catch (err: any) {
-      setError(`Unable to reach API server. (${err.message.split("\n")[0]})`);
-      return false;
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      loadingRef.current = false;
-    }
-  }, []);
+  const leads = leadsQuery.data?.leads ?? [];
+  const totalCount = leadsQuery.data?.total ?? 0;
+  const loading = leadsQuery.isLoading;
+  const error = leadsQuery.error
+    ? `Unable to reach API server. (${(leadsQuery.error as Error).message.split("\n")[0]})`
+    : null;
 
   const triggerRefetch = useCallback(() => {
-    cursorRef.current = null;
-    fetchKeyRef.current += 1;
-    doFetch(true);
-  }, [doFetch]);
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
+  }, [queryClient]);
 
-  // Mount: fetch first batch
-  useEffect(() => {
-    doFetch(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // List operations
+  const handleListSelect = useCallback((listId: string | null) => {
+    setActiveListId(listId);
   }, []);
 
-  // Refetch on filter change: skip first mount run
-  useEffect(() => {
-    if (fetchKeyRef.current === 0) {
-      fetchKeyRef.current = 1;
-      return;
-    }
-    triggerRefetch();
-  }, [statusFilter, emailStatusFilter, sortBy, sortOrder, triggerRefetch]);
-
-  // Intersection observer — attached only after initial mount fetch is done (!loading)
-  useEffect(() => {
-    if (loading) return;
-    if (!observerRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loadingMore) {
-          doFetch();
-        }
-      },
-      { rootMargin: "300px" }
-    );
-    observer.observe(observerRef.current);
-    return () => observer.disconnect();
-  }, [hasMore, loading, loadingMore]);
-
-  const verifyAllUnverified = async () => {
-    if (verifyingAll) return;
-    setVerifyingAll(true);
+  const handleCreateList = useCallback(async (name: string) => {
     try {
-      const result = await api.leads.list({ limit: 500 });
-      const unverified = result.data
-        .filter((l: any) => !l.email_status || l.email_status === "unverified")
-        .filter((l: any) => l.email);
+      const newList = await api.lists.create({ name, color: "#6366f1" });
+      setLists((prev) => [...prev, { id: newList.id, name, count: 0, color: "#6366f1" }]);
+    } catch { /* */ }
+  }, []);
 
-      if (unverified.length === 0) {
-        setVerifyingAll(false);
-        return;
-      }
+  const handleDeleteList = useCallback(async (listId: string) => {
+    try {
+      await api.lists.delete(listId);
+      setLists((prev) => prev.filter((l) => l.id !== listId));
+      if (activeListId === listId) setActiveListId(null);
+    } catch { /* */ }
+  }, [activeListId]);
 
-      const res = await fetch("/api/leads/verify-batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ lead_ids: unverified.map((l: any) => l.id) }),
-      });
+  const handleRenameList = useCallback(async (listId: string, name: string) => {
+    try {
+      await api.lists.update(listId, { name });
+      setLists((prev) => prev.map((l) => (l.id === listId ? { ...l, name } : l)));
+    } catch { /* */ }
+  }, []);
 
-      if (res.ok) {
-        triggerRefetch();
-      }
-    } finally {
-      setVerifyingAll(false);
+  const handleFilterApply = useCallback((f: Record<string, any>) => {
+    if (f.status) setStatusFilter(f.status);
+    if (f.search) setSearchTerm(f.search);
+  }, []);
+
+  // Stable callbacks for LeadsTable — avoids new fn refs each render
+  const handleRowClick = useCallback((id: string) => {
+    window.location.href = `/leads/${id}`;
+  }, []);
+
+  const handleEnrich = useCallback(async (id: string) => {
+    try {
+      await api.leadActions.enrichContact(id);
+      triggerRefetch();
+    } catch (e: any) {
+      if (e instanceof UpgradeRequiredError) { setUpgradeError(e); }
+      else { alert(e.message); }
     }
-  };
+  }, [triggerRefetch]);
+
+  const handleVerify = useCallback(async (id: string) => {
+    try {
+      await api.leadActions.verifyEmail(id);
+      triggerRefetch();
+    } catch (e: any) {
+      if (e instanceof UpgradeRequiredError) { setUpgradeError(e); }
+      else { alert(e.message); }
+    }
+  }, [triggerRefetch]);
+
+  // Bulk actions
+  const selectedLeads = useMemo(() => leads.filter((l) => selectedIds.has(l.id)), [leads, selectedIds]);
+
+  const handleBulkEnrich = useCallback(async () => {
+    for (const id of selectedIds) {
+      try { await api.leadActions.enrichContact(id); } catch (e: any) {
+        if (e instanceof UpgradeRequiredError) { setUpgradeError(e); break; }
+      }
+    }
+    setSelectedIds(new Set());
+    triggerRefetch();
+  }, [selectedIds, triggerRefetch]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-text tracking-tight">Leads</h1>
-          <p className="text-sm text-text-muted mt-1">
-            {loading ? "Loading..." : `${totalCount} leads in your database`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/leads/import" className="btn btn-secondary text-xs py-1.5 h-9 min-h-[36px]">
-            <Download className="w-3.5 h-3.5" />
-            Import
-          </Link>
-          <button onClick={() => setShowAddModal(true)} className="btn btn-primary text-xs py-1.5 h-9 min-h-[36px]">
-            <Plus className="w-3.5 h-3.5" />
-            Add Lead
-          </button>
-        </div>
-      </div>
-
-      {/* Error State */}
-      {error && (
-        <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red">
-          {error}
-          <button onClick={() => triggerRefetch()} className="ml-3 underline hover:no-underline">Retry</button>
-        </div>
-      )}
-
-      {/* Filters: horizontal on desktop, stacked on mobile */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
-          <input
-            type="text"
-            placeholder="Search leads..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") triggerRefetch(); }}
-            className="input pl-9 w-full"
-          />
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
+      {/* Main content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-text tracking-tight">My Leads</h1>
+            <p className="text-sm text-text-muted mt-1">
+              {loading ? "Loading..." : `${totalCount} leads`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a href="http://localhost:3001/leads/export" className="btn btn-secondary text-xs py-1.5 h-9">
+              <Download className="w-3.5 h-3.5" />
+              Export
+            </a>
+            <Link href="/leads/import" className="btn btn-secondary text-xs py-1.5 h-9">
+              <Plus className="w-3.5 h-3.5" />
+              Import
+            </Link>
+            <button onClick={() => setShowAddModal(true)} className="btn btn-primary text-xs py-1.5 h-9">
+              <Plus className="w-3.5 h-3.5" />
+              Add Lead
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+            <input
+              type="text"
+              placeholder="Search leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") triggerRefetch(); }}
+              className="input pl-9 w-full"
+            />
+          </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -236,26 +233,6 @@ export default function LeadsPage() {
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
-
-          <select
-            value={emailStatusFilter}
-            onChange={(e) => setEmailStatusFilter(e.target.value)}
-            className="h-9 px-3 text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20 cursor-pointer min-h-[36px]"
-          >
-            {EMAIL_STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-
-          <button
-            onClick={verifyAllUnverified}
-            disabled={verifyingAll}
-            className="btn btn-ghost text-xs h-9 min-h-[36px] text-blue disabled:opacity-50"
-          >
-            {verifyingAll ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-            Verify All
-          </button>
-
           <button
             onClick={() => {
               if (sortBy === "name") { setSortBy("date"); setSortOrder("desc"); }
@@ -268,91 +245,72 @@ export default function LeadsPage() {
             <ArrowUpDown className="w-3.5 h-3.5" />
           </button>
         </div>
-      </div>
 
-      {/* Lead List */}
-      <div className="space-y-2">
+        {/* Error state */}
+        {error && (
+          <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
+            {error}
+            <button onClick={triggerRefetch} className="ml-3 underline hover:no-underline">Retry</button>
+          </div>
+        )}
+
+        {/* Upgrade prompt */}
+        <UpgradePrompt error={upgradeError} onDismiss={() => setUpgradeError(null)} compact />
+
+        {/* Table */}
         {loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="h-20 rounded-xl border border-border/60 bg-surface animate-pulse" />
             ))}
           </div>
-        ) : leads.length > 0 ? (
-          leads.map((lead) => (
-            <div key={lead.id} className="flex items-center gap-2">
-              <div className="flex-1">
-                <LeadCard lead={lead} />
-              </div>
-              {lead.email && (
-                <div className="shrink-0 py-2 pr-2">
-                  {lead.emailStatus === "valid" && (
-                    <span className="inline-flex items-center gap-1 text-xs text-green"><Check className="w-3 h-3" /></span>
-                  )}
-                  {lead.emailStatus === "invalid" && (
-                    <span className="inline-flex items-center gap-1 text-xs text-red" title="Invalid email"><AlertCircle className="w-3 h-3" /></span>
-                  )}
-                  {lead.emailStatus === "catch-all" && (
-                    <span className="inline-flex items-center gap-1 text-xs text-amber" title="Catch-all email">⚠️</span>
-                  )}
-                  {(!lead.emailStatus || lead.emailStatus === "unverified") && (
-                    <span className="inline-flex items-center gap-1 text-xs text-text-faint" title="Unverified email"><Mail className="w-3 h-3" /></span>
-                  )}
-              {/* Enrichment Indicators */}
-              <div className="shrink-0 py-2 flex items-center gap-1.5">
-                {lead.gmb_url && (
-                  <button onClick={() => window.open(lead.gmb_url, "_blank", "noopener,noreferrer")}
-                    className="text-xs p-0.5 hover:scale-110 transition-transform" title="View on Google Maps">
-                    📍
-                  </button>
-                )}
-                {lead.owner_name && (
-                  <span className="text-xs" title={`Owner: ${lead.owner_name}`}>👤</span>
-                )}
-                {lead.facebook_url && (
-                  <button onClick={() => window.open(lead.facebook_url, "_blank", "noopener,noreferrer")}
-                    className="text-xs text-[#1877f2] font-bold hover:scale-110 transition-transform p-0.5"
-                    title="Facebook">
-                    <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
-                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                  </button>
-                )}
-              </div>
-                </div>
-              )}
-            </div>
-          ))
         ) : (
+          <LeadsTable
+            leads={leads}
+            selected={selectedIds}
+            onSelectionChange={setSelectedIds}
+            onRowClick={handleRowClick}
+            onEnrich={handleEnrich}
+            onVerify={handleVerify}
+          />
+        )}
+
+        {/* Bulk action bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between mt-3 p-3 rounded-xl bg-blue/5 border border-blue/20">
+            <span className="text-sm text-text">
+              <strong>{selectedIds.size}</strong> selected
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleBulkEnrich}
+                className="btn btn-primary text-xs"
+              >
+                🔍 Enrich — {selectedIds.size} credits
+              </button>
+              <button onClick={handleClearSelection} className="btn btn-ghost text-xs">Clear</button>
+            </div>
+          </div>
+        )}
+
+
+
+        {!loading && totalCount > 0 && (
+          <div className="text-center text-xs text-text-faint py-2">
+            Showing {leads.length} of {totalCount} leads
+          </div>
+        )}
+
+        {!loading && totalCount === 0 && (
           <div className="card text-center py-12">
             <UserPlus className="w-10 h-10 text-text-faint mx-auto mb-3" />
-            <p className="text-sm text-text-muted">No leads found</p>
-            <p className="text-xs text-text-faint mt-1">
-              Try adjusting your filters, search Google Maps, or import a CSV
-            </p>
+            <p className="text-sm text-text-muted">No leads yet.</p>
+            <Link href="/search/google-maps" className="text-sm text-blue hover:underline mt-1 inline-block">Search Google Maps →</Link>
           </div>
         )}
       </div>
 
-      {/* Loading more indicator */}
-      {loadingMore && (
-        <div className="flex items-center justify-center gap-2 py-4 text-sm text-text-muted">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Loading more...
-        </div>
-      )}
-
-      {/* Lazy-load sentinel */}
-      <div ref={observerRef} className="h-1" />
-
-      {/* Show total count at bottom */}
-      {!loading && totalCount > 0 && (
-        <div className="text-center text-xs text-text-faint py-2">
-          Showing {leads.length} of {totalCount} leads
-        </div>
-      )}
-
-      {/* ─── Add Lead Modal ─── */}
+      {/* Add Lead Modal */}
       {showAddModal && <AddLeadModal onClose={() => setShowAddModal(false)} onAdded={() => { triggerRefetch(); setShowAddModal(false); }} />}
     </div>
   );
@@ -437,7 +395,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn btn-ghost text-sm flex-1">Cancel</button>
             <button type="submit" disabled={saving || !name.trim()} className="btn btn-primary text-sm flex-1 disabled:opacity-50">
-              {saving ? <><Loader2 className="w-4 h-4 animate-spin mr-1" />Saving...</> : "Add Lead"}
+              {saving ? "Saving..." : "Add Lead"}
             </button>
           </div>
         </form>

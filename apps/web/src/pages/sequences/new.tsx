@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import { ArrowLeft, Plus, Trash2, ArrowUp, ArrowDown, Loader2, Check, Play } from "lucide-react";
 import Link from "next/link";
+import UpgradePrompt from "@/components/ui/upgrade-prompt";
 
 interface Step {
   step_order: number;
@@ -20,6 +21,7 @@ export default function NewSequencePage() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
 
   const addStep = () => {
     setSteps((prev) => [
@@ -59,6 +61,7 @@ export default function NewSequencePage() {
 
     setSaving(true);
     setError("");
+    setUpgradeError(null);
     try {
       const res = await fetch("/api/sequences", {
         method: "POST",
@@ -69,7 +72,12 @@ export default function NewSequencePage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Failed to create sequence");
+        if (res.status === 402 && data.upgrade_required) {
+          setUpgradeError(data.error || "Upgrade required to create sequences");
+        } else {
+          throw new Error(data.error || "Failed to create sequence");
+        }
+        return;
       }
 
       const data = await res.json();
@@ -124,6 +132,8 @@ export default function NewSequencePage() {
       {error && (
         <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red">{error}</div>
       )}
+
+      <UpgradePrompt error={upgradeError} onDismiss={() => setUpgradeError(null)} compact />
 
       <div className="rounded-xl border border-border/60 bg-surface p-5">
         <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wider">

@@ -11,7 +11,14 @@ import { createBrowserSupabaseClient } from "@/lib/supabase";
 import type { AppProps } from "next/app";
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 5 * 60 * 1000, retry: 1 } },
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 300_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
 });
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -25,13 +32,14 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
       if (session?.user?.email) setUserEmail(session.user.email);
       setSessionChecked(true);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.user?.email) setUserEmail(session.user.email);
-      else setUserEmail(null);
+      else if (_event === 'SIGNED_OUT' || _event === 'USER_DELETED') setUserEmail(null);
+      // Ignore TOKEN_REFRESHED, INITIAL_SESSION, etc. — don't clear email
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -65,8 +73,10 @@ export default function App({ Component, pageProps }: AppProps) {
             {userEmail && <Sidebar />}
             <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-[var(--sidebar-width,256px)]" : ""}`}>
               {userEmail && <TopBar userEmail={userEmail} />}
-              <main className="flex-1 p-4 pb-24 md:p-6 md:pb-6 overflow-y-auto">
-                <Component {...pageProps} />
+              <main className="flex-1 pb-24 md:pb-6 overflow-y-auto">
+                <div className="p-4 md:p-6">
+                  <Component {...pageProps} />
+                </div>
               </main>
               {userEmail && <BottomNav />}
             </div>

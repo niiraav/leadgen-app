@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { supabaseAdmin, getUserId } from '../db';
 import { extractOwnerNameFromReviews } from '../services/owner-name-extractor';
 import { buildGmbUrl } from '../lib/gmb-urls';
+import { enforceCredits, EnforcementError } from '../lib/billing/enforce';
 
 const router = new Hono();
 
@@ -10,18 +11,34 @@ router.post('/:id/enrich', async (c) => {
   const userId = getUserId(c);
   const leadId = c.req.param('id');
 
+  // ── Credit enforcement: check enrichment limit ──
+  try {
+    await enforceCredits(userId, 'enrichment');
+  } catch (err) {
+    if (err instanceof EnforcementError) {
+      const status = err.upgradeRequired ? 402 : 403;
+      return c.json({ error: err.message, upgrade_required: err.upgradeRequired, limit: err.limit, remaining: err.remaining }, status);
+    }
+    throw err;
+  }
+
   const { data: lead, error } = await supabaseAdmin
     .from('leads').select('*').eq('id', leadId).single();
   if (error || !lead) return c.json({ error: 'Not found' }, 404);
   if (lead.user_id !== userId) return c.json({ error: 'Forbidden' }, 403);
 
-  // Rate limit: 1 per 7 days
-  if (lead.enrichment_attempted_at) {
+  // If enrichment previously found no owner, allow immediate retry
+  if (lead.enrichment_attempted_at && !lead.owner_name) {
+    await supabaseAdmin.from('leads').update({
+      enrichment_attempted_at: null,
+    }).eq('id', leadId);
+  } else if (lead.enrichment_attempted_at) {
     const daysSince = (Date.now() - new Date(lead.enrichment_attempted_at).getTime()) / (1000 * 60 * 60 * 24);
     if (daysSince < 7) {
+      const nextAvailable = new Date(new Date(lead.enrichment_attempted_at).getTime() + 7 * 86400000);
       return c.json({
-        error: 'Already enriched recently',
-        next_available: new Date(new Date(lead.enrichment_attempted_at).getTime() + 7 * 86400000).toISOString(),
+        error: `Already enriched recently. Try again after ${nextAvailable.toLocaleDateString()}.`,
+        next_available: nextAvailable.toISOString(),
       }, 429);
     }
   }
@@ -42,7 +59,9 @@ router.post('/:id/enrich', async (c) => {
         updates.owner_first_name = result.first_name || null;
         updates.owner_name_source = 'gmb_reviews';
       }
-    } catch (e) { /* silent fail */ }
+    } catch (e) {
+      console.error(`[Enrichment] Owner extraction failed for lead ${leadId}:`, e);
+    }
   }
 
   // Ensure GMB URL
@@ -74,19 +93,39 @@ router.patch('/:id/social-links', async (c) => {
   const updates: Record<string, unknown> = {};
 
   if (body.facebook_url !== undefined) {
-    if (body.facebook_url && (!body.facebook_url.startsWith('https://') || (!body.facebook_url.includes('facebook.com') && !body.facebook_url.includes('fb.com'))))
+    if (body.facebook_url === '' || body.facebook_url === null) {
+      updates.facebook_url = null;
+    } else if (!body.facebook_url.startsWith('https://') || (!body.facebook_url.includes('facebook.com') && !body.facebook_url.includes('fb.com'))) {
       return c.json({ error: 'Must be a valid Facebook URL' }, 400);
-    updates.facebook_url = body.facebook_url || null;
-  }
-  if (body.linkedin_url !== undefined) {
-    if (body.linkedin_url && (!body.linkedin_url.startsWith('https://') || !body.linkedin_url.includes('linkedin.com')))
+    } else {
+      updates.facebook_url = body.facebook_url;
+    }
+  } else if (body.linkedin_url !== undefined) {
+    if (body.linkedin_url === '' || body.linkedin_url === null) {
+      updates.linkedin_url = null;
+    } else if (!body.linkedin_url.startsWith('https://') || !body.linkedin_url.includes('linkedin.com')) {
       return c.json({ error: 'Must be a valid LinkedIn URL' }, 400);
-    updates.linkedin_url = body.linkedin_url || null;
+    } else {
+      updates.linkedin_url = body.linkedin_url;
+    }
   }
   if (body.instagram_url !== undefined) {
-    if (body.instagram_url && (!body.instagram_url.startsWith('https://') || !body.instagram_url.includes('instagram.com')))
+    if (body.instagram_url === '' || body.instagram_url === null) {
+      updates.instagram_url = null;
+    } else if (!body.instagram_url.startsWith('https://') || !body.instagram_url.includes('instagram.com')) {
       return c.json({ error: 'Must be a valid Instagram URL' }, 400);
-    updates.instagram_url = body.instagram_url || null;
+    } else {
+      updates.instagram_url = body.instagram_url;
+    }
+  }
+  if (body.twitter_handle !== undefined) {
+    if (body.twitter_handle === '' || body.twitter_handle === null) {
+      updates.twitter_handle = null;
+    } else if (!body.twitter_handle.startsWith('https://') || (!body.twitter_handle.includes('twitter.com') && !body.twitter_handle.includes('x.com'))) {
+      return c.json({ error: 'Must be a valid Twitter/X URL' }, 400);
+    } else {
+      updates.twitter_handle = body.twitter_handle;
+    }
   }
   if (body.owner_name !== undefined) {
     updates.owner_name = body.owner_name || null;
@@ -101,6 +140,7 @@ router.patch('/:id/social-links', async (c) => {
     facebook_url: updated?.facebook_url,
     linkedin_url: updated?.linkedin_url,
     instagram_url: updated?.instagram_url,
+    twitter_handle: updated?.twitter_handle,
     owner_name: updated?.owner_name,
     owner_first_name: updated?.owner_first_name,
     owner_name_source: updated?.owner_name_source,

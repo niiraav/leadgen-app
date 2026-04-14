@@ -9,10 +9,12 @@ import {
   Users,
   Columns3,
   Mail,
+  MessageSquare,
   ChevronLeft,
   ChevronRight,
   Zap,
   Settings,
+  CreditCard,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -22,6 +24,8 @@ const navItems = [
   { label: "Leads", href: "/leads", icon: Users },
   { label: "Pipeline", href: "/pipeline", icon: Columns3 },
   { label: "Sequences", href: "/sequences", icon: Mail },
+  { label: "Replies", href: "/replies", icon: MessageSquare },
+  { label: "Billing", href: "/billing", icon: CreditCard },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 

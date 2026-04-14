@@ -14,14 +14,22 @@ export async function extractOwnerNameFromReviews(
   try {
     const params = new URLSearchParams({
       engine: 'google_maps_reviews', data_id: dataId, hl: 'en',
-      sort_by: 'qualityScore', api_key: SERPAPI_KEY, num: '40',
+      sort_by: 'qualityScore', api_key: SERPAPI_KEY,
     });
+    console.log('[OwnerExtractor] Fetching reviews from SerpAPI...');
     const resp = await fetch(`https://serpapi.com/search.json?${params.toString()}`);
     const data = await resp.json();
+    if (data.error) {
+      console.error('[OwnerExtractor] SerpAPI error:', data.error);
+      return { owner_name: null, first_name: null, confidence: 'low' };
+    }
+    const reviews = data.reviews || [];
+    console.log(`[OwnerExtractor] Fetched ${reviews.length} reviews`);
     const ownerAnswers: string[] = [];
-    for (const review of data.reviews || []) {
+    for (const review of reviews) {
       if (review.owner_answer?.name) ownerAnswers.push(review.owner_answer.name);
     }
+    console.log(`[OwnerExtractor] Found ${ownerAnswers.length} owner name(s) in replies`);
     if (!ownerAnswers.length) return { owner_name: null, first_name: null, confidence: 'low' };
     const counts: Record<string, number> = {};
     for (const n of ownerAnswers) counts[n] = (counts[n] || 0) + 1;

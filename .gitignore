@@ -6,3 +6,9 @@ dist
 .turbo
 *.tsbuildinfo
 .DS_Store
+
+.env.tmp
+*.db
+*.db-shm
+*.db-wal
+apps/api/test-send-email.cjs

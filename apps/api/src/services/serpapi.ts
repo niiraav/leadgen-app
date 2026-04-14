@@ -14,6 +14,9 @@ type SerpApiClientRequest = {
 
 type SerpApiPlace = {
   title?: string;
+  place_id?: string;
+  data_id?: string;
+  reviews_link?: string;
   gps_coordinates?: { latitude: number; longitude: number };
   rating?: number;
   reviews?: number;
@@ -109,7 +112,7 @@ export async function serpApiSearch({
     const addressParts = place.address?.split(',').map((s) => s.trim()) ?? [];
 
     return {
-      business_name: cleanBusinessName(place.title),
+      business_name: cleanBusinessName(place.title ?? ''),
       phone: place.phone || undefined,
       website_url: place.website || undefined,
       address: place.address || undefined,
@@ -117,7 +120,7 @@ export async function serpApiSearch({
       country: undefined,
       category: place.type || undefined,
       rating: place.rating || undefined,
-      review_count: place.reviews || 0,
+      review_count: typeof place.reviews === 'string' ? parseInt(place.reviews, 10) || 0 : place.reviews || 0,
       source: 'serpapi' as const,
       place_id: place.place_id || null,
       data_id: place.data_id || null,
