@@ -157,7 +157,7 @@ router.post('/google-maps', async (c) => {
         hot_score: score,
         readiness_flags: readinessFlags,
         status: 'new' as const,
-        source: 'outscraper' as const,
+        source: usedProvider as 'serpapi' | 'outscraper' | 'csv' | 'apollo',
         tags: [] as string[],
         metadata: {} as Record<string, unknown>,
         created_at: now,

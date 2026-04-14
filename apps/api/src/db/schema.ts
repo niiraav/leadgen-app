@@ -362,5 +362,5 @@ export type RawLead = {
   category?: string;
   rating?: number;
   review_count?: number;
-  source: 'serpapi' | 'manual';
+  source: 'serpapi' | 'outscraper' | 'manual';
 };

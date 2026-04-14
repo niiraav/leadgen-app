@@ -21,6 +21,7 @@ export class UpgradeRequiredError extends Error {
 
 import type {
   Lead,
+  LeadSource,
   LeadActivity,
   Sequence,
   AIGeneratedEmail,
@@ -87,7 +88,7 @@ export interface BackendLead {
   ai_bio_generated_at?: string | null;
 }
 
-/** A raw search result from SerpAPI (before it becomes a Lead) */
+/** A raw search result from search providers (SerpAPI/Outscraper) */
 export interface BackendRawSearchLead {
   business_name: string;
   phone?: string;
@@ -102,6 +103,7 @@ export interface BackendRawSearchLead {
   longitude?: number;
   hot_score?: number;
   readiness_flags?: string[];
+  source?: string;
 }
 
 /** Single lead from GET /leads/:id */
@@ -704,7 +706,7 @@ export const api = {
       hot_score: r.hot_score ?? 0,
       readiness_flags: r.readiness_flags ?? [],
       status: "new" as const,
-      source: "serpapi" as const,
+      source: (r.source ?? "serpapi") as LeadSource,
       tags: [] as string[],
       metadata: {} as Record<string, unknown>,
       created_at: new Date().toISOString(),
