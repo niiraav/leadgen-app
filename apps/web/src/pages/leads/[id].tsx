@@ -1557,7 +1557,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 ) : (
                   <div>
                     <p className="text-sm text-text-faint">Unknown</p>
-                    {lead?.data_id ? (
+                    {lead?.data_id || lead?.place_id ? (
                       <div className="flex items-center gap-2 mt-1">
                         <button onClick={handleEnrich} disabled={enrichLoading}
                           className="text-xs text-blue hover:underline flex items-center gap-1">
