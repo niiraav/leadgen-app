@@ -11,7 +11,7 @@ export type LeadStatus =
   | 'not_interested'
   | 'archived';
 
-export type LeadSource = 'serpapi' | 'outscraper' | 'csv' | 'apollo';
+export type LeadSource = 'serpapi' | 'outscraper' | 'csv' | 'apollo' | 'manual';
 
 export type EmailTone = 'professional' | 'friendly' | 'direct';
 

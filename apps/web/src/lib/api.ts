@@ -104,6 +104,10 @@ export interface BackendRawSearchLead {
   hot_score?: number;
   readiness_flags?: string[];
   source?: string;
+  place_id?: string;
+  data_id?: string;
+  gmb_reviews_url?: string;
+  postal_code?: string;
 }
 
 /** Single lead from GET /leads/:id */
@@ -706,12 +710,15 @@ export const api = {
       hot_score: r.hot_score ?? 0,
       readiness_flags: r.readiness_flags ?? [],
       status: "new" as const,
-      source: (r.source ?? "serpapi") as LeadSource,
+      source: (r.source ?? "outscraper") as LeadSource,
       tags: [] as string[],
       metadata: {} as Record<string, unknown>,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       has_website: !!r.website_url,
+      place_id: r.place_id ?? undefined,
+      data_id: r.data_id ?? undefined,
+      gmb_reviews_url: r.gmb_reviews_url ?? undefined,
     }));
   },
 };

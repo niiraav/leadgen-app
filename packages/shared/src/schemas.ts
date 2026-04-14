@@ -5,7 +5,7 @@ export const leadStatusSchema = z.enum([
   'new', 'contacted', 'replied', 'interested', 'closed', 'not_interested', 'archived'
 ]) satisfies z.ZodSchema<LeadStatus>;
 
-export const leadSourceSchema = z.enum(['serpapi', 'outscraper', 'csv', 'apollo']) satisfies z.ZodSchema<LeadSource>;
+export const leadSourceSchema = z.enum(['serpapi', 'outscraper', 'csv', 'apollo', 'manual']) satisfies z.ZodSchema<LeadSource>;
 export const emailToneSchema = z.enum(['professional', 'friendly', 'direct']) satisfies z.ZodSchema<EmailTone>;
 
 export const searchParamsSchema = z.object({

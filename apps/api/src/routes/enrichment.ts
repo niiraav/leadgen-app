@@ -51,9 +51,10 @@ router.post('/:id/enrich', async (c) => {
   const updates: Record<string, unknown> = {};
 
   // Owner name from GMB reviews
-  if (lead.data_id && !lead.owner_name) {
+  const identifierForReviews = lead.data_id || lead.place_id;
+  if (identifierForReviews && !lead.owner_name) {
     try {
-      const result = await extractOwnerNameFromReviews(lead.data_id, lead.business_name);
+      const result = await extractOwnerNameFromReviews(identifierForReviews, lead.business_name);
       if (result.owner_name) {
         updates.owner_name = result.owner_name;
         updates.owner_first_name = result.first_name || null;

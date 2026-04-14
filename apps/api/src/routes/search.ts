@@ -8,6 +8,13 @@ import { enforceCredits, EnforcementError } from '../lib/billing/enforce';
 
 const router = new Hono();
 
+// ── Search provider feature flag ──────────────────────────────────────────
+// SEARCH_PROVIDER env var controls which provider is tried first.
+// Values: 'outscraper' (default) | 'serpapi'
+// If the primary provider fails or returns 0 results, the other is tried as fallback.
+const SEARCH_PROVIDER = (process.env.SEARCH_PROVIDER || 'outscraper').toLowerCase() as 'outscraper' | 'serpapi';
+type SearchProvider = 'outscraper' | 'serpapi';
+
 const searchSchema = z.object({
   query: z.string().min(1),
   location: z.string().min(1),
@@ -49,47 +56,134 @@ router.post('/google-maps', async (c) => {
     const { query, location, maxResults, no_website, noWebsite, min_rating, max_reviews, no_social } = parsed.data;
     const filterNoWebsite = no_website ?? noWebsite ?? false;
 
-    // Try SerpAPI first, fall back to Outscraper
-    let results: any[] = [];
-    let usedProvider = 'serpapi';
+    // ── Provider selection + fallback logic ──────────────────────────────────
+    // Primary provider determined by SEARCH_PROVIDER env var (default: 'outscraper').
+    // If primary fails (error) or returns 0 results, fallback provider is tried.
+    // Rollback: set SEARCH_PROVIDER=serpapi to restore old behaviour.
+    const primary: SearchProvider = SEARCH_PROVIDER;
+    const fallback: SearchProvider = primary === 'outscraper' ? 'serpapi' : 'outscraper';
 
-    try {
-      console.log(`[Search] SerpAPI: "${query}" in "${location}" (${maxResults} results)`);
-      const serpResults = await serpApiSearch({ businessType: query, location, maxResults });
-      if (serpResults.length > 0) {
-        results = serpResults.map((r: any) => ({
-          name: r.business_name,
-          phone: r.phone,
-          site: r.website_url,
-          full_address: r.address,
-          street: undefined,
-          city: r.city,
-          postal_code: undefined,
-          latitude: undefined,
-          longitude: undefined,
-          category: r.category,
-          subtypes: [],
-          description: undefined,
-          business_status: 'OPERATIONAL',
-          verified: false,
-          price_range: undefined,
-          working_hours: undefined,
-          photo_count: undefined,
-          logo: undefined,
-          reviews_link: r.gmb_reviews_url,
-          rating: r.rating,
-          reviews: r.review_count,
-          place_id: r.place_id,
-        }));
-      }
-    } catch (serpErr: any) {
-      console.warn(`[Search] SerpAPI failed: ${serpErr.message}, trying Outscraper...`);
-      usedProvider = 'outscraper';
+    interface UnifiedSearchResult {
+      name: string;
+      phone: string | undefined;
+      site: string | undefined;
+      full_address: string | undefined;
+      street: string | undefined;
+      city: string | undefined;
+      postal_code: string | undefined;
+      latitude: number | undefined;
+      longitude: number | undefined;
+      category: string | undefined;
+      subtypes: string[];
+      description: string | undefined;
+      business_status: string;
+      verified: boolean;
+      price_range: string | undefined;
+      working_hours: Record<string, string> | undefined;
+      photo_count: number | undefined;
+      logo: string | undefined;
+      reviews_link: string | undefined;
+      rating: number | undefined;
+      reviews: number | undefined;
+      place_id: string | null;
+      data_id: string | null;
     }
 
-    if (results.length === 0 && usedProvider === 'outscraper') {
-      console.log(`[Search] Outscraper: "${query}" in "${location}" (${maxResults} results)`);
-      results = await searchGoogleMaps(query, location, maxResults);
+    const mapSerpResult = (r: any): UnifiedSearchResult => ({
+        name: r.business_name,
+        phone: r.phone,
+        site: r.website_url,
+        full_address: r.address,
+        street: undefined,
+        city: r.city,
+        postal_code: undefined,
+        latitude: undefined,
+        longitude: undefined,
+        category: r.category,
+        subtypes: [],
+        description: undefined,
+        business_status: 'OPERATIONAL',
+        verified: false,
+        price_range: undefined,
+        working_hours: undefined,
+        photo_count: undefined,
+        logo: undefined,
+        reviews_link: r.gmb_reviews_url || undefined,
+        rating: r.rating,
+        reviews: r.review_count,
+        place_id: r.place_id || null,
+        data_id: r.data_id || null,
+    });
+
+    const mapOutscraperResult = (r: any): UnifiedSearchResult => ({
+        name: r.name,
+        phone: r.phone || undefined,
+        site: r.site || undefined,
+        full_address: r.full_address || undefined,
+        street: r.street || undefined,
+        city: r.city || undefined,
+        postal_code: r.postal_code || undefined,
+        latitude: r.latitude,
+        longitude: r.longitude,
+        category: r.category,
+        subtypes: r.subtypes || [],
+        description: r.description || undefined,
+        business_status: r.business_status || 'OPERATIONAL',
+        verified: r.verified || false,
+        price_range: r.price_range || undefined,
+        working_hours: r.working_hours || undefined,
+        photo_count: r.photo_count,
+        logo: r.logo || undefined,
+        reviews_link: r.reviews_link || undefined,
+        rating: r.rating || undefined,
+        reviews: r.reviews || undefined,
+        place_id: r.place_id || null,
+        data_id: null,  // Outscraper does not provide data_id
+    });
+
+    let results: UnifiedSearchResult[] = [];
+    let usedProvider: SearchProvider = primary;
+
+    // ── Try primary provider ──
+    try {
+      if (primary === 'outscraper') {
+        console.log(`[Search] Outscraper (primary): "${query}" in "${location}" (${maxResults} results)`);
+        const outResults = await searchGoogleMaps(query, location, maxResults);
+        if (outResults.length > 0) {
+          results = outResults.map(mapOutscraperResult);
+        }
+      } else {
+        console.log(`[Search] SerpAPI (primary): "${query}" in "${location}" (${maxResults} results)`);
+        const serpResults = await serpApiSearch({ businessType: query, location, maxResults });
+        if (serpResults.length > 0) {
+          results = serpResults.map(mapSerpResult);
+        }
+      }
+    } catch (primaryErr: any) {
+      console.warn(`[Search] ${primary} failed: ${primaryErr.message}, trying ${fallback}...`);
+      usedProvider = fallback;
+    }
+
+    // ── Fallback if primary returned 0 results or errored ──
+    if (results.length === 0 && usedProvider === primary) {
+      console.log(`[Search] ${primary} returned 0 results, trying ${fallback}...`);
+      usedProvider = fallback;
+    }
+
+    if (results.length === 0) {
+      try {
+        if (usedProvider === 'outscraper') {
+          console.log(`[Search] Outscraper (fallback): "${query}" in "${location}" (${maxResults} results)`);
+          const outResults = await searchGoogleMaps(query, location, maxResults);
+          results = outResults.map(mapOutscraperResult);
+        } else {
+          console.log(`[Search] SerpAPI (fallback): "${query}" in "${location}" (${maxResults} results)`);
+          const serpResults = await serpApiSearch({ businessType: query, location, maxResults });
+          results = serpResults.map(mapSerpResult);
+        }
+      } catch (fallbackErr: any) {
+        console.error(`[Search] ${fallback} also failed: ${fallbackErr.message}`);
+      }
     }
 
     // Filter out permanently closed businesses
@@ -149,10 +243,11 @@ router.post('/google-maps', async (c) => {
         working_hours: lead.working_hours,
         photo_count: lead.photo_count,
         logo: lead.logo,
-        reviews_link: lead.reviews_link,
+        gmb_reviews_url: lead.reviews_link,
         rating: lead.rating || undefined,
         review_count: lead.reviews || 0,
         place_id: lead.place_id || null,
+        data_id: lead.data_id,
         email: undefined,
         hot_score: score,
         readiness_flags: readinessFlags,

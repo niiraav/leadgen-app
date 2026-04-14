@@ -11,6 +11,7 @@ import type { Lead } from "@leadgen/shared";
 
 interface SearchResult {
   place_id: string;
+  data_id?: string;
   name: string;
   city: string;
   category: string;
@@ -23,6 +24,11 @@ interface SearchResult {
   phone?: string;
   site?: string;
   full_address?: string;
+  postal_code?: string;
+  latitude?: number;
+  longitude?: number;
+  source?: string;
+  gmb_reviews_url?: string;
   description?: string;
   duplicate?: boolean;
   existingLeadId?: string;
@@ -81,6 +87,7 @@ export default function SearchGoogleMaps() {
 
       const mapped = (searchResult as any).results?.map((r: any) => ({
         place_id: r.place_id ?? `temp-${Math.random().toString(36).slice(2)}`,
+        data_id: r.data_id ?? undefined,
         name: r.business_name,
         city: r.city ?? "",
         category: r.category ?? "",
@@ -93,6 +100,11 @@ export default function SearchGoogleMaps() {
         phone: r.phone ?? undefined,
         site: r.website_url ?? undefined,
         full_address: r.address ?? undefined,
+        postal_code: r.postal_code ?? undefined,
+        latitude: r.latitude ?? undefined,
+        longitude: r.longitude ?? undefined,
+        source: r.source ?? undefined,
+        gmb_reviews_url: r.gmb_reviews_url ?? undefined,
         description: r.description ?? "",
         duplicate: false,
       })) ?? [];
@@ -129,10 +141,14 @@ export default function SearchGoogleMaps() {
         hot_score: result.hot_score,
         readiness_flags: [],
         status: "new",
-        source: "search",
+        source: result.source ?? "outscraper",
         tags: [],
         metadata: { place_id: result.place_id },
         place_id: result.place_id,
+        data_id: result.data_id ?? null,
+        gmb_reviews_url: result.gmb_reviews_url ?? null,
+        latitude: result.latitude ?? null,
+        longitude: result.longitude ?? null,
       }]);
 
       // Mark as duplicate
@@ -170,10 +186,14 @@ export default function SearchGoogleMaps() {
         hot_score: r.hot_score,
         readiness_flags: [],
         status: "new",
-        source: "search",
+        source: r.source ?? "outscraper",
         tags: [],
         metadata: { place_id: r.place_id },
         place_id: r.place_id,
+        data_id: r.data_id ?? null,
+        gmb_reviews_url: r.gmb_reviews_url ?? null,
+        latitude: r.latitude ?? null,
+        longitude: r.longitude ?? null,
       }));
 
       const result = await api.leads.batchCreate(leads);
