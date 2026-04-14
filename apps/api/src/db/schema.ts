@@ -363,4 +363,8 @@ export type RawLead = {
   rating?: number;
   review_count?: number;
   source: 'serpapi' | 'outscraper' | 'manual' | 'csv' | 'apollo';
+  // Identifiers for enrichment/reviews extraction
+  place_id?: string | null;
+  data_id?: string | null;
+  gmb_reviews_url?: string | null;
 };

@@ -476,7 +476,7 @@ export const api = {
   // ── Lead Enrichment ──
   enrich: {
     enrichLead: (leadId: string) =>
-      request<{ success: boolean; owner_name: string | null; owner_first_name: string | null; enriched_at: string }>(
+      request<{ success: boolean; owner_name: string | null; owner_first_name: string | null; owner_name_source: string | null; enriched_at: string }>(
         `/leads/${leadId}/enrich`,
         { method: "POST" }
       ),

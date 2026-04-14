@@ -28,7 +28,7 @@ export const leadCreateSchema = z.object({
   industry: z.string().optional(),
   rating: z.coerce.number().min(0).max(5).optional(),
   review_count: z.coerce.number().int().min(0).optional(),
-  source: leadSourceSchema.default('serpapi'),
+  source: leadSourceSchema.default('outscraper'),
   notes: z.string().optional(),
   tags: z.array(z.string()).default([]),
 });

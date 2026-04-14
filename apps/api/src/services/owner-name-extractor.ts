@@ -6,17 +6,44 @@ const openai = new OpenAI({
   defaultHeaders: { 'HTTP-Referer': 'https://leadgen-app.local', 'X-Title': 'LeadGen App' },
 });
 
+/**
+ * Extract owner name from GMB reviews via SerpAPI.
+ * Supports both SerpAPI data_id (0x...:0x... format) and Google place_id (ChIJ... format).
+ * SerpAPI google_maps_reviews engine accepts either parameter.
+ */
 export async function extractOwnerNameFromReviews(
-  dataId: string, businessName: string
+  dataId: string | null,
+  placeId: string | null,
+  businessName: string
 ): Promise<{ owner_name: string | null; first_name: string | null; confidence: 'high' | 'low' }> {
   const SERPAPI_KEY = process.env.SERPAPI_KEY;
-  if (!SERPAPI_KEY) return { owner_name: null, first_name: null, confidence: 'low' };
+  if (!SERPAPI_KEY) {
+    console.warn('[OwnerExtractor] No SERPAPI_KEY configured, skipping extraction');
+    return { owner_name: null, first_name: null, confidence: 'low' };
+  }
+
+  // Prefer data_id (native SerpAPI identifier); fall back to place_id
+  const identifier = dataId || placeId;
+  if (!identifier) {
+    console.warn('[OwnerExtractor] No data_id or place_id provided, skipping extraction');
+    return { owner_name: null, first_name: null, confidence: 'low' };
+  }
+
   try {
     const params = new URLSearchParams({
-      engine: 'google_maps_reviews', data_id: dataId, hl: 'en',
-      sort_by: 'qualityScore', api_key: SERPAPI_KEY,
+      engine: 'google_maps_reviews',
+      hl: 'en',
+      sort_by: 'qualityScore',
+      api_key: SERPAPI_KEY,
     });
-    console.log('[OwnerExtractor] Fetching reviews from SerpAPI...');
+
+    if (dataId) {
+      params.set('data_id', dataId);
+    } else if (placeId) {
+      params.set('place_id', placeId);
+    }
+
+    console.log(`[OwnerExtractor] Fetching reviews via ${dataId ? 'data_id' : 'place_id'} for "${businessName}"...`);
     const resp = await fetch(`https://serpapi.com/search.json?${params.toString()}`);
     const data = await resp.json();
     if (data.error) {

@@ -50,11 +50,10 @@ router.post('/:id/enrich', async (c) => {
 
   const updates: Record<string, unknown> = {};
 
-  // Owner name from GMB reviews
-  const identifierForReviews = lead.data_id || lead.place_id;
-  if (identifierForReviews && !lead.owner_name) {
+  // Owner name from GMB reviews — supports both data_id (SerpAPI) and place_id (Outscraper)
+  if ((lead.data_id || lead.place_id) && !lead.owner_name) {
     try {
-      const result = await extractOwnerNameFromReviews(identifierForReviews, lead.business_name);
+      const result = await extractOwnerNameFromReviews(lead.data_id, lead.place_id, lead.business_name);
       if (result.owner_name) {
         updates.owner_name = result.owner_name;
         updates.owner_first_name = result.first_name || null;
@@ -77,6 +76,7 @@ router.post('/:id/enrich', async (c) => {
     success: true,
     owner_name: updates.owner_name || null,
     owner_first_name: updates.owner_first_name || null,
+    owner_name_source: updates.owner_name_source || null,
     enriched_at: updates.enriched_at,
   });
 });

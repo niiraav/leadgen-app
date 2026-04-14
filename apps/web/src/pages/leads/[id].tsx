@@ -440,6 +440,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
           ...prev,
           owner_name: result.owner_name || prev.owner_name,
           owner_first_name: result.owner_first_name || prev.owner_first_name,
+          owner_name_source: result.owner_name_source || (result.owner_name ? "gmb_reviews" : prev.owner_name_source),
           enriched_at: result.enriched_at,
         } : undefined);
       }
