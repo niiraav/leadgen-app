@@ -88,7 +88,7 @@ export default function LeadsPage() {
         status: l.status,
         hot_score: l.hot_score ?? 0,
         list_id: l.list_id ?? null,
-        source: l.source ?? "search",
+        source: l.source ?? "outscraper",
         notes: l.notes ?? null,
         created_at: l.created_at,
       }));

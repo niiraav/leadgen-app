@@ -1591,7 +1591,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 ) : (
                   <p className="text-xs text-text-faint">Not yet enriched</p>
                 )}
-                {lead?.data_id && !lead?.owner_name && (
+                {(lead?.data_id || lead?.place_id) && !lead?.owner_name && (
                   <button onClick={handleEnrich} disabled={enrichLoading}
                     className="mt-2 btn btn-ghost text-xs py-0.5 h-6 min-h-[24px]">
                     {enrichLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
