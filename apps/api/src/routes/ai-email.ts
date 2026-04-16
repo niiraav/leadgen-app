@@ -21,6 +21,7 @@ const aiEmailSchema = z.object({
   profile_cta: z.string().max(300).optional(),
   profile_calendly: z.string().max(500).optional(),
   profile_linkedin: z.string().max(500).optional(),
+  review_summary: z.string().max(5000).optional(),
 });
 
 router.post('/:id/ai-email', async (c) => {
@@ -57,10 +58,13 @@ router.post('/:id/ai-email', async (c) => {
       return c.json({ error: 'Lead not found' }, 404);
     }
 
-    const { tone, purpose, customInstructions, recontact, bio, owner_first_name, profile_usp, profile_services, profile_full_name, profile_signoff, profile_cta, profile_calendly, profile_linkedin } = parsed.data;
+    const { tone, purpose, customInstructions, recontact, bio, owner_first_name, profile_usp, profile_services, profile_full_name, profile_signoff, profile_cta, profile_calendly, profile_linkedin, review_summary } = parsed.data;
 
     // Use bio from request body, or fall back to the lead's cached ai_bio
     const leadBio = bio || (lead as any).ai_bio || undefined;
+
+    // Parse review summary JSON if provided
+    const leadReviewSummary = review_summary ? JSON.parse(review_summary) : (lead as any).review_summary || undefined;
 
     console.log(`[AI Email] Generating email for lead: ${lead.business_name}`);
 
@@ -90,6 +94,7 @@ router.post('/:id/ai-email', async (c) => {
         calendly: profile_calendly ?? null,
         linkedin: profile_linkedin ?? null,
       },
+      review_summary: leadReviewSummary,
     });
 
     // ── Increment AI email usage ──

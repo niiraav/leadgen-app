@@ -142,6 +142,7 @@ router.post('/', async (c) => {
       metadata: (data.metadata ?? {}) as Record<string, JsonValue>,
       place_id: data.place_id ?? null,
       data_id: data.data_id ?? null,
+      gmb_url: data.gmb_url ?? null,
       gmb_reviews_url: data.gmb_reviews_url ?? null,
     });
 
@@ -203,6 +204,10 @@ router.patch('/:id', async (c) => {
     if (parsed.data.readiness_flags !== undefined) updateData.readiness_flags = parsed.data.readiness_flags;
     if (parsed.data.tags !== undefined) updateData.tags = parsed.data.tags;
     if (parsed.data.metadata !== undefined) updateData.metadata = parsed.data.metadata;
+    if (parsed.data.place_id !== undefined) updateData.place_id = parsed.data.place_id || null;
+    if (parsed.data.data_id !== undefined) updateData.data_id = parsed.data.data_id || null;
+    if (parsed.data.gmb_url !== undefined) updateData.gmb_url = parsed.data.gmb_url || null;
+    if (parsed.data.gmb_reviews_url !== undefined) updateData.gmb_reviews_url = parsed.data.gmb_reviews_url || null;
 
     await updateLead(userId, id, updateData);
 
@@ -324,6 +329,7 @@ router.post('/batch', async (c) => {
         metadata: data.metadata ?? {},
         place_id: data.place_id ?? null,
         data_id: data.data_id ?? null,
+        gmb_url: data.gmb_url ?? null,
         gmb_reviews_url: data.gmb_reviews_url ?? null,
         reply_token: crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 8),
       };
@@ -720,20 +726,22 @@ router.post('/:id/generate-bio', async (c) => {
       `Rating: ${lead.rating || 'N/A'}\n` +
       `Website: ${lead.website_url || 'No website'}`;
 
-    const openRouterKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || '';
+    const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+    const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+    const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
 
-    if (!openRouterKey) return c.json({ error: 'OPENROUTER_API_KEY not configured' }, 500);
+    if (!llmKey) return c.json({ error: 'FIREWORKS_API_KEY not configured' }, 500);
 
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const resp = await fetch(llmBase + '/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + openRouterKey,
+        'Authorization': 'Bearer ' + llmKey,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://leadgen.app',
         'X-Title': 'LeadGen App',
       },
       body: JSON.stringify({
-        model: 'google/gemma-2-9b-it',
+        model: llmModel,
         messages: [
           { role: 'system', content: 'Write concise, professional business bios. Max 200 chars.' },
           { role: 'user', content: bioPrompt },
@@ -880,6 +888,7 @@ const aiEmailSchema = z.object({
   profile_calendly: z.string().optional(),
   profile_linkedin: z.string().optional(),
   owner_first_name: z.string().optional(),
+  review_summary: z.string().max(5000).optional(),
 });
 
 router.post('/:id/ai-email', async (c) => {
@@ -914,8 +923,10 @@ router.post('/:id/ai-email', async (c) => {
     let bio: string | null = (lead as any).ai_bio ?? null;
     if (!bio) {
       try {
-        const openRouterKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || '';
-        if (openRouterKey) {
+        const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+        const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+        const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
+        if (llmKey) {
           const bioPrompt = 'Write a concise business bio (max 200 characters) for:\n'
             + 'Name: ' + (lead.business_name || 'Unknown') + '\n'
             + 'Category: ' + (lead.category || 'Unknown') + '\n'
@@ -923,16 +934,16 @@ router.post('/:id/ai-email', async (c) => {
             + 'Description: ' + (lead.description || 'No description available') + '\n'
             + 'Rating: ' + (lead.rating || 'N/A') + '\n'
             + 'Website: ' + (lead.website_url || 'No website');
-          const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          const resp = await fetch(llmBase + '/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': 'Bearer ' + openRouterKey,
+              'Authorization': 'Bearer ' + llmKey,
               'Content-Type': 'application/json',
               'HTTP-Referer': 'https://leadgen.app',
               'X-Title': 'LeadGen App',
             },
             body: JSON.stringify({
-              model: 'google/gemma-2-9b-it',
+              model: llmModel,
               messages: [
                 { role: 'system', content: 'Write concise, professional business bios. Max 200 chars.' },
                 { role: 'user', content: bioPrompt },
@@ -963,6 +974,7 @@ router.post('/:id/ai-email', async (c) => {
       lead: { business_name: lead.business_name, email: lead.email ?? undefined, phone: lead.phone ?? undefined, website_url: lead.website_url ?? undefined, category: lead.category ?? undefined, city: lead.city ?? undefined, country: lead.country ?? undefined, rating: lead.rating ?? undefined } as any,
       tone: parsed.data.tone, purpose: parsed.data.purpose, customInstructions: parsed.data.customInstructions, recontact: parsed.data.recontact,
       bio: bio || undefined,
+      review_summary: parsed.data.review_summary ? JSON.parse(parsed.data.review_summary) : (lead as any).review_summary || undefined,
       profile: {
         usp: parsed.data.profile_usp || null,
         services: parsed.data.profile_services || [],

@@ -88,7 +88,7 @@ export interface BackendLead {
   ai_bio_generated_at?: string | null;
 }
 
-/** A raw search result from search providers (SerpAPI/Outscraper) */
+/** A raw search result from Outscraper */
 export interface BackendRawSearchLead {
   business_name: string;
   phone?: string;
@@ -149,6 +149,9 @@ export interface BackendLeadDetail {
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | null;
   contact_enrichment_provider?: string | null;
   contact_enrichment_error?: string | null;
+  // Review insights
+  review_summary?: Record<string, unknown> | null;
+  reviews_fetched_at?: string | null;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
@@ -251,6 +254,9 @@ export function mapBackendLead(raw: BackendLead): Lead {
     // AI bio (cached per lead, used invisibly for email personalization)
     ai_bio: raw.ai_bio ?? undefined,
     ai_bio_generated_at: raw.ai_bio_generated_at ?? undefined,
+    // Review insights
+    review_summary: (raw as any).review_summary ?? undefined,
+    reviews_fetched_at: (raw as any).reviews_fetched_at ?? undefined,
   };
 }
 
@@ -466,6 +472,7 @@ export const api = {
       profile_cta?: string;
       profile_calendly?: string;
       profile_linkedin?: string;
+      review_summary?: string;
     }) =>
       request<BackendAIEmailResponse>(`/leads/${leadId}/ai-email`, {
         method: "POST",
@@ -626,6 +633,10 @@ export const api = {
       request<any>(`/leads/${leadId}/notes`, {
         method: "PATCH",
         body: JSON.stringify({ notes }),
+      }),
+    fetchReviews: (leadId: string) =>
+      request<{ success: boolean; cached: boolean; review_summary: Record<string, unknown> }>(`/leads/${leadId}/fetch-reviews`, {
+        method: "POST",
       }),
   },
 

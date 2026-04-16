@@ -5,7 +5,7 @@ import { HotScoreBadge } from "@/components/ui/badge";
 import {
   Mail, Phone, MapPin, Globe, ExternalLink, Sparkles, Send, Loader2, Copy,
   Check, MessageSquare, Clock, AlertCircle, Pencil, ChevronDown, X,
-  ArrowLeft, Archive, Trash2, MessageCircle, Linkedin, Search,
+  ArrowLeft, Archive, Trash2, MessageCircle, Linkedin, Search, Info, RefreshCw, Star,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -13,7 +13,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { UpgradeRequiredError } from "@/lib/api";
 import { useProfile } from "@/contexts/profile-context";
-import type { Lead, LeadActivity } from "@leadgen/shared";
+import type { Lead, LeadActivity, ReviewSummary } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
 import { NotesEditor } from "@/components/leads/NotesEditor";
 import { ActivityLog } from "@/components/leads/ActivityLog";
@@ -113,6 +113,19 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
 
   // Sprint 8: Email verification confirmation
   const [confirmVerify, setConfirmVerify] = useState(false);
+
+  // ── AI Review Insights state ──
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState<string | null>(null);
+  const [ownerNoticeDismissed, setOwnerNoticeDismissed] = useState(false);
+
+  // Check localStorage for dismissed owner notice per lead
+  useEffect(() => {
+    if (leadId) {
+      const dismissed = localStorage.getItem('owner-notice-dismissed-' + leadId);
+      setOwnerNoticeDismissed(!!dismissed);
+    }
+  }, [leadId]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -336,6 +349,8 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       };
       // Inject lead's cached AI bio for personalization
       if (lead.ai_bio) params.bio = lead.ai_bio;
+      // Pass review summary for personalised email generation
+      if (lead.review_summary) params.review_summary = JSON.stringify(lead.review_summary);
       // Pass owner first name for personalized greeting
       if (lead.owner_first_name) params.owner_first_name = lead.owner_first_name;
       if (profile?.usp) params.profile_usp = profile.usp;
@@ -473,6 +488,40 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       console.error("Failed to save owner name:", err);
     }
   };
+
+  // ── Fetch AI Review Insights ──
+  const handleFetchReviews = useCallback(async () => {
+    if (!lead) return;
+    setReviewsLoading(true);
+    setReviewsError(null);
+    try {
+      const result = await api.leadActions.fetchReviews(leadId);
+      if (result.success && result.review_summary) {
+        const rs = result.review_summary as unknown as ReviewSummary;
+        queryClient.setQueryData(['lead', leadId], (prev: Lead | undefined) => prev ? {
+          ...prev,
+          review_summary: rs,
+          reviews_fetched_at: rs.fetched_at,
+          ...(rs.owner_name && !prev.owner_name ? {
+            owner_name: rs.owner_name,
+            owner_first_name: rs.owner_name.split(/\s+/)[0] || null,
+            owner_name_source: 'reviews',
+          } : {}),
+        } : undefined);
+        if (rs.owner_name && !lead.owner_name) {
+          setOwnerName(rs.owner_name);
+          setOwnerFirstName(rs.owner_name.split(/\s+/)[0] || '');
+        }
+      } else if (result.error) {
+        setReviewsError(result.error as string);
+      }
+    } catch (err: any) {
+      console.error('[AI Insights] Fetch failed:', err.message);
+      setReviewsError(err.message || 'Failed to analyze reviews');
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, [lead, leadId, queryClient]);
 
   const handleSaveSocial = async () => {
     if (!lead) return;
@@ -1031,6 +1080,127 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
           </Card>
           </div>
 
+          {/* AI Insights Card — show if lead has place_id or business name */}}
+          {(lead.place_id || lead.business_name) && (
+          <Card>
+            <div className="p-4">
+              {!lead.review_summary ? (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-4 h-4 text-blue" />
+                    <h3 className="text-sm font-semibold text-text">AI Insights</h3>
+                  </div>
+                  <p className="text-xs text-text-muted mb-3">Personalises your outreach email automatically</p>
+                  {reviewsError && (
+                    <div className="rounded-lg bg-red/5 border border-red/20 p-2 mb-3">
+                      <p className="text-[11px] text-red">{reviewsError}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleFetchReviews}
+                    disabled={reviewsLoading}
+                    className="btn btn-secondary text-xs py-1.5 h-8 w-full"
+                  >
+                    {reviewsLoading ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Analysing reviews... (this takes ~20s)
+                      </>
+                    ) : reviewsError ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Retry Analysis
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-3.5 h-3.5" />
+                        Get AI Insights
+                      </>
+                    )}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-blue" />
+                      <h3 className="text-sm font-semibold text-text">AI Insights</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {lead.reviews_fetched_at && (
+                        <span className="text-[10px] text-text-faint">
+                          {(() => {
+                            const days = Math.floor((Date.now() - new Date(lead.reviews_fetched_at).getTime()) / 86400000);
+                            return days < 1 ? 'Fetched today' : days === 1 ? '1 day ago' : days + ' days ago';
+                          })()}
+                        </span>
+                      )}
+                      <button
+                        onClick={handleFetchReviews}
+                        disabled={reviewsLoading}
+                        className="text-xs text-blue hover:underline flex items-center gap-1"
+                      >
+                        {reviewsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        Refresh
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    {(() => {
+                      const rs = lead.review_summary as unknown as ReviewSummary;
+                      if (!rs) return null;
+                      return (
+                        <>
+                          {rs.owner_name && rs.owner_confidence >= 0.7 && (
+                            <div>
+                              <span className="text-xs text-text-muted">Likely owner: </span>
+                              <span className="text-sm text-text font-medium">{rs.owner_name}</span>
+                            </div>
+                          )}
+                          {rs.staff_names && rs.staff_names.length > 0 && (
+                            <div>
+                              <span className="text-xs text-text-muted block mb-1">Team mentioned</span>
+                              <span className="text-xs text-text">{rs.staff_names.join(', ')}</span>
+                            </div>
+                          )}
+                          {rs.themes && rs.themes.length > 0 && (
+                            <div>
+                              <span className="text-xs text-text-muted block mb-1.5">Themes</span>
+                              <div className="flex flex-wrap gap-1.5">
+                                {rs.themes.map((theme, i) => (
+                                  <span key={i} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue/10 text-blue">
+                                    {theme}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {rs.pain_points && rs.pain_points.length > 0 && (
+                            <div>
+                              <span className="text-xs text-text-muted block mb-1">Customer concerns</span>
+                              <ul className="text-xs text-text space-y-0.5">
+                                {rs.pain_points.map((pp, i) => (
+                                  <li key={i}>{pp}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {lead.rating !== undefined && (
+                            <div className="text-xs text-text-muted flex items-center gap-1">
+                              <Star className="w-3 h-3 text-amber fill-amber" />
+                              {lead.rating} from {lead.review_count ?? 0} reviews
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
+          </Card>
+          )}
+
           <Card>
             <div className="p-4">
               <h3 className="text-sm font-semibold text-text">Business Info</h3>
@@ -1202,10 +1372,16 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     ) : (
                       <>
                         <Sparkles className="w-3.5 h-3.5" />
-                        AI Suggest
+                        {lead.review_summary ? 'Smart Suggest' : 'AI Suggest'}
                       </>
                     )}
                   </button>
+                  {!lead.review_summary && !emailLoading && (
+                    <p className="text-[10px] text-text-faint mt-1 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" />
+                      Get AI Insights first for a personalised email
+                    </p>
+                  )}
                 </div>
 
                 {emailError && (
@@ -1546,13 +1722,31 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     </p>
                     {lead.owner_name_source && (
                       <span className="inline-flex items-center gap-1 text-xs text-text-faint mt-0.5">
-                        {lead.owner_name_source === "gmb_reviews" ? "📍 Found in GMB Reviews" : "✏️ Entered manually"}
+                        {lead.owner_name_source === "gmb_reviews" ? "📍 Found in GMB Reviews" : lead.owner_name_source === "reviews" ? "🤖 Suggested by AI" : "✏️ Entered manually"}
                       </span>
                     )}
                     <button onClick={() => setShowOwnerEdit(true)}
                       className="text-xs text-blue hover:underline ml-2">
                       Edit
                     </button>
+                    {/* AI-suggested owner name disclaimer — only when source is 'reviews' and not yet dismissed */}
+                    {lead.owner_name_source === 'reviews' && !ownerNoticeDismissed && (
+                      <div className="mt-2 rounded-lg bg-blue/5 border border-blue/20 p-2 flex items-start gap-2">
+                        <Info className="w-3.5 h-3.5 text-blue mt-0.5 shrink-0" />
+                        <div className="text-xs text-text-muted flex-1">
+                          Owner name suggested by AI — extracted from customer reviews. Please verify before using in outreach.
+                        </div>
+                        <button
+                          onClick={() => {
+                            setOwnerNoticeDismissed(true);
+                            localStorage.setItem('owner-notice-dismissed-' + leadId, '1');
+                          }}
+                          className="text-text-faint hover:text-text shrink-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div>
@@ -1602,6 +1796,126 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             </div>
           </div>
         </Card>
+
+        {/* Review Insights Card */}
+        <Card className="p-0">
+          <div className="px-4 pt-4 pb-2 flex items-center gap-1.5">
+            <Star className="w-4 h-4 text-amber" />
+            <h3 className="text-sm font-semibold text-text">Review Insights</h3>
+            {lead?.review_summary && lead.reviews_fetched_at && (Date.now() - new Date(lead.reviews_fetched_at).getTime()) / 86400000 >= 7 && (lead?.place_id || lead?.business_name) && (
+              <button
+                onClick={handleFetchReviews}
+                disabled={reviewsLoading}
+                className="ml-auto text-xs text-blue hover:underline flex items-center gap-1"
+              >
+                {reviewsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                Refresh
+              </button>
+            )}
+          </div>
+
+          {lead?.review_summary ? (
+            <div className="px-4 pb-4 space-y-3">
+              {/* Themes */}
+              {lead.review_summary.themes && lead.review_summary.themes.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">What Customers Value</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {lead.review_summary.themes.map((t, i) => (
+                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green/10 text-green font-medium">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* USP Candidates */}
+              {lead.review_summary.usp_candidates && lead.review_summary.usp_candidates.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {lead.review_summary.usp_candidates.map((u, i) => (
+                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue/10 text-blue font-medium">{u}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Staff Names */}
+              {lead.review_summary.staff_names && lead.review_summary.staff_names.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {lead.review_summary.staff_names.map((s, i) => (
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-surface-2 text-text font-medium">
+                        <span className="w-4 h-4 rounded-full bg-purple/20 text-purple text-[9px] flex items-center justify-center font-bold">{s.charAt(0)}</span>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Pain Points */}
+              {lead.review_summary.pain_points && lead.review_summary.pain_points.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Pain Points</h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {lead.review_summary.pain_points.map((p, i) => (
+                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber/10 text-amber font-medium">{p}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Owner Evidence */}
+              {lead.review_summary.owner_name && lead.review_summary.owner_evidence && (
+                <div className="rounded-lg bg-surface-2/60 p-2.5">
+                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Owner Evidence</h4>
+                  <p className="text-xs text-text-muted italic">{lead.review_summary.owner_evidence}</p>
+                </div>
+              )}
+              {/* Fetched timestamp */}
+              {lead.reviews_fetched_at && (
+                <p className="text-[10px] text-text-faint pt-1">
+                  Insights from {lead.review_count || 0} reviews &middot; analyzed {new Date(lead.reviews_fetched_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          ) : reviewsLoading ? (
+            <div className="px-4 pb-4 flex items-center gap-2 text-sm text-text-muted">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Fetching reviews and extracting insights...
+            </div>
+          ) : reviewsError ? (
+            <div className="px-4 pb-4">
+              <div className="rounded-lg bg-red/5 border border-red/20 p-3 mb-2">
+                <p className="text-xs text-red font-medium">Failed to analyze reviews</p>
+                <p className="text-[11px] text-text-muted mt-0.5">{reviewsError}</p>
+              </div>
+              <button
+                onClick={handleFetchReviews}
+                disabled={reviewsLoading}
+                className="btn btn-secondary text-xs py-1.5 h-8 flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Try Again
+              </button>
+            </div>
+          ) : lead?.place_id || lead?.business_name ? (
+            <div className="px-4 pb-4">
+              <p className="text-xs text-text-muted mb-2">No review insights yet. Analyze customer reviews to discover what makes this business unique and personalize your outreach.</p>
+              <button
+                onClick={handleFetchReviews}
+                disabled={reviewsLoading}
+                className="btn btn-primary text-xs py-1.5 h-8 flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Analyze Reviews
+              </button>
+            </div>
+          ) : (
+            <div className="px-4 pb-4">
+              <p className="text-xs text-text-muted">No Google Maps data available for review analysis.</p>
+            </div>
+          )}
+        </Card>
+
         </div>
       </div>
     </div>

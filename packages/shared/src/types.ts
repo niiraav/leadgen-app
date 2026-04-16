@@ -11,7 +11,7 @@ export type LeadStatus =
   | 'not_interested'
   | 'archived';
 
-export type LeadSource = 'serpapi' | 'outscraper' | 'csv' | 'apollo' | 'manual';
+export type LeadSource = 'outscraper' | 'csv' | 'apollo' | 'manual';
 
 export type EmailTone = 'professional' | 'friendly' | 'direct';
 
@@ -85,6 +85,20 @@ export interface Lead {
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed';
   contact_enrichment_provider?: string;
   contact_enrichment_error?: string;
+  // Review insights (AI-extracted from Google Maps reviews)
+  review_summary?: ReviewSummary;
+  reviews_fetched_at?: string;
+}
+
+export interface ReviewSummary {
+  owner_name: string | null;
+  owner_confidence: number;
+  owner_evidence: string | null;
+  staff_names: string[];
+  themes: string[];
+  usp_candidates: string[];
+  pain_points: string[];
+  fetched_at: string;
 }
 
 export interface Notification {

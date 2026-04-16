@@ -81,14 +81,17 @@ router.get('/:id', async (c) => {
   if (!suggestedReply && reply.body_plain) {
     try {
       const lead = reply.lead;
-      const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+      const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+      const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
+      const openRouterResponse = await fetch(llmBase + '/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Authorization': `Bearer ${llmKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openai/gpt-4o-mini',
+          model: llmModel,
           messages: [
             {
               role: 'system',

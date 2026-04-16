@@ -94,6 +94,10 @@ export const leads = pgTable('leads', {
   twitterHandle: text('twitter_handle'),
   contacts: jsonb('contacts'), // cached array of enriched contacts
   companySocials: jsonb('company_socials').$type<Record<string, unknown>>(),
+
+  // Review insights (AI-extracted from Google Maps reviews)
+  reviewSummary: jsonb('review_summary').$type<Record<string, unknown>>().default(null),
+  reviewsFetchedAt: timestamp('reviews_fetched_at', { withTimezone: true }),
 });
 
 export const leadsRelations = relations(leads, ({ one }) => ({

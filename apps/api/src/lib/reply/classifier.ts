@@ -50,14 +50,17 @@ Reply subject: ${input.subject}
 Reply:
 ${input.bodyPlain.slice(0, 800)}`
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+  const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+  const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
+  const response = await fetch(llmBase + '/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      'Authorization': `Bearer ${llmKey}`,
       'Content-Type':  'application/json',
     },
     body: JSON.stringify({
-      model: 'openai/gpt-4o-mini',
+      model: llmModel,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },

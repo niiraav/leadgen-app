@@ -478,3 +478,67 @@ function safeJsonParse<T>(text: string, fallback: T): T {
     return fallback
   }
 }
+
+// ── Reviews fetch (Google Maps reviews-v3) ────────────────────────
+export interface ReviewItem {
+  text: string;
+  rating: number;
+  reviewer_name: string;
+  date: string;
+}
+
+/**
+ * Fetch up to 10 Google Maps reviews for a lead via Outscraper reviews-v3 API.
+ * Uses the same async poll pattern as searchGoogleMaps / contactsPreview.
+ *
+ * NOTE: Outscraper reviews-v3 does NOT return data when queried with
+ * `place_id:XXX` — it returns an empty data array. We must use a text
+ * query (business name + location) instead. The place_id is accepted
+ * as a fallback but is currently not used in the API query.
+ *
+ * @param placeId — Google Maps place_id (kept for compatibility, not used in query)
+ * @param businessName — Business name (e.g. "Tower of London")
+ * @param location — City or address (e.g. "London, UK")
+ * @returns Array of review objects (max 10)
+ */
+export async function fetchReviewsForPlace(
+  placeId: string,
+  businessName?: string,
+  location?: string,
+): Promise<ReviewItem[]> {
+  // Build a text query — place_id:XXX returns empty data on reviews-v3
+  const query = businessName
+    ? location
+      ? `${businessName}, ${location}`
+      : businessName
+    : `place_id:${placeId}`;
+
+  const params = new URLSearchParams();
+  params.set('query', query);
+  params.set('reviewsLimit', '10');
+  params.set('sort', 'newest');
+  // Do NOT set async=false — reviews-v3 returns empty data with sync mode.
+  // The fetchOutscraper helper handles async polling automatically.
+
+  const url = `${APP_BASE}/maps/reviews-v3?${params.toString()}`;
+  console.log(`[Outscraper] Fetching reviews for query: "${query}" (place_id: ${placeId})`);
+
+  const data = await fetchOutscraper(url);
+  if (!data) throw new Error('Outscraper reviews request failed — no data returned');
+
+  const rows = data?.data?.[0]?.reviews_data;
+  if (!rows || !Array.isArray(rows)) {
+    console.warn('[Outscraper] No reviews_data in response:', JSON.stringify(data).slice(0, 300));
+    throw new Error('No reviews found for this business on Google Maps');
+  }
+
+  const reviews: ReviewItem[] = rows.slice(0, 10).map((r: any) => ({
+    text: (r.review_text || '').slice(0, 300),
+    rating: r.review_rating ?? r.rating ?? 0,
+    reviewer_name: r.reviewer_name || 'Anonymous',
+    date: r.review_datetime_utc || r.review_date || '',
+  }));
+
+  console.log(`[Outscraper] Fetched ${reviews.length} reviews for query: "${query}"`);
+  return reviews;
+}

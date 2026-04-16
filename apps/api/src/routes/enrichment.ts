@@ -50,8 +50,9 @@ router.post('/:id/enrich', async (c) => {
 
   const updates: Record<string, unknown> = {};
 
-  // Owner name from GMB reviews — supports both data_id (SerpAPI) and place_id (Outscraper)
-  if ((lead.data_id || lead.place_id) && !lead.owner_name) {
+  // Owner name from GMB reviews (auto-extraction disabled — SerpAPI removed)
+  // Owner names can be set manually via PATCH /leads/:id/social-links
+  if (!lead.owner_name) {
     try {
       const result = await extractOwnerNameFromReviews(lead.data_id, lead.place_id, lead.business_name);
       if (result.owner_name) {

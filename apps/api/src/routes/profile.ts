@@ -133,7 +133,9 @@ router.post('/generate-usp', async (c) => {
     const svcLabels = (services as string[]).map((k) => SERVICE_LABELS[k] || k);
     const allServices = [...svcLabels, ...(custom_services as string[])];
 
-    const openRouterKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || '';
+    const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+    const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+    const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
     const systemMsg = `You are a sales copywriter. Write punchy one-liner pitches for sales professionals. Keep each under 20 words. Be specific, not vague. Never use words: 'leverage', 'synergy', 'empower', 'solutions', 'cutting-edge', 'best-in-class', 'holistic', 'seamless'. Return only valid JSON, no markdown.`;
     const userMsg = `Generate 3 different one-liner pitches for a ${role || 'sales professional'} at ${company_name || 'a company'} who sells: ${allServices.length > 0 ? allServices.join(', ') : 'services'}.
 Tone: ${tone || 'professional'}.
@@ -147,16 +149,16 @@ Each pitch should take a different angle:
 
 Return JSON: {"pitches":["string","string","string"]}`;
 
-    const resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const resp = await fetch(llmBase + '/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openRouterKey}`,
+        'Authorization': `Bearer ${llmKey}`,
         'Content-Type': 'application/json',
         'HTTP-Referer': 'https://leadgen.app',
         'X-Title': 'LeadGen App',
       },
       body: JSON.stringify({
-        model: 'openai/gpt-4o-mini',
+        model: llmModel,
         messages: [
           { role: 'system', content: systemMsg },
           { role: 'user', content: userMsg },

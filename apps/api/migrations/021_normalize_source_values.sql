@@ -1,10 +1,11 @@
 -- Phase 4: Normalize source values to match TS LeadSource union
--- ('serpapi' | 'outscraper' | 'csv' | 'apollo' | 'manual')
+-- ('outscraper' | 'csv' | 'apollo' | 'manual')
 --
 -- Context: Before the Outscraper migration (Phase 2), leads were saved
 -- with source='search' (Outscraper leads) and source='google-maps'
 -- (legacy search page label). Neither value is in the current TS type
 -- union. This migration aligns DB data with code expectations.
+-- Note: 'serpapi' was removed from the union in Phase 5 (SerpAPI removal).
 --
 -- Rationale:
 --   'search' → 'outscraper': 77 leads with ChIJ place_ids, no data_id.

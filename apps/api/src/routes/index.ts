@@ -14,6 +14,7 @@ import deadLeadsRouter from './dead-leads';
 import enrichmentRouter from './enrichment';
 import repliesRouter from './replies';
 import notificationsRouter from './notifications';
+import reviewsRouter from './reviews';
 
 const app = new Hono();
 
@@ -31,6 +32,7 @@ app.route('/billing', billingRouter);
 app.route('/analytics', analyticsRouter);
 app.route('/dead-leads', deadLeadsRouter);
 app.route('/enrichment', enrichmentRouter);
+app.route('/leads', reviewsRouter);
 app.route('/', repliesRouter);
 app.route('/notifications', notificationsRouter);
 

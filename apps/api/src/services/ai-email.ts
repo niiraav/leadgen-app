@@ -1,16 +1,17 @@
 import OpenAI from 'openai';
 import { applyUkCorrections } from '../lib/uk-corrections';
 
-const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
-const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
+const LLM_BASE = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+const LLM_KEY = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+const LLM_MODEL = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
 
-if (!OPENROUTER_KEY) {
-  console.warn('[OpenRouter] OPENROUTER_API_KEY not set — AI email generation will fail');
+if (!LLM_KEY) {
+  console.warn('[LLM] FIREWORKS_API_KEY not set — AI email generation will fail');
 }
 
 const openai = new OpenAI({
-  apiKey: OPENROUTER_KEY,
-  baseURL: OPENROUTER_BASE,
+  apiKey: LLM_KEY,
+  baseURL: LLM_BASE,
   defaultHeaders: {
     'HTTP-Referer': 'https://leadgen-app.local',
     'X-Title': 'LeadGen App',
@@ -35,6 +36,13 @@ export type AIEmailGenerationRequest = {
   customInstructions?: string;
   recontact?: boolean;
   bio?: string;
+  review_summary?: {
+    owner_name?: string | null;
+    staff_names?: string[];
+    themes?: string[];
+    usp_candidates?: string[];
+    pain_points?: string[];
+  } | null;
   profile?: {
     usp?: string | null;
     services?: string[];
@@ -121,6 +129,10 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
   basePrompt += '4. One clear call-to-action only.\n';
   basePrompt += '5. Never use: leverage, synergy, empower, solutions, cutting-edge, seamless.';
 
+  if (request.review_summary?.owner_name) {
+    basePrompt += '\n   If an owner name is provided in the review context, greet them by first name: "Hi [First Name],"';
+  }
+
   if (recontact) {
     basePrompt += '\n\nIMPORTANT: This is a RE-ENGAGEMENT email. The lead did NOT respond to previous outreach.';
     basePrompt += '\nUse a completely different angle. Keep it SHORT (4-5 sentences max).';
@@ -134,11 +146,29 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
   userPrompt += '\nTone: ' + tone + '\n';
   userPrompt += 'Purpose: ' + purpose + '\n';
   if (customInstructions) userPrompt += 'Additional instructions: ' + customInstructions + '\n';
+
+  // ── Review insights context — weave naturally into email ──
+  if (request.review_summary) {
+    const rs = request.review_summary;
+    const reviewLines: string[] = [];
+    reviewLines.push('Additional context from real customer reviews:');
+    if (rs.owner_name) reviewLines.push('- Owner name: ' + rs.owner_name);
+    if (rs.staff_names && rs.staff_names.length > 0) reviewLines.push('- Staff mentioned by customers: ' + rs.staff_names.join(', '));
+    if (rs.themes && rs.themes.length > 0) reviewLines.push('- What customers value most: ' + rs.themes.join(', '));
+    if (rs.usp_candidates && rs.usp_candidates.length > 0) reviewLines.push('- Differentiating strengths to reference: ' + rs.usp_candidates.join(', '));
+    if (rs.pain_points && rs.pain_points.length > 0) reviewLines.push('- Areas some customers mentioned: ' + rs.pain_points.join(', '));
+    if (reviewLines.length > 1) {
+      reviewLines.push('');
+      reviewLines.push('Use this context to write a specific, personalised cold email. Weave these details naturally into the narrative — do not list them, do not reference "reviews" or "research", and do not make the email feel data-driven. Write as if you simply know this business well and have a genuine reason to reach out.');
+      userPrompt += '\n' + joinLines(reviewLines) + '\n';
+    }
+  }
+
   userPrompt += '\nReturn ONLY a JSON object with "subject" and "body" keys. '
     + 'Make the email personalized to this business.';
 
   const response = await openai.chat.completions.create({
-    model: 'google/gemma-2-9b-it',
+    model: LLM_MODEL,
     messages: [
       { role: 'system', content: basePrompt },
       { role: 'user', content: userPrompt },
@@ -195,7 +225,7 @@ export async function classifyReply(replyText: string) {
     + '{"classification":"CATEGORY","reasoning":"brief explanation"}';
 
   const response = await openai.chat.completions.create({
-    model: 'google/gemma-2-9b-it',
+    model: LLM_MODEL,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: 'Reply text: ' + replyText.slice(0, 1000)},

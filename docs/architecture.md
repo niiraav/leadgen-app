@@ -63,10 +63,10 @@
 │  └──────────────────────────────────────────────────────────────────┘   │
 │                                                                          │
 │  Services:                                                               │
-│  ┌──────┐  ┌────────┐  ┌────────────┐  ┌────────┐  ┌────────────────┐  │
-│  │SerpAPI│ │AI Email│ │Owner Name  │  │Search  │  │ Sequence       │  │
-│  │Search │ │(OpenAI)│ │Extractor   │  │Filter  │  │ Scheduler      │  │
-│  └──────┘  └────────┘  └────────────┘  └────────┘  └────────────────┘  │
+│  ┌──────────┐  ┌────────┐  ┌────────────┐  ┌────────────────┐           │
+│  │Outscraper│ │AI Email│ │Owner Name  │  │ Sequence       │           │
+│  │Search    │ │(OpenAI)│ │Extractor   │  │ Scheduler      │           │
+│  └──────────┘  └────────┘  └────────────┘  └────────────────┘           │
 │                                                                          │
 │  Library:                                                                │
 │  ┌──────────┐  ┌──────────┐  ┌────────────────┐  ┌────────────────────┐│
@@ -80,10 +80,11 @@
 │   THIRD-PARTY APIs │            │              DATABASES                  │
 │                    │            │                                         │
 │  ┌──────────────┐  │            │  ┌───────────────────────────────────┐  │
-│  │  SerpAPI     │  │            │  │  Supabase (PostgreSQL)            │  │
+│  │  Outscraper  │  │            │  │  Supabase (PostgreSQL)            │  │
 │  │  Google Maps │  │            │  │  ┌─────────────────────────────┐  │  │
-│  │  Search      │  │            │  │  │  auth.users                 │  │  │
-│  └──────────────┘  │            │  │  │  profiles                   │  │  │
+│  │  Search +    │  │            │  │  │  auth.users                 │  │  │
+│  │  Enrichment  │  │            │  │  │  profiles                   │  │  │
+│  └──────────────┘  │
 │                    │            │  │  │  leads                      │  │  │
 │  ┌──────────────┐  │            │  │  │  usage_tracking             │  │  │
 │  │  OpenAI      │  │            │  │  │  lead_activities            │  │  │
@@ -119,7 +120,7 @@
 | **Database (prod)** | Supabase (PostgreSQL) | Auth, profiles, leads, sequences |
 | **Database (dev)** | SQLite + Drizzle ORM | Local development |
 | **Auth** | Supabase Auth (JWT) | Email/password + Google Sign-in |
-| **Lead Enrichment** | SerpAPI (Google Maps) | Business discovery, reviews, place_id |
+| **Lead Enrichment** | Outscraper (Google Maps) | Business discovery, contact enrichment |
 | **AI Generation** | OpenRouter → GPT-4o-mini | Email drafting, owner name extraction |
 | **Email Verification** | ZeroBounce | Email deliverability validation |
 | **Billing** | Stripe (v2025-02-24.acacia) | Subscriptions, checkouts, webhooks |
@@ -141,8 +142,8 @@ User enters business type + city
          ▼
 [Hono]    POST /search/google-maps
          │
-         ├─→ SerpAPI Google Maps Search
-         │    Returns: place_id, data_id, reviews_link, business details
+         ├─→ Outscraper Google Maps Search
+         │    Returns: business details, contact data
          │
          ├─→ Computes hot_score (no_website +25, no_email +5, etc.)
          │
@@ -175,10 +176,8 @@ User clicks "Auto-find owner name" on lead detail
          ├─→ Rate limit: 1 attempt per 7 days (reset if no owner found)
          │
          ├─→ extractOwnerNameFromReviews(lead.data_id)
-         │    ├─→ SerpAPI: google_maps_reviews engine
-         │    ├─→ Fetches up to 40 reviews, extracts owner_answer.name
-         │    ├─→ Finds most frequent owner reply name
-         │    ├─→ AI (GPT) extracts first name from full name
+         │    ├─→ Currently returns null (Outscraper has no reviews endpoint)
+         │    ├─→ Owner names can be set manually via PATCH /leads/:id/social-links
          │    └─→ Returns { owner_name, first_name, confidence }
          │
          ├─→ buildGmbUrl(lead) — creates canonical Google Maps deep link
@@ -278,10 +277,10 @@ On downgrade (free tier), user data preserved, access locked.
 
 | Column | Type | Source |
 |--------|------|--------|
-| `place_id` | TEXT | SerpAPI Google Maps search |
-| `data_id` | TEXT | SerpAPI Google Maps search |
+| `place_id` | TEXT | Google Maps place identifier |
+| `data_id` | TEXT | Google Maps data identifier |
 | `gmb_url` | TEXT | Canonical Google Maps deep link |
-| `gmb_reviews_url` | TEXT | Reviews link from SerpAPI |
+| `gmb_reviews_url` | TEXT | Reviews link (when available) |
 | `owner_name` | TEXT | Extracted from GMB reviews via AI |
 | `owner_first_name` | TEXT | First name from owner extraction |
 | `owner_name_source` | TEXT | `'gmb_reviews'` or `'manual'` |
@@ -354,7 +353,7 @@ leadgen-app/
 │   │   │   ├── index.ts              # Server entry, middleware, routes
 │   │   │   ├── db.ts                 # Supabase client, auth middleware
 │   │   │   ├── routes/               # Business logic endpoints
-│   │   │   ├── services/             # SerpAPI, AI email, enrichment
+│   │   │   ├── services/             # Outscraper, AI email, enrichment
 │   │   │   ├── scripts/              # Backfill geo-data script
 │   │   │   └── migrations/           # SQL migrations
 │   │   └── leadgen.db                # SQLite local database
