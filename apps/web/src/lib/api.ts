@@ -635,7 +635,7 @@ export const api = {
         body: JSON.stringify({ notes }),
       }),
     fetchReviews: (leadId: string) =>
-      request<{ success: boolean; cached: boolean; review_summary: Record<string, unknown> }>(`/leads/${leadId}/fetch-reviews`, {
+      request<{ success: boolean; cached: boolean; review_summary?: Record<string, unknown>; error?: string }>(`/leads/${leadId}/fetch-reviews`, {
         method: "POST",
       }),
   },

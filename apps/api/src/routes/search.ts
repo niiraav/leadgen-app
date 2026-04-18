@@ -176,4 +176,28 @@ router.post('/google-maps', async (c) => {
   }
 });
 
+// ─── GET /search/history ─────────────────────────────────────────────────────
+// Returns recent search history for the authenticated user
+
+router.get('/history', async (c) => {
+  try {
+    const userId = getUserId(c);
+
+    const { data, error } = await supabaseAdmin
+      .from('search_history')
+      .select('id, query, location, limit_count, result_count, params, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) throw error;
+
+    return c.json(data ?? []);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Search] GET /history Error:', message);
+    return c.json({ error: 'Failed to fetch search history', details: message }, 500);
+  }
+});
+
 export default router;
