@@ -1,13 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-
-interface SearchFormProps {
-  onSearch: (query: string, location: string, limit: number) => void;
-  loading: boolean;
-  recentSearches?: Array<{ query: string; location: string; limit_count: number }>;
-  savedFilters?: Array<{ id: string; name: string; filters: Record<string, any> }>;
-  onClearForm: () => void;
-}
+import { Search, MapPin, Hash, Globe, Star, MessageSquare, Loader2, X } from "lucide-react";
+import type { SearchFilterBarProps, SearchFilters } from "./types";
 
 const QUICK_TYPES = [
   { label: "Plumber", emoji: "🔧" },
@@ -20,26 +13,62 @@ const QUICK_TYPES = [
   { label: "Hairdresser", emoji: "💇" },
 ];
 
-export function SearchForm({ onSearch, loading, recentSearches, savedFilters, onClearForm }: SearchFormProps) {
-  const [query, setQuery] = useState("");
-  const [location, setLocation] = useState("");
-  const [limit, setLimit] = useState(25);
+export function SearchForm({
+  onSearch,
+  loading,
+  initialFilters,
+  onClearForm,
+}: SearchFilterBarProps) {
+  const [businessType, setBusinessType] = useState(
+    initialFilters?.businessType ?? ""
+  );
+  const [location, setLocation] = useState(initialFilters?.location ?? "");
+  const [leadCount, setLeadCount] = useState(
+    initialFilters?.leadCount ?? 25
+  );
+  const [hasWebsite, setHasWebsite] = useState<boolean | undefined>(
+    initialFilters?.hasWebsite
+  );
+  const [minRating, setMinRating] = useState<number | undefined>(
+    initialFilters?.minRating
+  );
+  const [maxReviews, setMaxReviews] = useState<number | undefined>(
+    initialFilters?.maxReviews
+  );
   const [showQuick, setShowQuick] = useState(false);
-  const [showRecent, setShowRecent] = useState(false);
-  const [showSaved] = useState(false);
   const quickRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = useCallback(() => {
-    if (!query.trim() || !location.trim()) return;
-    onSearch(query.trim(), location.trim(), limit);
-  }, [query, location, limit, onSearch]);
+  // Sync with initial filters on re-expand
+  useEffect(() => {
+    if (initialFilters) {
+      setBusinessType(initialFilters.businessType ?? "");
+      setLocation(initialFilters.location ?? "");
+      setLeadCount(initialFilters.leadCount ?? 25);
+      setHasWebsite(initialFilters.hasWebsite);
+      setMinRating(initialFilters.minRating);
+      setMaxReviews(initialFilters.maxReviews);
+    }
+  }, [initialFilters]);
 
-  const handleRecentClick = useCallback((s: { query: string; location: string; limit_count: number }) => {
-    setQuery(s.query);
-    setLocation(s.location);
-    setLimit(s.limit_count ?? 25);
-    setShowRecent(false);
-  }, []);
+  const handleSearch = useCallback(() => {
+    if (!businessType.trim() || !location.trim()) return;
+    const filters: SearchFilters = {
+      businessType: businessType.trim(),
+      location: location.trim(),
+      leadCount,
+    };
+    if (hasWebsite !== undefined) filters.hasWebsite = hasWebsite;
+    if (minRating !== undefined) filters.minRating = minRating;
+    if (maxReviews !== undefined) filters.maxReviews = maxReviews;
+    onSearch(filters);
+  }, [businessType, location, leadCount, hasWebsite, minRating, maxReviews, onSearch]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") handleSearch();
+    },
+    [handleSearch]
+  );
 
   // Close quick types on outside click
   useEffect(() => {
@@ -53,115 +82,166 @@ export function SearchForm({ onSearch, loading, recentSearches, savedFilters, on
   }, [showQuick]);
 
   return (
-    <div className="space-y-4">
-      {/* Business type — with quick chips */}
-      <div className="relative" ref={quickRef}>
-        <label className="block text-xs font-medium text-text-muted mb-1">Business type</label>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="e.g. Plumber, Dentist, Estate Agent..."
-          className="input w-full"
-          onFocus={() => setShowQuick(true)}
-        />
-        {showQuick && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-3 shadow-xl z-20">
-            <div className="text-xs text-text-faint mb-2">Quick select</div>
-            <div className="flex flex-wrap gap-1.5">
-              {QUICK_TYPES.map((t) => (
-                <button
-                  key={t.label}
-                  onClick={() => { setQuery(t.label); setShowQuick(false); }}
-                  className="text-xs px-2.5 py-1.5 rounded-lg bg-surface-2 hover:bg-blue/10 text-text transition-colors"
-                >
-                  {t.emoji} {t.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Location */}
-      <div>
-        <label className="block text-xs font-medium text-text-muted mb-1">Location</label>
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="e.g. Manchester, London SE1..."
-          className="input w-full"
-        />
-      </div>
-
-      {/* Leads count slider */}
-      <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-xs font-medium text-text-muted">Leads</label>
-          <span className="text-xs font-mono text-text">{limit}</span>
-        </div>
-        <input
-          type="range"
-          min={10}
-          max={100}
-          step={5}
-          value={limit}
-          onChange={(e) => setLimit(Number(e.target.value))}
-          className="w-full"
-        />
-        <div className="flex justify-between text-xs text-text-faint mt-1">
-          <span>10</span>
-          <span>100</span>
-        </div>
-      </div>
-
-      {/* Recent searches + Saved filters row */}
-      <div className="flex items-center gap-2">
-        {recentSearches && recentSearches.length > 0 && (
+    <div className="rounded-xl border border-border bg-surface p-4">
+      {/* Row 1: Business type + Location + Search button */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-3">
+        {/* Business type */}
+        <div className="relative flex-1" ref={quickRef}>
           <div className="relative">
-            <button
-              onClick={() => setShowRecent(!showRecent)}
-              className="text-xs text-text-faint hover:text-text transition-colors flex items-center gap-1"
-              title="Recent searches"
-            >
-              🕐 Recent
-            </button>
-            {showRecent && (
-              <div className="absolute top-full left-0 mt-1 w-64 bg-surface border border-border rounded-xl shadow-xl z-20 py-1 max-h-52 overflow-y-auto">
-                <div className="px-3 py-1.5 text-xs text-text-muted font-medium">Recent searches</div>
-                {recentSearches.map((s, i) => (
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+            <input
+              type="text"
+              value={businessType}
+              onChange={(e) => setBusinessType(e.target.value)}
+              onFocus={() => setShowQuick(true)}
+              onKeyDown={handleKeyDown}
+              placeholder="Business type"
+              className="input w-full pl-9"
+            />
+          </div>
+          {showQuick && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-3 shadow-xl z-20">
+              <div className="text-xs text-text-faint mb-2">Quick select</div>
+              <div className="flex flex-wrap gap-1.5">
+                {QUICK_TYPES.map((t) => (
                   <button
-                    key={i}
-                    onClick={() => handleRecentClick(s)}
-                    className="w-full text-left px-3 py-1.5 text-xs text-text hover:bg-surface-2 transition-colors"
+                    key={t.label}
+                    onClick={() => {
+                      setBusinessType(t.label);
+                      setShowQuick(false);
+                    }}
+                    className="text-xs px-2.5 py-1.5 rounded-lg bg-surface-2 hover:bg-blue/10 text-text transition-colors"
                   >
-                    <span className="font-medium">{s.query}</span>
-                    <span className="text-text-muted"> in </span>
-                    <span>{s.location}</span>
-                    <span className="text-text-muted ml-1">({s.limit_count})</span>
+                    {t.emoji} {t.label}
                   </button>
                 ))}
               </div>
-            )}
-          </div>
-        )}
-        {savedFilters && savedFilters.length > 0 && (
-          <button className="text-xs text-text-muted hover:text-text transition-colors" title="Saved filters">
-            ★ Saved filters
+            </div>
+          )}
+        </div>
+
+        {/* Location */}
+        <div className="relative sm:w-48">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Location"
+            className="input w-full pl-9"
+          />
+        </div>
+
+        {/* Lead count */}
+        <div className="relative sm:w-24">
+          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <input
+            type="number"
+            min={10}
+            max={100}
+            step={5}
+            value={leadCount}
+            onChange={(e) => setLeadCount(Number(e.target.value))}
+            onKeyDown={handleKeyDown}
+            placeholder="Count"
+            className="input w-full pl-9"
+          />
+        </div>
+
+        {/* Search button */}
+        <button
+          onClick={handleSearch}
+          disabled={loading || !businessType.trim() || !location.trim()}
+          className="btn btn-primary shrink-0 disabled:opacity-50 sm:w-auto w-full"
+        >
+          {loading ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : (
+            <Search className="w-4 h-4 mr-2" />
+          )}
+          {loading ? "Searching..." : "Search"}
+        </button>
+      </div>
+
+      {/* Row 2: Optional filters — compact toggles */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Has website toggle */}
+        <button
+          onClick={() =>
+            setHasWebsite(
+              hasWebsite === undefined ? true : hasWebsite ? false : undefined
+            )
+          }
+          className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
+            hasWebsite === true
+              ? "bg-blue/10 border-blue/30 text-blue"
+              : hasWebsite === false
+              ? "bg-red/10 border-red/30 text-red"
+              : "bg-surface-2 border-border text-text-muted"
+          }`}
+          title="Filter by website presence"
+        >
+          <Globe className="w-3 h-3" />
+          {hasWebsite === true
+            ? "Has website"
+            : hasWebsite === false
+            ? "No website"
+            : "Website"}
+        </button>
+
+        {/* Min rating */}
+        <div className="flex items-center gap-1">
+          <Star className="w-3 h-3 text-text-faint" />
+          <select
+            value={minRating ?? ""}
+            onChange={(e) =>
+              setMinRating(e.target.value ? Number(e.target.value) : undefined)
+            }
+            className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-text-muted"
+          >
+            <option value="">Any rating</option>
+            <option value="3">3+</option>
+            <option value="3.5">3.5+</option>
+            <option value="4">4+</option>
+            <option value="4.5">4.5+</option>
+          </select>
+        </div>
+
+        {/* Max reviews */}
+        <div className="flex items-center gap-1">
+          <MessageSquare className="w-3 h-3 text-text-faint" />
+          <select
+            value={maxReviews ?? ""}
+            onChange={(e) =>
+              setMaxReviews(
+                e.target.value ? Number(e.target.value) : undefined
+              )
+            }
+            className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-text-muted"
+          >
+            <option value="">Any reviews</option>
+            <option value="10">≤10</option>
+            <option value="30">≤30</option>
+            <option value="100">≤100</option>
+          </select>
+        </div>
+
+        {/* Clear all filters */}
+        {(hasWebsite !== undefined ||
+          minRating !== undefined ||
+          maxReviews !== undefined ||
+          businessType ||
+          location) && (
+          <button
+            onClick={onClearForm}
+            className="text-xs px-2 py-1.5 text-text-faint hover:text-text transition-colors flex items-center gap-1"
+          >
+            <X className="w-3 h-3" />
+            Clear
           </button>
         )}
       </div>
-
-      {/* Search button */}
-      <button
-        onClick={handleSearch}
-        disabled={loading || !query.trim() || !location.trim()}
-        className="btn btn-primary w-full disabled:opacity-50"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-        {loading ? "Searching..." : "Search →"}
-      </button>
     </div>
   );
 }

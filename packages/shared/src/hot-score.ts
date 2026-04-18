@@ -1,14 +1,25 @@
-import type { RawLead } from './types';
-
 /**
  * Hot Score computation — run on every lead import.
  * Scoring logic:
  *   No website       → +25 (strong signal they need the service)
  *   Low reviews (<10) → +10 (opportunity to build reputation)
  *   High rating (≥4.5) → +10 (established, likely has budget)
- *   No email         → -10 (harder to contact)
+ *   No phone         → flag only (neutral — may be enrichable)
  */
-export function computeHotScore(lead: RawLead): { score: number; flags: string[] } {
+
+interface HotScoreInput {
+  business_name: string;
+  phone?: string | null;
+  website_url?: string | null;
+  address?: string | null;
+  rating?: number | null;
+  review_count?: number | null;
+  category?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export function computeHotScore(lead: HotScoreInput): { score: number; flags: string[] } {
   let score = 50;
   const flags: string[] = [];
 

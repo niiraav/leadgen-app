@@ -146,7 +146,7 @@ export interface BackendLeadDetail {
   contacts?: Record<string, unknown>[] | null;
   company_socials?: Record<string, unknown> | null;
   // Enrichment status tracking
-  contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | null;
+  contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | 'no_data' | null;
   contact_enrichment_provider?: string | null;
   contact_enrichment_error?: string | null;
   // Review insights

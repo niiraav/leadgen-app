@@ -82,7 +82,7 @@ export interface Lead {
   // Sprint 9: Reply tracking token
   reply_token?: string;
   // Enrichment status tracking
-  contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed';
+  contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | 'no_data';
   contact_enrichment_provider?: string;
   contact_enrichment_error?: string;
   // Review insights (AI-extracted from Google Maps reviews)
@@ -174,4 +174,32 @@ export interface DashboardKPI {
   contacted_this_week: number;
   replies: number;
   open_sequences: number;
+}
+
+// ════════════════════════════════════════════
+// Search & contact status enums
+// ════════════════════════════════════════════
+
+/** Email availability state — used in search results and lead cards */
+export type EmailLockState =
+  | 'unknown'     // Not enriched yet, no data
+  | 'available'   // Enrichment found an email (still masked until credit spend)
+  | 'verified'    // Email exists and passed verification
+  | 'unavailable' // Enrichment ran, no email found
+  | 'locked';     // Email exists but requires credit to reveal
+
+/** Contact channel availability — for phone/WhatsApp/socials icons */
+export type ContactAvailability =
+  | 'available'   // Known to exist (e.g., phone from search data)
+  | 'unavailable' // Known to not exist
+  | 'unknown';    // Not checked yet
+
+/** Quality score tier — drives color in score bars and badges */
+export type ScoreTier = 'hot' | 'warm' | 'cold';
+
+/** Map a numeric hot_score (0-100) to a ScoreTier */
+export function getScoreTier(score: number): ScoreTier {
+  if (score >= 70) return 'hot';
+  if (score >= 50) return 'warm';
+  return 'cold';
 }

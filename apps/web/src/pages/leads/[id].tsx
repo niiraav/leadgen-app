@@ -5,7 +5,7 @@ import { HotScoreBadge } from "@/components/ui/badge";
 import {
   Mail, Phone, MapPin, Globe, ExternalLink, Sparkles, Send, Loader2, Copy,
   Check, MessageSquare, Clock, AlertCircle, Pencil, ChevronDown, X,
-  ArrowLeft, Archive, Trash2, MessageCircle, Linkedin, Search, Info, RefreshCw, Star,
+  Linkedin, Search, Info, RefreshCw, Star,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -13,10 +13,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { UpgradeRequiredError } from "@/lib/api";
 import { useProfile } from "@/contexts/profile-context";
-import type { Lead, LeadActivity, ReviewSummary } from "@leadgen/shared";
+import type { Lead, ReviewSummary } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
 import { NotesEditor } from "@/components/leads/NotesEditor";
-import { ActivityLog } from "@/components/leads/ActivityLog";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 
 // ─── Fallback subjects/body ─────────────────────────────────────────────────
@@ -75,7 +74,6 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
 
   // — Enrichment state —
   const [enrichLoading, setEnrichLoading] = useState(false);
@@ -679,7 +677,11 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       )}
 
       <div className="space-y-6 max-w-6xl">
-      {/* Header */}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          1) LEAD SUMMARY
+          Business name, category, location, rating, review count, status badge
+          ══════════════════════════════════════════════════════════════════ */}
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -748,17 +750,24 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Lead Details */}
+        {/* ══════════════════════════════════════════════════════════════════
+            LEFT COLUMN (1/3)
+            ══════════════════════════════════════════════════════════════════ */}
         <div className="lg:col-span-1 space-y-4">
+
+          {/* ──────────────────────────────────────────────────────────────
+              2) CONTACT & PROFILE
+              All reachability + identity + enrichment in one card
+              ────────────────────────────────────────────────────────────── */}
           <Card>
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-text">Contact Info</h3>
+                <h3 className="text-sm font-semibold text-text">Contact & Profile</h3>
                 {!editing && (
                   <button
                     onClick={startEditing}
                     className="rounded-full p-1.5 text-text-faint hover:text-blue hover:bg-blue/5 transition-colors"
-                    title="Edit lead info"
+                    title="Edit contact info"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -783,277 +792,523 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                   </div>
                 )}
               </div>
+
+              {/* ── Known contact data ── */}
               <div className="space-y-3 mt-3">
                 {editing ? (
                   <>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">Email</label>
-                      <input
-                        type="email"
-                        value={editForm.email}
+                      <input type="email" value={editForm.email}
                         onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
-                        placeholder="Add email..."
-                        className="input text-sm"
-                      />
+                        placeholder="Add email..." className="input text-sm" />
                     </div>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">Phone</label>
-                      <input
-                        type="tel"
-                        value={editForm.phone}
+                      <input type="tel" value={editForm.phone}
                         onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
-                        placeholder="Add phone..."
-                        className="input text-sm"
-                      />
+                        placeholder="Add phone..." className="input text-sm" />
                     </div>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">Website</label>
-                      <input
-                        type="url"
-                        value={editForm.website_url}
+                      <input type="url" value={editForm.website_url}
                         onChange={(e) => setEditForm((f) => ({ ...f, website_url: e.target.value }))}
-                        placeholder="Add website..."
-                        className="input text-sm"
-                      />
+                        placeholder="Add website..." className="input text-sm" />
                     </div>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">City</label>
-                      <input
-                        type="text"
-                        value={editForm.city}
+                      <input type="text" value={editForm.city}
                         onChange={(e) => setEditForm((f) => ({ ...f, city: e.target.value }))}
-                        placeholder="Add city..."
-                        className="input text-sm"
-                      />
+                        placeholder="Add city..." className="input text-sm" />
                     </div>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">Category</label>
-                      <input
-                        type="text"
-                        value={editForm.category}
+                      <input type="text" value={editForm.category}
                         onChange={(e) => setEditForm((f) => ({ ...f, category: e.target.value }))}
-                        placeholder="Add category..."
-                        className="input text-sm"
-                      />
+                        placeholder="Add category..." className="input text-sm" />
                     </div>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">Address</label>
-                      <input
-                        type="text"
-                        value={editForm.address}
+                      <input type="text" value={editForm.address}
                         onChange={(e) => setEditForm((f) => ({ ...f, address: e.target.value }))}
-                        placeholder="Add address..."
-                        className="input text-sm"
-                      />
+                        placeholder="Add address..." className="input text-sm" />
                     </div>
                     <div>
                       <label className="text-xs text-text-muted mb-1 block">Notes</label>
-                      <textarea
-                        value={editForm.notes}
+                      <textarea value={editForm.notes}
                         onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                         placeholder="Add notes..."
                         className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
-                        rows={3}
-                      />
+                        rows={3} />
                     </div>
                   </>
                 ) : (
                   <>
-                    {lead.email ? (
-                      <div className="flex items-center gap-3 text-sm">
-                        <Mail className="w-4 h-4 text-text-faint shrink-0" />
-                        <span className="text-text">{lead.email}</span>
-                        {emailBadge && (
-                          <span className={`text-xs ${emailBadge.className}`} title={emailBadge.tooltip}>
-                            {EMAIL_STATUS_BADGE[lead.email_status || ""]?.label === "Valid"
-                              ? "✓"
-                              : emailBadge.label === "Invalid"
-                              ? "✗"
-                              : emailBadge.label === "Catch-all"
-                              ? "⚠"
-                              : "?"}
-                          </span>
+                    {/* Enriched contact data — takes priority when available */}
+                    {lead.contact_full_name || lead.contact_email ? (
+                      <div className="space-y-2.5 text-sm">
+                        {lead.contact_full_name && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-text font-medium">{lead.contact_full_name}</span>
+                            {lead.contact_title && <span className="text-text-muted text-xs">· {lead.contact_title}</span>}
+                          </div>
                         )}
-                        {hasEmail && (
-                          <button
-                            onClick={verifyEmail}
-                            disabled={verifying}
-                            className="text-xs text-blue hover:underline disabled:opacity-50"
-                          >
-                            {verifying ? <Loader2 className="w-3 h-3 inline animate-spin" /> : "Verify"}
-                          </button>
+                        {lead.contact_email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="w-3.5 h-3.5 text-text-faint" />
+                            <span className="text-text">{lead.contact_email}</span>
+                            {lead.email_status === "valid" && <span className="text-green text-xs">✓</span>}
+                            {lead.email_status === "catch-all" && <span className="text-amber text-xs">⚠</span>}
+                            {lead.email_status === "invalid" && <span className="text-red text-xs">✗</span>}
+                            {lead.contact_email_type && (
+                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                                lead.contact_email_type === "direct" ? "bg-green/10 text-green" : "bg-surface-2 text-text-muted"
+                              }`}>
+                                {lead.contact_email_type === "direct" ? "Direct" : "Generic"}
+                              </span>
+                            )}
+                            {repliesQuery.data?.replies?.length ? (
+                              <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                                <MessageSquare className="w-2.5 h-2.5" />
+                                {repliesQuery.data.replies!.length} repl{repliesQuery.data.replies!.length === 1 ? "y" : "ies"}
+                              </span>
+                            ) : null}
+                          </div>
+                        )}
+                        {lead.contact_phone && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-3.5 h-3.5 text-text-faint" />
+                            <span className="text-text">{lead.contact_phone}</span>
+                          </div>
+                        )}
+                        {lead.contact_linkedin && (
+                          <div className="flex items-center gap-2">
+                            <Linkedin className="w-3.5 h-3.5 text-text-faint" />
+                            <a href={lead.contact_linkedin} target="_blank" rel="noopener noreferrer"
+                              className="text-blue text-xs hover:underline">LinkedIn</a>
+                          </div>
+                        )}
+                        {lead.company_size && (
+                          <div className="text-xs text-text-muted">Company size: {lead.company_size}</div>
                         )}
                       </div>
                     ) : (
-                      <div className="flex items-center gap-3 text-sm">
-                        <AlertCircle className="w-4 h-4 text-red shrink-0" />
-                        <span className="text-xs text-text-muted">No email — add one below</span>
-                      </div>
-                    )}
-                    {lead.phone && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <Phone className="w-4 h-4 text-text-faint shrink-0" />
-                        <span className="text-text">{lead.phone}</span>
-                      </div>
-                    )}
-                    {lead.website_url && (
-                      <div className="flex items-center gap-3 text-sm">
-                        <Globe className="w-4 h-4 text-text-faint shrink-0" />
-                        <a
-                          href={lead.website_url?.startsWith('http') ? lead.website_url : `https://${lead.website_url}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue hover:underline flex items-center gap-1"
-                        >
-                          {lead.website_url?.replace(/^https?:\/\//, '')}
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
-                      </div>
-                    )}
-                    {!lead.email && !lead.phone && !lead.website_url && (
-                      <p className="text-xs text-text-faint italic">Click pencil to add contact info</p>
+                      <>
+                        {/* Manual contact fields */}
+                        {lead.email ? (
+                          <div className="flex items-center gap-3 text-sm">
+                            <Mail className="w-4 h-4 text-text-faint shrink-0" />
+                            <span className="text-text">{lead.email}</span>
+                            {emailBadge && (
+                              <span className={`text-xs ${emailBadge.className}`} title={emailBadge.tooltip}>
+                                {EMAIL_STATUS_BADGE[lead.email_status || ""]?.label === "Valid"
+                                  ? "✓"
+                                  : emailBadge.label === "Invalid"
+                                  ? "✗"
+                                  : emailBadge.label === "Catch-all"
+                                  ? "⚠"
+                                  : "?"}
+                              </span>
+                            )}
+                            {hasEmail && (
+                              <button onClick={verifyEmail} disabled={verifying}
+                                className="text-xs text-blue hover:underline disabled:opacity-50">
+                                {verifying ? <Loader2 className="w-3 h-3 inline animate-spin" /> : "Verify"}
+                              </button>
+                            )}
+                          </div>
+                        ) : null}
+                        {lead.phone && (
+                          <div className="flex items-center gap-3 text-sm">
+                            <Phone className="w-4 h-4 text-text-faint shrink-0" />
+                            <span className="text-text">{lead.phone}</span>
+                          </div>
+                        )}
+                        {lead.website_url && (
+                          <div className="flex items-center gap-3 text-sm">
+                            <Globe className="w-4 h-4 text-text-faint shrink-0" />
+                            <a
+                              href={lead.website_url?.startsWith('http') ? lead.website_url : `https://${lead.website_url}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="text-blue hover:underline flex items-center gap-1"
+                            >
+                              {lead.website_url?.replace(/^https?:\/\//, '')}
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
+
+                        {/* ── Empty state 1: No contact data, enrichment not attempted (has identifier) ── */}
+                        {!lead.email && !lead.phone && !lead.website_url
+                          && (lead.place_id || lead.data_id)
+                          && lead.contact_enrichment_status !== 'success'
+                          && lead.contact_enrichment_status !== 'partial'
+                          && lead.contact_enrichment_status !== 'no_data' && (
+                          <div className="text-xs space-y-1">
+                            <p className="text-text-muted">No contact details yet.</p>
+                            <p className="text-text-faint">Enrich to find public contacts, or add manually.</p>
+                          </div>
+                        )}
+
+                        {/* ── Empty state 2: Enrichment attempted, no_data ── */}
+                        {lead.contact_enrichment_status === 'no_data'
+                          && !lead.email && !lead.phone && !lead.website_url && (
+                          <div className="text-xs space-y-1">
+                            <p className="text-text-muted">No public contacts found for this business.</p>
+                            <p className="text-text-faint">You can add contact details manually.</p>
+                          </div>
+                        )}
+
+                        {/* ── Empty state 3: No identifier available (no place_id AND no data_id) ── */}
+                        {!lead.email && !lead.phone && !lead.website_url
+                          && !lead.place_id && !lead.data_id
+                          && lead.contact_enrichment_status !== 'no_data' && (
+                          <p className="text-xs text-text-muted">Contact details unavailable.</p>
+                        )}
+
+                        {/* Verify email button (enriched contact email exists but not verified) */}
+                        {lead.contact_email && !(lead as any).email_verified_at && !lead.email_status && (
+                          <div className="mt-2">
+                            {!confirmVerify ? (
+                              <button onClick={() => setConfirmVerify(true)} disabled={verifying}
+                                className="btn btn-ghost text-xs w-full text-amber">
+                                {verifying ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+                                Verify email — 1 credit
+                              </button>
+                            ) : (
+                              <div className="rounded-lg bg-surface-2 p-2 text-xs space-y-2">
+                                <p className="text-text">Use 1 verification credit?</p>
+                                <div className="flex gap-2">
+                                  <button onClick={handleVerifyEmail} disabled={verifying}
+                                    className="btn btn-primary text-xs flex-1 disabled:opacity-50">
+                                    {verifying ? "Verifying..." : "Confirm"}
+                                  </button>
+                                  <button onClick={() => setConfirmVerify(false)}
+                                    className="btn btn-ghost text-xs flex-1">Cancel</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}
               </div>
-            </div>
-          </Card>
 
-          {/* Sprint 8: Contact Enrichment Card */}
-          <div>
-          <Card>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-text">Contact</h3>
-                {lead.contact_enrichment_status === "success" && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-green/10 text-green px-1.5 py-0.5 rounded-full">
-                    <Sparkles className="w-2.5 h-2.5" />Enriched
-                  </span>
-                )}
-                {lead.contact_enrichment_status === "partial" && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber/10 text-amber px-1.5 py-0.5 rounded-full">
-                    <Sparkles className="w-2.5 h-2.5" />Partial
-                  </span>
-                )}
-                {lead.contact_enrichment_status === "failed" && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-red/10 text-red px-1.5 py-0.5 rounded-full" title={lead.contact_enrichment_error || undefined}>
-                    Failed
-                  </span>
-                )}
-                {lead.contact_enrichment_status === "no_data" && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-full">
-                    No data
-                  </span>
-                )}
-              </div>
+              {/* ── Enrichment preview + CTA ── */}
+              {/* Show enrichment section ONLY when:
+                  - preview data exists (total_contacts > 0) AND already_enriched is false AND status is NOT success/partial
+                  - OR status is null/undefined/failed (CTA still needed)
+                  Skip entirely when: already_enriched is true OR status is success/partial/no_data */}
+              {!(lead.contact_enrichment_status === 'success' || lead.contact_enrichment_status === 'partial' || lead.contact_enrichment_status === 'no_data')
+                && !lead.contact_enriched_at && (
+                <div className="mt-4 pt-3 border-t border-border/40">
 
-              {/* Already enriched — show full contact */}
-              {lead.contact_full_name || lead.contact_email ? (
-                <div className="space-y-2.5 text-sm">
-                  {lead.contact_full_name && (
-                    <div className="flex items-center gap-2"><span className="text-text font-medium">{lead.contact_full_name}</span>{lead.contact_title && <span className="text-text-muted text-xs">· {lead.contact_title}</span>}</div>
-                  )}
-                  {lead.contact_email && (
-                    <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-text-faint" /><span className="text-text">{lead.contact_email}</span>{lead.email_status === "valid" && <span className="text-green text-xs">✓</span>}{lead.email_status === "catch-all" && <span className="text-amber text-xs">⚠</span>}{lead.email_status === "invalid" && <span className="text-red text-xs">✗</span>}{repliesQuery.data?.replies?.length ? <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-full flex items-center gap-1"><MessageSquare className="w-2.5 h-2.5" />{repliesQuery.data.replies!.length} repl{repliesQuery.data.replies!.length === 1 ? "y" : "ies"}</span> : null}</div>
-                  )}
-                  {lead.contact_phone && (
-                    <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-text-faint" /><span className="text-text">{lead.contact_phone}</span></div>
-                  )}
-                  {lead.contact_linkedin && (
-                    <div className="flex items-center gap-2"><Linkedin className="w-3.5 h-3.5 text-text-faint" /><a href={lead.contact_linkedin} target="_blank" rel="noopener noreferrer" className="text-blue text-xs hover:underline">LinkedIn</a></div>
-                  )}
-                  {lead.company_size && (
-                    <div className="text-xs text-text-muted">Company size: {lead.company_size}</div>
-                  )}
-                </div>
-              ) : (
-                <>
-                  {/* Previous enrichment error — show specific message */}
-                  {lead.contact_enrichment_status === "failed" && lead.contact_enrichment_error && (
-                    <div className="rounded-lg bg-red/5 border border-red/20 p-2.5 mb-3 text-xs text-red space-y-1">
+                  {/* Enrichment failed banner */}
+                  {lead.contact_enrichment_status === 'failed' && (
+                    <div className="rounded-lg bg-red/5 border border-red/20 p-2.5 mb-2 text-xs text-red space-y-1">
                       <p className="font-medium">Enrichment failed</p>
-                      <p className="text-text-muted">{lead.contact_enrichment_error}</p>
+                      {lead.contact_enrichment_error && <p className="text-text-muted">{lead.contact_enrichment_error}</p>}
                       <p className="text-text-faint italic">You can retry — the error may be transient.</p>
                     </div>
                   )}
-                  {/* Previous enrichment returned no data */}
-                  {lead.contact_enrichment_status === "no_data" && (
-                    <div className="rounded-lg bg-surface-2 border border-border/40 p-2.5 mb-3 text-xs space-y-1">
-                      <p className="font-medium text-text-muted">No enrichment data available</p>
-                      <p className="text-text-faint">No public contacts found for this business. Some businesses simply don't have public contact information.</p>
-                    </div>
-                  )}
 
-                  {/* Preview teaser card (free) */}
+                  {/* Preview teaser — only when preview data exists AND already_enriched is false AND status NOT success/partial */}
                   {previewLoading ? (
-                    <div className="flex items-center gap-2 text-xs text-text-muted"><Loader2 className="w-3 h-3 animate-spin" />Checking for contacts...</div>
-                  ) : contactPreview && contactPreview.total_contacts > 0 ? (
-                    <div className="rounded-lg bg-blue/5 border border-blue/20 p-3 mb-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs text-text-muted">
+                      <Loader2 className="w-3 h-3 animate-spin" />Checking for contacts...
+                    </div>
+                  ) : contactPreview && contactPreview.total_contacts > 0 && !contactPreview.already_enriched ? (
+                    <div className="rounded-lg bg-blue/5 border border-blue/20 p-3 mb-2 space-y-2">
                       <div className="flex items-center gap-1.5 text-sm text-text font-medium">
                         <Sparkles className="w-3.5 h-3.5 text-blue" />
                         {contactPreview.total_contacts} contact{contactPreview.total_contacts > 1 ? "s" : ""} found
                         {contactPreview.direct_emails > 0 && (
-                          <span className="text-xs text-text-muted">({contactPreview.direct_emails} with direct email)</span>
+                          <span className="text-xs text-text-muted">({contactPreview.direct_emails} direct{contactPreview.direct_emails > 1 ? "s" : ""})</span>
                         )}
                       </div>
+                      {/* Masked preview rows */}
                       {contactPreview.first_name && (
-                        <div className="text-xs text-text-muted">
-                          Example: <span className="text-text font-medium">{contactPreview.first_name}</span> — {contactPreview.first_email || "No email shown"}
+                        <div className="text-xs text-text-muted flex items-center gap-2">
+                          <span className="text-text font-medium">{contactPreview.first_name.charAt(0)}***</span>
+                          {contactPreview.first_email && (
+                            <>
+                              <span>·</span>
+                              <span>{contactPreview.first_email.charAt(0)}***@{contactPreview.first_email.split('@')[1]}</span>
+                              {contactPreview.direct_emails > 0 && (
+                                <span className="text-[10px] font-medium bg-green/10 text-green px-1.5 py-0.5 rounded-full">Direct</span>
+                              )}
+                              {contactPreview.generic_emails > 0 && contactPreview.direct_emails === 0 && (
+                                <span className="text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-full">Generic</span>
+                              )}
+                            </>
+                          )}
                         </div>
                       )}
-                      <div className="text-xs text-text-muted italic">Unlock to view all contacts</div>
+                      <div className="text-xs text-text-muted italic">Unlock to view all contact details</div>
                     </div>
-                  ) : contactPreview && contactPreview.total_contacts === 0 && lead.contact_enrichment_status !== "no_data" ? (
-                    <p className="text-xs text-text-muted mb-2">No contacts found via public data. Enrichment may still return generic emails.</p>
                   ) : null}
 
-                  {/* Enrich button — show for pending, failed, and no_data (retry) */}
-                  {lead.contact_enrichment_status !== "success" && lead.contact_enrichment_status !== "partial" && (
-                    !confirmEnrich ? (
-                      <button
-                        onClick={() => { setEnrichmentVisible(true); setConfirmEnrich(true); }}
-                        disabled={enrichingContact}
-                        className="btn btn-ghost text-xs w-full text-blue"
-                      >
-                        {enrichingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Search className="w-3.5 h-3.5 mr-1" />}
-                        {lead.contact_enrichment_status === "failed" || lead.contact_enrichment_status === "no_data" ? "Retry enrichment — 1 credit" : "Enrich contact — 1 credit"}
-                      </button>
-                    ) : (
-                      <div className="rounded-lg bg-surface-2 p-2 text-xs space-y-2">
-                        <p className="text-text">Use 1 enrichment credit?</p>
-                        <div className="flex gap-2">
-                          <button onClick={handleEnrichContact} disabled={enrichingContact} className="btn btn-primary text-xs flex-1 disabled:opacity-50">{enrichingContact ? "Enriching..." : "Confirm"}</button>
-                          <button onClick={() => setConfirmEnrich(false)} className="btn btn-ghost text-xs flex-1">Cancel</button>
+                  {/* CTA — show when status is null/undefined/failed, regardless of email */}
+                  {(!lead.contact_enrichment_status || lead.contact_enrichment_status === 'failed') && (lead.place_id || lead.data_id || lead.website_url) && (
+                    <div className="space-y-1.5">
+                      {!confirmEnrich ? (
+                        <button
+                          onClick={() => { setEnrichmentVisible(true); setConfirmEnrich(true); }}
+                          disabled={enrichingContact}
+                          className="btn btn-ghost text-xs w-full text-blue"
+                        >
+                          {enrichingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Search className="w-3.5 h-3.5 mr-1" />}
+                          {lead.contact_enrichment_status === 'failed' ? 'Retry enrichment' : 'Unlock contact details'}
+                        </button>
+                      ) : (
+                        <div className="rounded-lg bg-surface-2 p-2 text-xs space-y-2">
+                          <p className="text-text">Use 1 enrichment credit to unlock?</p>
+                          <div className="flex gap-2">
+                            <button onClick={handleEnrichContact} disabled={enrichingContact}
+                              className="btn btn-primary text-xs flex-1 disabled:opacity-50">
+                              {enrichingContact ? "Enriching..." : "Confirm"}
+                            </button>
+                            <button onClick={() => setConfirmEnrich(false)}
+                              className="btn btn-ghost text-xs flex-1">Cancel</button>
+                          </div>
                         </div>
-                      </div>
-                    )
-                  )}
-                  {enrichResult && <p className="text-xs text-text-muted mt-1">{enrichResult}</p>}
-                </>
-              )}
-              {/* Verify email button (only when enriched contact email exists but not verified) */}
-              {lead.contact_email && !(lead as any).email_verified_at && !lead.email_status && (
-                <div className="mt-2">
-                  {!confirmVerify ? (
-                    <button
-                      onClick={() => setConfirmVerify(true)}
-                      disabled={verifying}
-                      className="btn btn-ghost text-xs w-full text-amber"
-                    >
-                      {verifying ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
-                      Verify email — 1 credit
-                    </button>
-                  ) : (
-                    <div className="rounded-lg bg-surface-2 p-2 text-xs space-y-2">
-                      <p className="text-text">Use 1 verification credit?</p>
-                      <div className="flex gap-2">
-                        <button onClick={handleVerifyEmail} disabled={verifying} className="btn btn-primary text-xs flex-1 disabled:opacity-50">{verifying ? "Verifying..." : "Confirm"}</button>
-                        <button onClick={() => setConfirmVerify(false)} className="btn btn-ghost text-xs flex-1">Cancel</button>
-                      </div>
+                      )}
+                      <p className="text-[10px] text-text-faint text-center">
+                        Finds direct email, phone, LinkedIn and owner name
+                      </p>
+                      <p className="text-[9px] text-text-faint text-center">
+                        Uses 1 enrichment credit
+                      </p>
                     </div>
                   )}
                 </div>
               )}
+
+              {/* Enrichment result toast — rendered once only in the merged card */}
+              {enrichResult && <p className="text-xs text-text-muted mt-2">{enrichResult}</p>}
+
+              {/* ── Owner row (slim, folded into same card) ── */}
+              <div className="mt-4 pt-3 border-t border-border/40">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-text-faint uppercase tracking-wide">Owner</span>
+                  {lead.contact_enrichment_status === 'success' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-green/10 text-green px-1.5 py-0.5 rounded-full">
+                      <Sparkles className="w-2.5 h-2.5" />Enriched
+                    </span>
+                  )}
+                  {lead.contact_enrichment_status === 'partial' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber/10 text-amber px-1.5 py-0.5 rounded-full">
+                      <Sparkles className="w-2.5 h-2.5" />Partial
+                    </span>
+                  )}
+                </div>
+
+                {showOwnerEdit ? (
+                  <div className="mt-2 space-y-2">
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">Full name</label>
+                      <input value={ownerName} onChange={(e) => setOwnerName(e.target.value)}
+                        placeholder="e.g. John Smith"
+                        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-text-muted mb-1 block">First name</label>
+                      <input value={ownerFirstName} onChange={(e) => setOwnerFirstName(e.target.value)}
+                        placeholder="e.g. John"
+                        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button onClick={handleSaveOwner}
+                        className="btn btn-primary text-xs py-0.5 h-6 min-h-[24px]">Save</button>
+                      <button onClick={() => setShowOwnerEdit(false)}
+                        className="text-xs text-text-muted hover:text-text underline">Cancel</button>
+                    </div>
+                  </div>
+                ) : lead?.owner_name || lead?.owner_first_name ? (
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <span className="text-sm text-text font-medium">
+                      {lead.owner_first_name || lead.owner_name}
+                    </span>
+                    {lead.owner_name_source && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-2 text-text-muted">
+                        {lead.owner_name_source === "gmb_reviews" ? "from reviews"
+                          : lead.owner_name_source === "reviews" ? "from reviews"
+                          : "manual"}
+                      </span>
+                    )}
+                    <button onClick={() => setShowOwnerEdit(true)}
+                      className="text-xs text-blue hover:underline">Edit</button>
+                    {/* AI-suggested owner name disclaimer */}
+                    {lead.owner_name_source === 'reviews' && !ownerNoticeDismissed && (
+                      <div className="mt-2 rounded-lg bg-blue/5 border border-blue/20 p-2 flex items-start gap-2 w-full">
+                        <Info className="w-3.5 h-3.5 text-blue mt-0.5 shrink-0" />
+                        <div className="text-xs text-text-muted flex-1">
+                          Owner name suggested by AI — extracted from customer reviews. Please verify before using in outreach.
+                        </div>
+                        <button
+                          onClick={() => {
+                            setOwnerNoticeDismissed(true);
+                            localStorage.setItem('owner-notice-dismissed-' + leadId, '1');
+                          }}
+                          className="text-text-faint hover:text-text shrink-0"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-1.5 flex items-center gap-2 text-xs">
+                    <span className="text-text-faint">Owner unknown</span>
+                    {(lead?.data_id || lead?.place_id) && (
+                      <button onClick={handleEnrich} disabled={enrichLoading}
+                        className="text-blue hover:underline flex items-center gap-1">
+                        {enrichLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                        {enrichLoading ? "Extracting..." : "Extract from reviews"}
+                      </button>
+                    )}
+                    <button onClick={() => setShowOwnerEdit(true)}
+                      className="text-text-muted hover:text-text underline">
+                      Add manually
+                    </button>
+                  </div>
+                )}
+
+                {/* Last enriched timestamp */}
+                {lead?.enriched_at && (
+                  <p className="text-[10px] text-text-faint mt-2">
+                    Last enriched: {new Date(lead.enriched_at).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+
+              {/* ── Social & Web ── */}
+              <div className="mt-4 pt-3 border-t border-border/40">
+                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Social & Web</h4>
+                {socialError && <p className="text-xs text-red mb-2">{socialError}</p>}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Google Maps */}
+                  {lead?.gmb_url ? (
+                    <a href={lead.gmb_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                      <MapPin className="w-3 h-3" />
+                      Google Maps <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : null}
+
+                  {/* Website */}
+                  {lead.website_url ? (
+                    <a href={lead.website_url?.startsWith('http') ? lead.website_url : `https://${lead.website_url}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                      <Globe className="w-3 h-3" />
+                      Website <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : null}
+
+                  {/* Facebook */}
+                  {socialEditing === "facebook_url" ? (
+                    <div className="col-span-2 flex items-center gap-1.5">
+                      <input value={socialValues.facebook_url || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, facebook_url: e.target.value }))}
+                        placeholder="https://facebook.com/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]" />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.facebook_url ? (
+                    <a href={lead.facebook_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                      <span className="text-blue-600 font-bold text-xs">f</span>
+                      Facebook <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("facebook_url")}
+                      className="text-xs text-text-faint hover:text-blue underline">+ Add Facebook</button>
+                  )}
+
+                  {/* LinkedIn */}
+                  {socialEditing === "linkedin_url" ? (
+                    <div className="col-span-2 flex items-center gap-1.5">
+                      <input value={socialValues.linkedin_url || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, linkedin_url: e.target.value }))}
+                        placeholder="https://linkedin.com/in/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]" />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.linkedin_url ? (
+                    <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                      <span className="text-[#0077b5] font-bold text-xs">in</span>
+                      LinkedIn <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("linkedin_url")}
+                      className="text-xs text-text-faint hover:text-blue underline">+ Add LinkedIn</button>
+                  )}
+
+                  {/* Instagram */}
+                  {socialEditing === "instagram_url" ? (
+                    <div className="col-span-2 flex items-center gap-1.5">
+                      <input value={socialValues.instagram_url || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, instagram_url: e.target.value }))}
+                        placeholder="https://instagram.com/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]" />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.instagram_url ? (
+                    <a href={lead.instagram_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                      <span className="text-[#e1306c] font-bold text-xs">ig</span>
+                      Instagram <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("instagram_url")}
+                      className="text-xs text-text-faint hover:text-blue underline">+ Add Instagram</button>
+                  )}
+
+                  {/* Twitter / X */}
+                  {socialEditing === "twitter_handle" ? (
+                    <div className="col-span-2 flex items-center gap-1.5">
+                      <input value={socialValues.twitter_handle || ""}
+                        onChange={(e) => setSocialValues(v => ({ ...v, twitter_handle: e.target.value }))}
+                        placeholder="https://twitter.com/... or https://x.com/..."
+                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]" />
+                      <button onClick={handleSaveSocial} disabled={savingSocial}
+                        className="text-green hover:underline text-xs min-h-[28px] px-1">
+                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                      <button onClick={() => setSocialEditing(null)}
+                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
+                    </div>
+                  ) : lead?.twitter_handle ? (
+                    <a href={lead.twitter_handle} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                      <span className="text-text-faint font-bold text-xs">𝕏</span>
+                      Twitter / X <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  ) : (
+                    <button onClick={() => setSocialEditing("twitter_handle")}
+                      className="text-xs text-text-faint hover:text-blue underline">+ Add Twitter / X</button>
+                  )}
+                </div>
+              </div>
 
               {/* Channel buttons */}
               <div className="mt-4 pt-3 border-t border-border/40">
@@ -1078,181 +1333,357 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               </div>
             </div>
           </Card>
-          </div>
 
-          {/* AI Insights Card — show if lead has place_id or business name */}}
-          {(lead.place_id || lead.business_name) && (
-          <Card>
-            <div className="p-4">
-              {!lead.review_summary ? (
-                <>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-4 h-4 text-blue" />
-                    <h3 className="text-sm font-semibold text-text">AI Insights</h3>
-                  </div>
-                  <p className="text-xs text-text-muted mb-3">Personalises your outreach email automatically</p>
-                  {reviewsError && (
-                    <div className="rounded-lg bg-red/5 border border-red/20 p-2 mb-3">
-                      <p className="text-[11px] text-red">{reviewsError}</p>
-                    </div>
-                  )}
-                  <button
-                    onClick={handleFetchReviews}
-                    disabled={reviewsLoading}
-                    className="btn btn-secondary text-xs py-1.5 h-8 w-full"
-                  >
-                    {reviewsLoading ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Analysing reviews... (this takes ~20s)
-                      </>
-                    ) : reviewsError ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Retry Analysis
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        Get AI Insights
-                      </>
-                    )}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-blue" />
-                      <h3 className="text-sm font-semibold text-text">AI Insights</h3>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {lead.reviews_fetched_at && (
-                        <span className="text-[10px] text-text-faint">
-                          {(() => {
-                            const days = Math.floor((Date.now() - new Date(lead.reviews_fetched_at).getTime()) / 86400000);
-                            return days < 1 ? 'Fetched today' : days === 1 ? '1 day ago' : days + ' days ago';
-                          })()}
-                        </span>
-                      )}
-                      <button
-                        onClick={handleFetchReviews}
-                        disabled={reviewsLoading}
-                        className="text-xs text-blue hover:underline flex items-center gap-1"
-                      >
-                        {reviewsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                        Refresh
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    {(() => {
-                      const rs = lead.review_summary as unknown as ReviewSummary;
-                      if (!rs) return null;
-                      return (
-                        <>
-                          {rs.owner_name && rs.owner_confidence >= 0.7 && (
-                            <div>
-                              <span className="text-xs text-text-muted">Likely owner: </span>
-                              <span className="text-sm text-text font-medium">{rs.owner_name}</span>
-                            </div>
-                          )}
-                          {rs.staff_names && rs.staff_names.length > 0 && (
-                            <div>
-                              <span className="text-xs text-text-muted block mb-1">Team mentioned</span>
-                              <span className="text-xs text-text">{rs.staff_names.join(', ')}</span>
-                            </div>
-                          )}
-                          {rs.themes && rs.themes.length > 0 && (
-                            <div>
-                              <span className="text-xs text-text-muted block mb-1.5">Themes</span>
-                              <div className="flex flex-wrap gap-1.5">
-                                {rs.themes.map((theme, i) => (
-                                  <span key={i} className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue/10 text-blue">
-                                    {theme}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {rs.pain_points && rs.pain_points.length > 0 && (
-                            <div>
-                              <span className="text-xs text-text-muted block mb-1">Customer concerns</span>
-                              <ul className="text-xs text-text space-y-0.5">
-                                {rs.pain_points.map((pp, i) => (
-                                  <li key={i}>{pp}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {lead.rating !== undefined && (
-                            <div className="text-xs text-text-muted flex items-center gap-1">
-                              <Star className="w-3 h-3 text-amber fill-amber" />
-                              {lead.rating} from {lead.review_count ?? 0} reviews
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </>
+          {/* ──────────────────────────────────────────────────────────────
+              4) REVIEW INTELLIGENCE
+              Review-derived insights for outreach personalization
+              ────────────────────────────────────────────────────────────── */}
+          <Card className="p-0">
+            <div className="px-4 pt-4 pb-2 flex items-center gap-1.5">
+              <Star className="w-4 h-4 text-amber" />
+              <h3 className="text-sm font-semibold text-text">Review Intelligence</h3>
+              {lead?.review_summary && lead.reviews_fetched_at && (Date.now() - new Date(lead.reviews_fetched_at).getTime()) / 86400000 >= 7 && (lead?.place_id || lead?.business_name) && (
+                <button
+                  onClick={handleFetchReviews}
+                  disabled={reviewsLoading}
+                  className="ml-auto text-xs text-blue hover:underline flex items-center gap-1"
+                >
+                  {reviewsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  Refresh
+                </button>
               )}
             </div>
+
+            {lead?.review_summary ? (
+              <div className="px-4 pb-4 space-y-3">
+                {/* Themes */}
+                {lead.review_summary.themes && lead.review_summary.themes.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">What Customers Value</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lead.review_summary.themes.map((t, i) => (
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green/10 text-green font-medium">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* USP Candidates */}
+                {lead.review_summary.usp_candidates && lead.review_summary.usp_candidates.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lead.review_summary.usp_candidates.map((u, i) => (
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue/10 text-blue font-medium">{u}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Staff Names */}
+                {lead.review_summary.staff_names && lead.review_summary.staff_names.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lead.review_summary.staff_names.map((s, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-surface-2 text-text font-medium">
+                          <span className="w-4 h-4 rounded-full bg-purple/20 text-purple text-[9px] flex items-center justify-center font-bold">{s.charAt(0)}</span>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Pain Points */}
+                {lead.review_summary.pain_points && lead.review_summary.pain_points.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Pain Points</h4>
+                    <div className="flex flex-wrap gap-1.5">
+                      {lead.review_summary.pain_points.map((p, i) => (
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber/10 text-amber font-medium">{p}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Owner Evidence */}
+                {lead.review_summary.owner_name && lead.review_summary.owner_evidence && (
+                  <div className="rounded-lg bg-surface-2/60 p-2.5">
+                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Owner Evidence</h4>
+                    <p className="text-xs text-text-muted italic">{lead.review_summary.owner_evidence}</p>
+                  </div>
+                )}
+                {/* Fetched timestamp */}
+                {lead.reviews_fetched_at && (
+                  <p className="text-[10px] text-text-faint pt-1">
+                    Insights from {lead.review_count || 0} reviews &middot; analyzed {new Date(lead.reviews_fetched_at).toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            ) : reviewsLoading ? (
+              <div className="px-4 pb-4 flex items-center gap-2 text-sm text-text-muted">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Scanning reviews and extracting insights...
+              </div>
+            ) : reviewsError ? (
+              <div className="px-4 pb-4">
+                <div className="rounded-lg bg-red/5 border border-red/20 p-3 mb-2">
+                  <p className="text-xs text-red font-medium">Failed to scan reviews</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">{reviewsError}</p>
+                </div>
+                <button
+                  onClick={handleFetchReviews}
+                  disabled={reviewsLoading}
+                  className="btn btn-secondary text-xs py-1.5 h-8 flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Try Again
+                </button>
+              </div>
+            ) : lead?.place_id || lead?.business_name ? (
+              <div className="px-4 pb-4">
+                <p className="text-xs text-text-muted mb-2">Scan customer reviews to discover what makes this business unique and personalize your outreach.</p>
+                <button
+                  onClick={handleFetchReviews}
+                  disabled={reviewsLoading}
+                  className="btn btn-primary text-xs py-1.5 h-8 flex items-center gap-1.5"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  Scan reviews for insights
+                </button>
+              </div>
+            ) : (
+              <div className="px-4 pb-4">
+                <p className="text-xs text-text-muted">No Google Maps data available for review analysis.</p>
+              </div>
+            )}
           </Card>
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════
+            RIGHT COLUMN (2/3)
+            ══════════════════════════════════════════════════════════════════ */}
+        <div id="email-composer" className="lg:col-span-2 space-y-4">
+
+          {isRecontact && (
+            <div className="rounded-xl border border-amber/20 bg-amber/5 p-4 flex items-start gap-3">
+              <span className="text-lg">💡</span>
+              <div>
+                <p className="text-sm text-amber font-medium">Re-engaging a cold lead</p>
+                <p className="text-xs text-amber/80 mt-0.5">Try a different angle — shorter, more direct, no reference to previous outreach</p>
+              </div>
+            </div>
           )}
 
-          <Card>
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-text">Business Info</h3>
-              <div className="space-y-3 mt-3">
-                {lead.category && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-text-muted">Category</span>
-                    <span className="text-text font-medium">{lead.category}</span>
-                  </div>
-                )}
-                {lead.city && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-text-muted">Location</span>
-                    <span className="text-text font-medium">{lead.city}, {lead.country}</span>
-                  </div>
-                )}
-                {lead.rating !== undefined && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-text-muted">Rating</span>
-                    <span className="text-text font-medium">★ {lead.rating}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-text-muted">Reviews</span>
-                  <span className="text-text font-medium">{lead.review_count ?? 0}</span>
+          {lead.email_status === "catch-all" && (
+            <div className="rounded-xl border border-amber/20 bg-amber/5 p-3 text-xs text-amber">
+              ⚠️ This email is catch-all — it may not reach a real inbox
+            </div>
+          )}
+
+          {/* ──────────────────────────────────────────────────────────────
+              5) AI EMAIL COMPOSER
+              Generate outreach email using contact + enrichment + review intelligence
+              ────────────────────────────────────────────────────────────── */}
+          <Card className="p-0 overflow-hidden">
+            <div className="p-4 border-b border-border/40">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-blue" />
+                  AI Email Composer
+                </h3>
+                <button
+                  onClick={() => handleAISuggest(isRecontact)}
+                  disabled={emailLoading}
+                  className="btn btn-secondary text-xs py-1.5 h-8"
+                >
+                  {emailLoading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Generate personalized email
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Prerequisite hints */}
+              {!lead.review_summary && !emailLoading && !lead.email && (
+                <div className="rounded-lg bg-amber/5 border border-amber/20 p-2 text-xs text-amber space-y-1">
+                  <p className="font-medium">Missing prerequisites</p>
+                  <p>Enrich contact for an email address, then scan reviews for personalized content.</p>
                 </div>
-                {lead.address && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-text-muted">Address</span>
-                    <span className="text-text font-medium">{lead.address}</span>
+              )}
+              {!lead.review_summary && !emailLoading && lead.email && (
+                <p className="text-[10px] text-text-faint mt-1 flex items-center gap-1">
+                  <Star className="w-2.5 h-2.5" />
+                  Scan reviews first for a personalised email
+                </p>
+              )}
+
+              {emailError && (
+                <div className="text-xs text-red mb-2">{emailError}</div>
+              )}
+
+              {subjectOptions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {subjectOptions.map((subj, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setSelectedSubjectIdx(idx);
+                        setEmailSubject(subj);
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                        idx === selectedSubjectIdx
+                          ? "bg-blue text-white"
+                          : "bg-surface-2 text-text-muted hover:text-text hover:bg-border/10"
+                      }`}
+                    >
+                      Option {idx + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="px-4 pt-3">
+              <input
+                type="text"
+                placeholder="Subject line..."
+                value={emailSubject}
+                onChange={(e) => {
+                  setEmailSubject(e.target.value);
+                  const matchIdx = subjectOptions.indexOf(e.target.value);
+                  if (matchIdx >= 0) setSelectedSubjectIdx(matchIdx);
+                }}
+                className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0"
+              />
+            </div>
+
+            <div className="px-4 pb-3 pt-1">
+              <textarea
+                ref={textareaRef}
+                value={draftEmail}
+                onChange={(e) => setDraftEmail(e.target.value)}
+                rows={12}
+                className="w-full px-0 py-1 text-sm bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0 resize-none leading-relaxed"
+                placeholder="Write your email here or use AI to generate..."
+              />
+            </div>
+
+            <div className="px-4 py-3 bg-surface-2 border-t border-border/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="rounded-full p-2 text-text-muted hover:text-text hover:bg-border/10 transition-colors"
+                  aria-label="Copy email"
+                  title="Copy subject + body"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4 text-green" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </button>
+                <span className="text-xs text-text-faint">
+                  {draftEmail.split(/\s+/).filter(Boolean).length} words
+                </span>
+                {isMobile && !copied && (
+                  <button
+                    onClick={handleCopyFull}
+                    className="btn btn-ghost text-xs py-1 h-6 px-2"
+                    title="Copy subject + body to clipboard"
+                  >
+                    Copy for mail app
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!canSend ? (
+                  <div className="relative group">
+                    <button
+                      disabled
+                      className="btn btn-primary text-xs py-1.5 h-8 opacity-50 cursor-not-allowed"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {!hasEmail ? "No email" : "Email invalid"}
+                    </button>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48">
+                      <div className="text-xs text-text bg-surface border border-border rounded-lg px-3 py-2 shadow-lg">
+                        <AlertCircle className="w-3 h-3 inline mr-1 text-red" />
+                        {!hasEmail ? "No email address — enrich this lead first" : "Email marked invalid — cannot send outreach"}
+                      </div>
+                      <div className="w-2 h-2 bg-surface border-r border-b border-border rotate-45 mx-auto -mt-1" />
+                    </div>
                   </div>
+                ) : (
+                  <>
+                    {emailSent && (
+                      <span className="text-xs text-green font-medium animate-pulse">
+                        ✓ Email queued!
+                      </span>
+                    )}
+                    <button
+                      onClick={handleSend}
+                      disabled={emailLoading || !draftEmail}
+                      className="btn btn-primary text-xs py-1.5 h-8 disabled:opacity-50"
+                    >
+                      {emailLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      {emailSent ? "Queued" : "Send Email"}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
           </Card>
 
-          {/* Notes card — always visible, auto-saves (Sprint 8: NotesEditor) */}
-          <Card>
-            <div className="p-4">
-              <NotesEditor leadId={leadId} initialNotes={lead.notes ?? ""} />
+          {/* ──────────────────────────────────────────────────────────────
+              6) NOTES / ACTIVITY / SECONDARY DETAILS
+              Useful but not core to the lead workflow
+              ────────────────────────────────────────────────────────────── */}
+
+          {/* Activity History */}
+          <Card className="p-0">
+            <div className="px-4 pt-4 pb-2">
+              <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+                <Clock className="w-4 h-4 text-text-faint" />
+                Activity
+                {allActivities.length > 0 && (
+                  <span className="text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-full">
+                    {allActivities.length}
+                  </span>
+                )}
+              </h3>
             </div>
+            {allActivities.length > 0 ? (
+              <div className="divide-y divide-border/40">
+                {allActivities.map((activity) => (
+                  <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium text-text">{activity.description}</p>
+                      <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
+                        <Clock className="w-3 h-3" />
+                        {new Date(activity.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-4">
+                <p className="text-xs text-text-muted">No activity yet</p>
+              </div>
+            )}
           </Card>
 
-          {/* Sprint 8: Activity Log */}
-          <Card>
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-text mb-3">Activity</h3>
-              <ActivityLog activities={allActivities} />
-            </div>
-          </Card>
-
-          {/* Sprint 9: Replies */}
+          {/* Replies */}
           <Card>
             <div className="p-4">
               <h3 className="text-sm font-semibold text-text mb-3 flex items-center gap-2">
@@ -1306,616 +1737,12 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             </div>
           </Card>
 
-          {/* Email Composer — moved below bio/activity */}
-        </div>
-        <div id="email-composer" className="lg:col-span-2 space-y-4">
-          {isRecontact && (
-            <div className="rounded-xl border border-amber/20 bg-amber/5 p-4 flex items-start gap-3">
-              <span className="text-lg">💡</span>
-              <div>
-                <p className="text-sm text-amber font-medium">Re-engaging a cold lead</p>
-                <p className="text-xs text-amber/80 mt-0.5">Try a different angle — shorter, more direct, no reference to previous outreach</p>
-              </div>
+          {/* Notes */}
+          <Card>
+            <div className="p-4">
+              <NotesEditor leadId={leadId} initialNotes={lead.notes ?? ""} />
             </div>
-          )}
-
-          {lead.email_status === "catch-all" && (
-            <div className="rounded-xl border border-amber/20 bg-amber/5 p-3 text-xs text-amber">
-              ⚠️ This email is catch-all — it may not reach a real inbox
-            </div>
-          )}
-
-          {/* Tabs */}
-          <div className="flex items-center gap-1 bg-surface-2 rounded-full p-1 w-fit">
-            <button
-              onClick={() => setActiveTab("compose")}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                activeTab === "compose"
-                  ? "bg-surface text-text shadow-sm"
-                  : "text-text-muted hover:text-text"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Compose
-            </button>
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-all ${
-                activeTab === "history"
-                  ? "bg-surface text-text shadow-sm"
-                  : "text-text-muted hover:text-text"
-              }`}
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              History ({allActivities.length})
-            </button>
-          </div>
-
-          {activeTab === "compose" && (
-            <Card className="p-0 overflow-hidden">
-              <div className="p-4 border-b border-border/40">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-text flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-blue" />
-                    AI Email Composer
-                  </h3>
-                  <button
-                    onClick={() => handleAISuggest(isRecontact)}
-                    disabled={emailLoading}
-                    className="btn btn-secondary text-xs py-1.5 h-8"
-                  >
-                    {emailLoading ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {lead.review_summary ? 'Smart Suggest' : 'AI Suggest'}
-                      </>
-                    )}
-                  </button>
-                  {!lead.review_summary && !emailLoading && (
-                    <p className="text-[10px] text-text-faint mt-1 flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" />
-                      Get AI Insights first for a personalised email
-                    </p>
-                  )}
-                </div>
-
-                {emailError && (
-                  <div className="text-xs text-red mb-2">{emailError}</div>
-                )}
-
-                {subjectOptions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {subjectOptions.map((subj, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setSelectedSubjectIdx(idx);
-                          setEmailSubject(subj);
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                          idx === selectedSubjectIdx
-                            ? "bg-blue text-white"
-                            : "bg-surface-2 text-text-muted hover:text-text hover:bg-border/10"
-                        }`}
-                      >
-                        Option {idx + 1}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="px-4 pt-3">
-                <input
-                  type="text"
-                  placeholder="Subject line..."
-                  value={emailSubject}
-                  onChange={(e) => {
-                    setEmailSubject(e.target.value);
-                    const matchIdx = subjectOptions.indexOf(e.target.value);
-                    if (matchIdx >= 0) setSelectedSubjectIdx(matchIdx);
-                  }}
-                  className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0"
-                />
-              </div>
-
-              <div className="px-4 pb-3 pt-1">
-                <textarea
-                  ref={textareaRef}
-                  value={draftEmail}
-                  onChange={(e) => setDraftEmail(e.target.value)}
-                  rows={12}
-                  className="w-full px-0 py-1 text-sm bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0 resize-none leading-relaxed"
-                  placeholder="Write your email here or use AI to generate..."
-                />
-              </div>
-
-              <div className="px-4 py-3 bg-surface-2 border-t border-border/40 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleCopy}
-                    className="rounded-full p-2 text-text-muted hover:text-text hover:bg-border/10 transition-colors"
-                    aria-label="Copy email"
-                    title="Copy subject + body"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-green" />
-                    ) : (
-                      <Copy className="w-4 h-4" />
-                    )}
-                  </button>
-                  <span className="text-xs text-text-faint">
-                    {draftEmail.split(/\s+/).filter(Boolean).length} words
-                  </span>
-                  {isMobile && !copied && (
-                    <button
-                      onClick={handleCopyFull}
-                      className="btn btn-ghost text-xs py-1 h-6 px-2"
-                      title="Copy subject + body to clipboard"
-                    >
-                      Copy for mail app
-                    </button>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {!canSend ? (
-                    <div className="relative group">
-                      <button
-                        disabled
-                        className="btn btn-primary text-xs py-1.5 h-8 opacity-50 cursor-not-allowed"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        {!hasEmail ? "No email" : "Email invalid"}
-                      </button>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48">
-                        <div className="text-xs text-text bg-surface border border-border rounded-lg px-3 py-2 shadow-lg">
-                          <AlertCircle className="w-3 h-3 inline mr-1 text-red" />
-                          {!hasEmail ? "No email address — enrich this lead first" : "Email marked invalid — cannot send outreach"}
-                        </div>
-                        <div className="w-2 h-2 bg-surface border-r border-b border-border rotate-45 mx-auto -mt-1" />
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {emailSent && (
-                        <span className="text-xs text-green font-medium animate-pulse">
-                          ✓ Email queued!
-                        </span>
-                      )}
-                      <button
-                        onClick={handleSend}
-                        disabled={emailLoading || !draftEmail}
-                        className="btn btn-primary text-xs py-1.5 h-8 disabled:opacity-50"
-                      >
-                        {emailLoading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Send className="w-3.5 h-3.5" />
-                        )}
-                        {emailSent ? "Queued" : "Send Email"}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {activeTab === "history" && (
-            <Card className="p-0">
-              {allActivities.length > 0 ? (
-                <div className="divide-y divide-border/40">
-                  {allActivities.map((activity) => (
-                    <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
-                      <div>
-                        <p className="text-sm font-medium text-text">{activity.description}</p>
-                        <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
-                          <Clock className="w-3 h-3" />
-                          {new Date(activity.created_at).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center">
-                  <MessageSquare className="w-8 h-8 text-text-faint mx-auto mb-2" />
-                  <p className="text-sm text-text-muted">No activity yet</p>
-                </div>
-              )}
-            </Card>
-          )}
-
-        {/* Profile Section — GMB URL, Social Links, Owner Info */}
-        <Card>
-          <h3 className="text-sm font-semibold text-text px-4 pt-4 mb-2">Profile & Enrichment</h3>
-          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-
-            {/* LEFT: Google Maps + Social Links */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Google Maps</h4>
-                {lead?.gmb_url ? (
-                  <a href={lead.gmb_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-blue hover:underline">
-                    <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 2a4.5 4.5 0 00-3.18 7.68L10 13l3.18-3.32A4.5 4.5 0 0010 2z" />
-                    </svg>
-                    View on Google Maps
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
-                ) : (
-                  <p className="text-sm text-text-muted">Not available</p>
-                )}
-              </div>
-
-              <div>
-                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Social Links</h4>
-                {socialError && (
-                  <p className="text-xs text-red mb-2">{socialError}</p>
-                )}
-                <div className="space-y-2">
-                  {/* Facebook */}
-                  {socialEditing === "facebook_url" ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={socialValues.facebook_url || ""}
-                        onChange={(e) => setSocialValues(v => ({ ...v, facebook_url: e.target.value }))}
-                        placeholder="https://facebook.com/..."
-                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
-                      />
-                      <button onClick={handleSaveSocial} disabled={savingSocial}
-                        className="text-green hover:underline text-xs min-h-[28px] px-1">
-                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                      </button>
-                      <button onClick={() => setSocialEditing(null)}
-                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
-                    </div>
-                  ) : lead?.facebook_url ? (
-                    <a href={lead.facebook_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-blue hover:underline">
-                      <span className="text-blue-600 font-bold text-xs">f</span>
-                      Facebook <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <button onClick={() => setSocialEditing("facebook_url")}
-                      className="text-xs text-text-faint hover:text-blue underline">
-                      + Add Facebook
-                    </button>
-                  )}
-
-                  {/* LinkedIn */}
-                  {socialEditing === "linkedin_url" ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={socialValues.linkedin_url || ""}
-                        onChange={(e) => setSocialValues(v => ({ ...v, linkedin_url: e.target.value }))}
-                        placeholder="https://linkedin.com/in/..."
-                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
-                      />
-                      <button onClick={handleSaveSocial} disabled={savingSocial}
-                        className="text-green hover:underline text-xs min-h-[28px] px-1">
-                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                      </button>
-                      <button onClick={() => setSocialEditing(null)}
-                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
-                    </div>
-                  ) : lead?.linkedin_url ? (
-                    <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-blue hover:underline">
-                      <span className="text-[#0077b5] font-bold text-xs">in</span>
-                      LinkedIn <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <button onClick={() => setSocialEditing("linkedin_url")}
-                      className="text-xs text-text-faint hover:text-blue underline">
-                      + Add LinkedIn
-                    </button>
-                  )}
-
-                  {/* Instagram */}
-                  {socialEditing === "instagram_url" ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={socialValues.instagram_url || ""}
-                        onChange={(e) => setSocialValues(v => ({ ...v, instagram_url: e.target.value }))}
-                        placeholder="https://instagram.com/..."
-                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
-                      />
-                      <button onClick={handleSaveSocial} disabled={savingSocial}
-                        className="text-green hover:underline text-xs min-h-[28px] px-1">
-                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                      </button>
-                      <button onClick={() => setSocialEditing(null)}
-                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
-                    </div>
-                  ) : lead?.instagram_url ? (
-                    <a href={lead.instagram_url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-blue hover:underline">
-                      <span className="text-[#e1306c] font-bold text-xs">ig</span>
-                      Instagram <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <button onClick={() => setSocialEditing("instagram_url")}
-                      className="text-xs text-text-faint hover:text-blue underline">
-                      + Add Instagram
-                    </button>
-                  )}
-
-                  {/* Twitter / X */}
-                  {socialEditing === "twitter_handle" ? (
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        value={socialValues.twitter_handle || ""}
-                        onChange={(e) => setSocialValues(v => ({ ...v, twitter_handle: e.target.value }))}
-                        placeholder="https://twitter.com/... or https://x.com/..."
-                        className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
-                      />
-                      <button onClick={handleSaveSocial} disabled={savingSocial}
-                        className="text-green hover:underline text-xs min-h-[28px] px-1">
-                        {savingSocial ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                      </button>
-                      <button onClick={() => setSocialEditing(null)}
-                        className="text-text-faint hover:text-text text-xs min-h-[28px] px-1">✕</button>
-                    </div>
-                  ) : lead?.twitter_handle ? (
-                    <a href={lead.twitter_handle} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-blue hover:underline">
-                      <span className="text-text-faint font-bold text-xs">𝕏</span>
-                      Twitter / X <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <button onClick={() => setSocialEditing("twitter_handle")}
-                      className="text-xs text-text-faint hover:text-blue underline">
-                      + Add Twitter / X
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* CENTER: Owner Info */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Owner Info</h4>
-                {showOwnerEdit ? (
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-text-muted mb-1 block">Full name</label>
-                      <input
-                        value={ownerName}
-                        onChange={(e) => setOwnerName(e.target.value)}
-                        placeholder="e.g. John Smith"
-                        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-text-muted mb-1 block">First name</label>
-                      <input
-                        value={ownerFirstName}
-                        onChange={(e) => setOwnerFirstName(e.target.value)}
-                        placeholder="e.g. John"
-                        className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={handleSaveOwner}
-                        className="btn btn-primary text-xs py-0.5 h-6 min-h-[24px]">
-                        Save
-                      </button>
-                      <button onClick={() => setShowOwnerEdit(false)}
-                        className="text-xs text-text-muted hover:text-text underline">
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : lead?.owner_name || lead?.owner_first_name ? (
-                  <div>
-                    <p className="text-sm text-text font-medium">
-                      {lead.owner_first_name || lead.owner_name}
-                    </p>
-                    {lead.owner_name_source && (
-                      <span className="inline-flex items-center gap-1 text-xs text-text-faint mt-0.5">
-                        {lead.owner_name_source === "gmb_reviews" ? "📍 Found in GMB Reviews" : lead.owner_name_source === "reviews" ? "🤖 Suggested by AI" : "✏️ Entered manually"}
-                      </span>
-                    )}
-                    <button onClick={() => setShowOwnerEdit(true)}
-                      className="text-xs text-blue hover:underline ml-2">
-                      Edit
-                    </button>
-                    {/* AI-suggested owner name disclaimer — only when source is 'reviews' and not yet dismissed */}
-                    {lead.owner_name_source === 'reviews' && !ownerNoticeDismissed && (
-                      <div className="mt-2 rounded-lg bg-blue/5 border border-blue/20 p-2 flex items-start gap-2">
-                        <Info className="w-3.5 h-3.5 text-blue mt-0.5 shrink-0" />
-                        <div className="text-xs text-text-muted flex-1">
-                          Owner name suggested by AI — extracted from customer reviews. Please verify before using in outreach.
-                        </div>
-                        <button
-                          onClick={() => {
-                            setOwnerNoticeDismissed(true);
-                            localStorage.setItem('owner-notice-dismissed-' + leadId, '1');
-                          }}
-                          className="text-text-faint hover:text-text shrink-0"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-sm text-text-faint">Unknown</p>
-                    {lead?.data_id || lead?.place_id ? (
-                      <div className="flex items-center gap-2 mt-1">
-                        <button onClick={handleEnrich} disabled={enrichLoading}
-                          className="text-xs text-blue hover:underline flex items-center gap-1">
-                          {enrichLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "✨"}
-                          {enrichLoading ? "Finding..." : "Auto-find owner name"}
-                        </button>
-                        <button onClick={() => setShowOwnerEdit(true)}
-                          className="text-xs text-text-muted hover:text-text underline">
-                          or add manually
-                        </button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setShowOwnerEdit(true)}
-                        className="text-xs text-blue hover:underline mt-1">
-                        ✏️ Add manually
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* RIGHT: Enrichment Info */}
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-2">Enrichment</h4>
-                {lead?.enriched_at ? (
-                  <p className="text-xs text-text-faint">
-                    Last enriched: {new Date(lead.enriched_at).toLocaleDateString()}
-                  </p>
-                ) : (
-                  <p className="text-xs text-text-faint">Not yet enriched</p>
-                )}
-                {(lead?.data_id || lead?.place_id) && !lead?.owner_name && (
-                  <button onClick={handleEnrich} disabled={enrichLoading}
-                    className="mt-2 btn btn-ghost text-xs py-0.5 h-6 min-h-[24px]">
-                    {enrichLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                    {enrichLoading ? "Extracting..." : "Extract owner from reviews"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Review Insights Card */}
-        <Card className="p-0">
-          <div className="px-4 pt-4 pb-2 flex items-center gap-1.5">
-            <Star className="w-4 h-4 text-amber" />
-            <h3 className="text-sm font-semibold text-text">Review Insights</h3>
-            {lead?.review_summary && lead.reviews_fetched_at && (Date.now() - new Date(lead.reviews_fetched_at).getTime()) / 86400000 >= 7 && (lead?.place_id || lead?.business_name) && (
-              <button
-                onClick={handleFetchReviews}
-                disabled={reviewsLoading}
-                className="ml-auto text-xs text-blue hover:underline flex items-center gap-1"
-              >
-                {reviewsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                Refresh
-              </button>
-            )}
-          </div>
-
-          {lead?.review_summary ? (
-            <div className="px-4 pb-4 space-y-3">
-              {/* Themes */}
-              {lead.review_summary.themes && lead.review_summary.themes.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">What Customers Value</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {lead.review_summary.themes.map((t, i) => (
-                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green/10 text-green font-medium">{t}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* USP Candidates */}
-              {lead.review_summary.usp_candidates && lead.review_summary.usp_candidates.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {lead.review_summary.usp_candidates.map((u, i) => (
-                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue/10 text-blue font-medium">{u}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* Staff Names */}
-              {lead.review_summary.staff_names && lead.review_summary.staff_names.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {lead.review_summary.staff_names.map((s, i) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-surface-2 text-text font-medium">
-                        <span className="w-4 h-4 rounded-full bg-purple/20 text-purple text-[9px] flex items-center justify-center font-bold">{s.charAt(0)}</span>
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* Pain Points */}
-              {lead.review_summary.pain_points && lead.review_summary.pain_points.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Pain Points</h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {lead.review_summary.pain_points.map((p, i) => (
-                      <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber/10 text-amber font-medium">{p}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {/* Owner Evidence */}
-              {lead.review_summary.owner_name && lead.review_summary.owner_evidence && (
-                <div className="rounded-lg bg-surface-2/60 p-2.5">
-                  <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Owner Evidence</h4>
-                  <p className="text-xs text-text-muted italic">{lead.review_summary.owner_evidence}</p>
-                </div>
-              )}
-              {/* Fetched timestamp */}
-              {lead.reviews_fetched_at && (
-                <p className="text-[10px] text-text-faint pt-1">
-                  Insights from {lead.review_count || 0} reviews &middot; analyzed {new Date(lead.reviews_fetched_at).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-          ) : reviewsLoading ? (
-            <div className="px-4 pb-4 flex items-center gap-2 text-sm text-text-muted">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Fetching reviews and extracting insights...
-            </div>
-          ) : reviewsError ? (
-            <div className="px-4 pb-4">
-              <div className="rounded-lg bg-red/5 border border-red/20 p-3 mb-2">
-                <p className="text-xs text-red font-medium">Failed to analyze reviews</p>
-                <p className="text-[11px] text-text-muted mt-0.5">{reviewsError}</p>
-              </div>
-              <button
-                onClick={handleFetchReviews}
-                disabled={reviewsLoading}
-                className="btn btn-secondary text-xs py-1.5 h-8 flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Try Again
-              </button>
-            </div>
-          ) : lead?.place_id || lead?.business_name ? (
-            <div className="px-4 pb-4">
-              <p className="text-xs text-text-muted mb-2">No review insights yet. Analyze customer reviews to discover what makes this business unique and personalize your outreach.</p>
-              <button
-                onClick={handleFetchReviews}
-                disabled={reviewsLoading}
-                className="btn btn-primary text-xs py-1.5 h-8 flex items-center gap-1.5"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Analyze Reviews
-              </button>
-            </div>
-          ) : (
-            <div className="px-4 pb-4">
-              <p className="text-xs text-text-muted">No Google Maps data available for review analysis.</p>
-            </div>
-          )}
-        </Card>
-
+          </Card>
         </div>
       </div>
     </div>
