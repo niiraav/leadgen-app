@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { leadStatusSchema } from '@leadgen/shared';
+import { leadStatusSchema, engagementStatusSchema, pipelineStageSchema, lifecycleStateSchema } from '@leadgen/shared';
 import {
   getLeadById,
   createLead,
@@ -47,6 +47,11 @@ const createLeadSchema = z.object({
   data_id: z.string().nullable().optional(),
   gmb_url: z.string().nullable().optional(),
   gmb_reviews_url: z.string().nullable().optional(),
+  // Phase 2: domain-specific status columns
+  engagement_status: engagementStatusSchema.nullable().optional(),
+  pipeline_stage: pipelineStageSchema.nullable().optional(),
+  lifecycle_state: lifecycleStateSchema.nullable().optional(),
+  do_not_contact: z.boolean().optional(),
 });
 
 const updateLeadSchema = createLeadSchema.partial();
@@ -241,6 +246,11 @@ router.patch('/:id', async (c) => {
     if (parsed.data.data_id !== undefined) updateData.data_id = parsed.data.data_id || null;
     if (parsed.data.gmb_url !== undefined) updateData.gmb_url = parsed.data.gmb_url || null;
     if (parsed.data.gmb_reviews_url !== undefined) updateData.gmb_reviews_url = parsed.data.gmb_reviews_url || null;
+    // Phase 2: domain-specific status columns
+    if (parsed.data.engagement_status !== undefined) updateData.engagement_status = parsed.data.engagement_status;
+    if (parsed.data.pipeline_stage !== undefined) updateData.pipeline_stage = parsed.data.pipeline_stage;
+    if (parsed.data.lifecycle_state !== undefined) updateData.lifecycle_state = parsed.data.lifecycle_state;
+    if (parsed.data.do_not_contact !== undefined) updateData.do_not_contact = parsed.data.do_not_contact;
 
     await updateLead(userId, id, updateData);
 

@@ -83,6 +83,11 @@ export interface BackendLead {
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | 'no_data' | null;
   contact_enrichment_provider?: string | null;
   contact_enrichment_error?: string | null;
+  // Phase 2: domain-specific status columns (nullable, backfill pending)
+  engagement_status?: string | null;
+  pipeline_stage?: string | null;
+  lifecycle_state?: string | null;
+  do_not_contact?: boolean | null;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
@@ -269,6 +274,11 @@ export function mapBackendLead(raw: BackendLead): Lead {
     // Review insights
     review_summary: (raw as any).review_summary ?? undefined,
     reviews_fetched_at: (raw as any).reviews_fetched_at ?? undefined,
+    // Phase 2: domain-specific status columns
+    engagementStatus: (raw as any).engagement_status ?? undefined,
+    pipelineStage: (raw as any).pipeline_stage ?? undefined,
+    lifecycleState: (raw as any).lifecycle_state ?? undefined,
+    doNotContact: (raw as any).do_not_contact ?? false,
     // Last activity (Sprint 3 — resolved server-side)
     lastActivity: (raw as any).lastActivity
       ? {
