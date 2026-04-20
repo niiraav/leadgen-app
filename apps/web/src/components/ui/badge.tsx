@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { forwardRef } from "react";
+import { SCORE_THRESHOLDS } from "@leadgen/shared";
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
@@ -40,10 +41,10 @@ export function HotScoreBadge({ score }: { score: number }) {
   let colorClass = "";
   let bgClass = "";
 
-  if (score >= 80) {
+  if (score >= SCORE_THRESHOLDS.GREEN) {
     colorClass = "text-green";
     bgClass = "bg-green/10";
-  } else if (score >= 50) {
+  } else if (score >= SCORE_THRESHOLDS.AMBER) {
     colorClass = "text-amber";
     bgClass = "bg-amber/10";
   } else {
@@ -59,7 +60,7 @@ export function HotScoreBadge({ score }: { score: number }) {
         colorClass
       )}
     >
-      {score >= 80 && (
+      {score >= SCORE_THRESHOLDS.GREEN && (
         <svg width="10" height="10" viewBox="0 0 20 20" fill="currentColor" className="inline">
           <path d="M10 2a5 5 0 014.5 2.87A4.5 4.5 0 0118 9a5 5 0 01-2.5 4.34A5 5 0 0110 18a5 5 0 01-2.26-5.66A5 5 0 015.5 9a4.5 4.5 0 013.5-4.13A5 5 0 0110 2z" />
         </svg>

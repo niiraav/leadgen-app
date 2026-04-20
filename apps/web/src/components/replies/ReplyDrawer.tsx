@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import {
   X,
@@ -80,8 +81,8 @@ function intentEmoji(intent: string) {
 }
 
 function urgencyLabel(score: number) {
-  if (score >= 80) return { text: "Urgent", cls: "bg-red/10 text-red border-red/20" };
-  if (score >= 60) return { text: "Warm", cls: "bg-amber/10 text-amber border-amber/20" };
+  if (score >= SCORE_THRESHOLDS.GREEN) return { text: "Urgent", cls: "bg-red/10 text-red border-red/20" };
+  if (score >= SCORE_THRESHOLDS.AMBER) return { text: "Warm", cls: "bg-amber/10 text-amber border-amber/20" };
   return { text: "Low", cls: "bg-surface-2 text-text-muted border-border" };
 }
 

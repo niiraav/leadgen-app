@@ -117,6 +117,10 @@ export const leadActivities = pgTable('lead_activities', {
   userId: uuid('user_id'),
   type: text('type').notNull(),
   description: text('description'),
+  label: text('label'),
+  timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow(),
+  replyIntent: text('reply_intent'),
+  triggeredBy: text('triggered_by'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

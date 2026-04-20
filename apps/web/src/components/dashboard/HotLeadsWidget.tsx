@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { MessageSquare, ArrowRight, Loader2, Flame } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -46,8 +47,8 @@ function intentColor(intent: string) {
 }
 
 function hotScoreColor(score: number) {
-  if (score >= 70) return "bg-green";
-  if (score >= 40) return "bg-amber";
+  if (score >= SCORE_THRESHOLDS.GREEN) return "bg-green";
+  if (score >= SCORE_THRESHOLDS.AMBER) return "bg-amber";
   return "bg-red";
 }
 

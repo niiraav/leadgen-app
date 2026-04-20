@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import {
   Shield, ShieldCheck, ShieldAlert,
   ArrowRight, Clock,
@@ -36,10 +37,10 @@ export default function PipelineHealthCard({ data, loading }: { data?: HealthDat
   if (!data) return null;
 
   const { health_score, insights } = data;
-  const color = health_score >= 80 ? "text-green" : health_score >= 50 ? "text-amber" : "text-red";
-  const strokeColor = health_score >= 80 ? "text-green" : health_score >= 50 ? "text-amber" : "text-red";
-  const label = health_score >= 80 ? "Healthy" : health_score >= 50 ? "Needs attention" : "At risk";
-  const Icon = health_score >= 80 ? ShieldCheck : health_score >= 50 ? Shield : ShieldAlert;
+  const color = health_score >= SCORE_THRESHOLDS.GREEN ? "text-green" : health_score >= SCORE_THRESHOLDS.AMBER ? "text-amber" : "text-red";
+  const strokeColor = health_score >= SCORE_THRESHOLDS.GREEN ? "text-green" : health_score >= SCORE_THRESHOLDS.AMBER ? "text-amber" : "text-red";
+  const label = health_score >= SCORE_THRESHOLDS.GREEN ? "Healthy" : health_score >= SCORE_THRESHOLDS.AMBER ? "Needs attention" : "At risk";
+  const Icon = health_score >= SCORE_THRESHOLDS.GREEN ? ShieldCheck : health_score >= SCORE_THRESHOLDS.AMBER ? Shield : ShieldAlert;
   const circumference = 2 * Math.PI * 40;
   const offset = circumference - (health_score / 100) * circumference;
 

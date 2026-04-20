@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/auth";
+import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import ReplyDrawer from "@/components/replies/ReplyDrawer";
@@ -69,8 +70,8 @@ function intentEmoji(intent: string) {
 }
 
 function hotScoreColor(score: number) {
-  if (score >= 70) return "bg-green";
-  if (score >= 40) return "bg-amber";
+  if (score >= SCORE_THRESHOLDS.GREEN) return "bg-green";
+  if (score >= SCORE_THRESHOLDS.AMBER) return "bg-amber";
   return "bg-red";
 }
 

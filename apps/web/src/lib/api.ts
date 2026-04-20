@@ -86,6 +86,12 @@ export interface BackendLead {
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
+  // Last activity (resolved server-side in Sprint 3)
+  lastActivity?: {
+    label: string;
+    timestamp: string;
+    replyIntent?: string;
+  } | null;
 }
 
 /** A raw search result from Outscraper */
@@ -155,6 +161,12 @@ export interface BackendLeadDetail {
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
+  // Last activity (resolved server-side in Sprint 3)
+  lastActivity?: {
+    label: string;
+    timestamp: string;
+    replyIntent?: string;
+  } | null;
 }
 
 /** Pipeline activity response */
@@ -257,6 +269,14 @@ export function mapBackendLead(raw: BackendLead): Lead {
     // Review insights
     review_summary: (raw as any).review_summary ?? undefined,
     reviews_fetched_at: (raw as any).reviews_fetched_at ?? undefined,
+    // Last activity (Sprint 3 — resolved server-side)
+    lastActivity: (raw as any).lastActivity
+      ? {
+          label: (raw as any).lastActivity.label,
+          timestamp: new Date((raw as any).lastActivity.timestamp),
+          ...(((raw as any).lastActivity.replyIntent) ? { replyIntent: (raw as any).lastActivity.replyIntent } : {}),
+        }
+      : null,
   };
 }
 
@@ -602,7 +622,7 @@ export const api = {
 
   // ── Recent Searches ────────────────────────────────────────────
   searchHistory: {
-    list: () => request<any[]>("/search-history"),
+    list: () => request<any[]>("/search/history"),
   },
 
   // ── Contact Preview / Unlock ────────────────────────────────────

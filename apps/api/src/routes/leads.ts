@@ -8,10 +8,13 @@ import {
   createActivity,
   getLeads,
   batchCreateLeads,
+  getActivitiesForLeads,
+  getActivitiesForLead,
   type JsonValue,
   getUserId,
   supabaseAdmin,
 } from '../db';
+import { resolveLastActivity } from '../lib/resolve-last-activity';
 import { incrementLeads, incrementEnrichments, incrementEmailVerifications } from '../lib/usage';
 import { mapAndMergeEnrichment, selectPrimaryContact, buildFailedEnrichmentUpdate, buildPartialEnrichmentUpdate, buildNoDataEnrichmentUpdate } from '../lib/enrichment-mapper';
 import { enforceCredits, enforceFeatureGate, EnforcementError } from '../lib/billing/enforce';
@@ -69,7 +72,25 @@ router.get('/', async (c) => {
       search,
     });
 
-    return c.json(result);
+    // Batch-fetch activities for all leads (avoids N+1)
+    const leadIds = result.data.map((l: any) => l.id);
+    let activityMap = new Map<string, any[]>();
+    try {
+      activityMap = await getActivitiesForLeads(leadIds);
+    } catch (actErr) {
+      console.warn('[Leads GET /] Failed to fetch activities:', actErr);
+    }
+
+    // Attach lastActivity to each lead
+    const dataWithActivity = result.data.map((lead: any) => {
+      const activities = activityMap.get(lead.id) ?? [];
+      const lastActivity = activities.length > 0
+        ? resolveLastActivity(activities as any[])
+        : null;
+      return { ...lead, lastActivity };
+    });
+
+    return c.json({ ...result, data: dataWithActivity });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Leads GET /] Error:', message);
@@ -89,7 +110,18 @@ router.get('/:id', async (c) => {
       return c.json({ error: 'Lead not found' }, 404);
     }
 
-    return c.json(lead);
+    // Attach lastActivity from activities
+    let lastActivity = null;
+    try {
+      const activities = await getActivitiesForLead(userId, id);
+      if (activities.length > 0) {
+        lastActivity = resolveLastActivity(activities as any[]);
+      }
+    } catch (actErr) {
+      console.warn('[Leads GET /:id] Failed to fetch activities:', actErr);
+    }
+
+    return c.json({ ...lead, lastActivity });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Leads GET /:id] Error:', message);
@@ -1120,6 +1152,76 @@ router.get('/:id/replies', async (c) => {
   }
 
   return c.json({ replies: data ?? [] });
+});
+
+// ─── POST /leads/:id/activity ──────────────────────────────────────────────
+
+const VALID_ACTIVITY_TYPES = new Set([
+  'created', 'updated', 'enriched', 'email_verified', 'email_drafted',
+  'emailed', 'whatsapp_sent', 'replied', 'status_changed',
+  'email_logged', 'imported', 'reply_classified', 'bio_generated',
+]);
+
+const VALID_REPLY_INTENTS = new Set([
+  'interested', 'question', 'objection', 'not_now', 'not_interested',
+]);
+
+const postActivitySchema = z.object({
+  label: z.string().min(1, 'Label must not be empty'),
+  timestamp: z.string().refine((val) => {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return false;
+    // Not in the future by more than 5 minutes (clock skew tolerance)
+    return d.getTime() <= Date.now() + 5 * 60 * 1000;
+  }, 'Invalid or future timestamp'),
+  type: z.string().refine((val) => VALID_ACTIVITY_TYPES.has(val), 'Invalid activity type'),
+  replyIntent: z.string().optional().refine(
+    (val) => val === undefined || VALID_REPLY_INTENTS.has(val),
+    'Invalid reply intent'
+  ),
+});
+
+router.post('/:id/activity', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const leadId = c.req.param('id');
+
+    // Verify lead exists and belongs to user
+    const existing = await getLeadById(userId, leadId);
+    if (!existing) {
+      return c.json({ error: 'Lead not found' }, 404);
+    }
+
+    const body = await c.req.json();
+    const parsed = postActivitySchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    }
+
+    const { label, timestamp, type, replyIntent } = parsed.data;
+
+    await createActivity(userId, {
+      lead_id: leadId,
+      type,
+      label,
+      timestamp,
+      reply_intent: replyIntent ?? null,
+      triggered_by: 'manual',
+    });
+
+    // Return the created entry as an ActivityEntry shape
+    const activityEntry = {
+      label,
+      timestamp: new Date(timestamp),
+      ...(replyIntent ? { replyIntent } : {}),
+    };
+
+    return c.json({ success: true, activity: activityEntry }, 201);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Leads POST /:id/activity] Error:', message);
+    return c.json({ error: 'Failed to log activity', details: message }, 500);
+  }
 });
 
 export default router;

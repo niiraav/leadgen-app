@@ -48,7 +48,7 @@ router.post('/:id/status', async (c) => {
     // Log activity
     await createActivity(userId, {
       lead_id: id,
-      type: 'status_change',
+      type: 'status_changed',
       description: `Status changed to: ${status}${notes ? ` - ${notes}` : ''}`,
     });
 

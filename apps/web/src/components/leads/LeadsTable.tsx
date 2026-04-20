@@ -21,11 +21,19 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HotScoreBadge } from "@/components/ui/badge";
+import { SCORE_THRESHOLDS, type ReplyIntent } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
+import { formatRelativeTime, REPLY_INTENT_CHIP } from "@/lib/activity-utils";
 
 const EMPTY_SET: Set<string> = new Set();
 
 // --- Types ---
+
+export interface ActivityEntry {
+  label: string;
+  timestamp: Date;
+  replyIntent?: ReplyIntent;
+}
 
 export interface LeadsTableRow {
   id: string;
@@ -51,6 +59,8 @@ export interface LeadsTableRow {
   facebook_url?: string | null;
   instagram_url?: string | null;
   twitter_handle?: string | null;
+  // Last activity (Sprint 3 — resolved server-side)
+  lastActivity?: ActivityEntry | null;
 }
 
 interface LeadsTableProps {
@@ -150,7 +160,7 @@ const EmailIcon = memo(function EmailIcon({ lead }: { lead: LeadsTableRow }) {
 
 const HotScoreBar = memo(function HotScoreBar({ score }: { score: number }) {
   const pct = Math.min(score, 100);
-  const color = score >= 80 ? "bg-green" : score >= 50 ? "bg-amber" : "bg-red";
+  const color = score >= SCORE_THRESHOLDS.GREEN ? "bg-green" : score >= SCORE_THRESHOLDS.AMBER ? "bg-amber" : "bg-red";
   return (
     <div className="flex items-center gap-2" title={`Hot score: ${score}`}>
       <div className="w-12 h-1.5 rounded-full bg-surface-2 overflow-hidden">
@@ -204,6 +214,9 @@ function SkeletonRow() {
       </td>
       <td className="px-3 py-3">
         <div className="h-3 w-20 bg-surface-2 rounded" />
+      </td>
+      <td className="px-3 py-3">
+        <div className="h-3 w-24 bg-surface-2 rounded" />
       </td>
       <td className="px-3 py-3">
         <div className="h-4 w-16 bg-surface-2 rounded-full" />
@@ -377,6 +390,7 @@ export const LeadsTable = memo(function LeadsTable({
               ✉️
             </th>
             <th className="px-3 py-2.5 text-left">Score</th>
+            <th className="px-3 py-2.5 text-left">Last Activity</th>
             <th className="px-3 py-2.5 text-left">Status</th>
           </tr>
         </thead>
@@ -546,6 +560,27 @@ export const LeadsTable = memo(function LeadsTable({
                     <HotScoreBar score={lead.hot_score} />
                   </td>
 
+                  {/* Last Activity */}
+                  <td className="px-3 py-3">
+                    {lead.lastActivity ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-gray-700">
+                          {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
+                        </span>
+                        {lead.lastActivity.replyIntent && (() => {
+                          const chip = REPLY_INTENT_CHIP[lead.lastActivity.replyIntent!];
+                          return chip ? (
+                            <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-tight ${chip.className}`}>
+                              {chip.label}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 cursor-default" title="No activity recorded">—</span>
+                    )}
+                  </td>
+
                   {/* Status + notes toggle */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
@@ -565,7 +600,7 @@ export const LeadsTable = memo(function LeadsTable({
               ))}
           {!loading && leads.length === 0 && (
             <tr>
-              <td colSpan={10} className="text-center py-12 text-text-muted">
+              <td colSpan={11} className="text-center py-12 text-text-muted">
                 No leads found
               </td>
             </tr>

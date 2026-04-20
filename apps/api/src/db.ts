@@ -218,6 +218,10 @@ export async function createActivity(userId: string, values: {
   lead_id: string;
   type: string;
   description?: string | null;
+  label?: string | null;
+  timestamp?: string | null;
+  reply_intent?: string | null;
+  triggered_by?: string | null;
 }) {
   const { error } = await supabaseAdmin
     .from('lead_activities')
@@ -231,9 +235,30 @@ export async function getActivitiesForLead(userId: string, leadId: string) {
     .select('*')
     .eq('lead_id', leadId)
     .eq('user_id', userId)
-    .order('created_at');
+    .order('timestamp', { ascending: false, nullsFirst: false });
   if (error) throw error;
   return (data ?? []) as any[];
+}
+
+/** Fetch activities for multiple leads in a single query (avoids N+1). */
+export async function getActivitiesForLeads(leadIds: string[]) {
+  if (leadIds.length === 0) return new Map<string, any[]>();
+
+  const { data, error } = await supabaseAdmin
+    .from('lead_activities')
+    .select('*')
+    .in('lead_id', leadIds)
+    .order('timestamp', { ascending: false, nullsFirst: false });
+
+  if (error) throw error;
+
+  const grouped = new Map<string, any[]>();
+  for (const row of (data ?? [])) {
+    const existing = grouped.get(row.lead_id) ?? [];
+    existing.push(row);
+    grouped.set(row.lead_id, existing);
+  }
+  return grouped;
 }
 
 export async function getSequences(userId: string) {

@@ -2,21 +2,39 @@
 // Core shared types for LeadGen App
 // ════════════════════════════════════════════
 
+// TECH DEBT: LeadStatus currently combines engagement statuses
+// (new, contacted, replied, interested, not_interested),
+// pipeline stages (qualified, proposal_sent, converted, lost),
+// automation statuses (out_of_office, do_not_contact),
+// and lifecycle states (closed, archived).
+// Future refactor: split into LeadEngagementStatus +
+// PipelineStage + LeadLifecycleState.
+// Requires: pipeline page, dashboard, analytics, all badge
+// mappings. Do not change without a migration plan.
+
 export type LeadStatus =
   | 'new'
   | 'contacted'
   | 'replied'
   | 'interested'
-  | 'closed'
   | 'not_interested'
-  | 'archived';
+  | 'qualified'
+  | 'proposal_sent'
+  | 'converted'
+  | 'closed'
+  | 'lost'
+  | 'archived'
+  | 'out_of_office'
+  | 'do_not_contact';
 
 export type LeadSource = 'outscraper' | 'csv' | 'apollo' | 'manual';
 
 export type EmailTone = 'professional' | 'friendly' | 'direct';
 
 export const STATUS_ORDER: LeadStatus[] = [
-  'new', 'contacted', 'replied', 'interested', 'closed', 'not_interested', 'archived'
+  'new', 'contacted', 'replied', 'interested', 'not_interested',
+  'qualified', 'proposal_sent', 'converted', 'closed', 'lost',
+  'archived', 'out_of_office', 'do_not_contact'
 ];
 
 export interface Lead {
@@ -88,6 +106,10 @@ export interface Lead {
   // Review insights (AI-extracted from Google Maps reviews)
   review_summary?: ReviewSummary;
   reviews_fetched_at?: string;
+  // Derived: email deliverability (mapped from raw email_status)
+  email_deliverability?: EmailDeliverabilityState;
+  // Last activity summary (for Saved Leads Table)
+  lastActivity?: ActivityEntry | null;
 }
 
 export interface ReviewSummary {
@@ -159,9 +181,22 @@ export interface Sequence {
 export interface LeadActivity {
   id: string;
   lead_id: string;
-  type: 'created' | 'updated' | 'email_drafted' | 'emailed' | 'replied' | 'status_changed' | 'imported' | 'bio_generated';
+  type: 'created' | 'updated' | 'enriched' | 'email_verified' | 'email_drafted' | 'emailed' | 'whatsapp_sent' | 'replied' | 'status_changed' | 'email_logged' | 'imported' | 'reply_classified' | 'bio_generated';
   description: string;
+  label?: string | null;
+  timestamp: string;
+  reply_intent?: string | null;
+  triggered_by?: string | null;
   created_at: string;
+}
+
+// ── Activity Entry (for Last Activity column in Saved Leads Table) ────────
+export type ReplyIntent = 'interested' | 'question' | 'objection' | 'not_now' | 'not_interested';
+
+export interface ActivityEntry {
+  label: string;
+  timestamp: Date;
+  replyIntent?: ReplyIntent;
 }
 
 export interface AIGeneratedEmail {
@@ -188,6 +223,15 @@ export type EmailLockState =
   | 'unavailable' // Enrichment ran, no email found
   | 'locked';     // Email exists but requires credit to reveal
 
+/** Email deliverability state — provider-agnostic, mapped from vendor email_status.
+ *  Used by Saved Leads Table to drive UI and send-blocking logic. */
+export type EmailDeliverabilityState =
+  | 'none'          // no email on record
+  | 'verifying'     // enrichment or verification in progress
+  | 'deliverable'   // verified, safe to send
+  | 'risky'         // catch-all, uncertain deliverability
+  | 'undeliverable'; // invalid, disposable, or spamtrap
+
 /** Contact channel availability — for phone/WhatsApp/socials icons */
 export type ContactAvailability =
   | 'available'   // Known to exist (e.g., phone from search data)
@@ -199,7 +243,7 @@ export type ScoreTier = 'hot' | 'warm' | 'cold';
 
 /** Map a numeric hot_score (0-100) to a ScoreTier */
 export function getScoreTier(score: number): ScoreTier {
-  if (score >= 70) return 'hot';
+  if (score >= 80) return 'hot';
   if (score >= 50) return 'warm';
   return 'cold';
 }

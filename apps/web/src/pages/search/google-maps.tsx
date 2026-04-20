@@ -6,6 +6,7 @@ import { api, UpgradeRequiredError } from "@/lib/api";
 import { SearchForm } from "@/components/search/SearchForm";
 import { SearchResultsTable } from "@/components/search/SearchResultsTable";
 import { CollapsedSearchBar } from "@/components/search/CollapsedSearchBar";
+import { SearchHistoryPanel } from "@/components/search/SearchHistoryPanel";
 import { TargetAreaNudge } from "@/components/nudges/profile-nudges";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 import type { SearchResult, SearchFilters, SearchSummary } from "@/components/search/types";
@@ -38,7 +39,12 @@ export default function SearchGoogleMaps() {
   const [userLeadsCount, setUserLeadsCount] = useState(0);
   const [userLeadLimit, setUserLeadLimit] = useState(50);
 
-  // Fetch limits on mount
+  // Search history & saved searches
+  const [historyRecent, setHistoryRecent] = useState<any[]>([]);
+  const [historySaved, setHistorySaved] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  // Fetch limits + history on mount
   useEffect(() => {
     (async () => {
       try {
@@ -48,12 +54,66 @@ export default function SearchGoogleMaps() {
         setUserLeadLimit(50);
       }
     })();
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const [recent, saved] = await Promise.all([
+        api.searchHistory.list(),
+        api.filters.list(),
+      ]);
+      setHistoryRecent(recent ?? []);
+      setHistorySaved(saved ?? []);
+    } catch {
+      // silently fail
+    } finally {
+      setHistoryLoading(false);
+    }
   }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   }, []);
+
+  // ── Saved search handlers ──────────────────────────────────────────────
+
+  const handleSaveSearch = useCallback(
+    async (name: string) => {
+      try {
+        const saved = await api.filters.save({
+          name,
+          filters: filters as Record<string, any>,
+        });
+        setHistorySaved((prev) => [saved, ...prev]);
+        // Remove matching entries from recent (by query+location match)
+        setHistoryRecent((prev) =>
+          prev.filter(
+            (r) =>
+              !(r.query === filters.businessType && r.location === filters.location)
+          )
+        );
+        showToast(`Saved: ${name}`);
+      } catch (err: any) {
+        showToast(err.message || "Failed to save search");
+      }
+    },
+    [filters, showToast]
+  );
+
+  const handleDeleteSaved = useCallback(
+    async (id: string) => {
+      try {
+        await api.filters.delete(id);
+        setHistorySaved((prev) => prev.filter((s) => s.id !== id));
+      } catch {
+        // silently fail
+      }
+    },
+    []
+  );
 
   const handleSearch = useCallback(
     async (newFilters: SearchFilters) => {
@@ -123,6 +183,15 @@ export default function SearchGoogleMaps() {
       }
     },
     []
+  );
+
+  // ── Re-run a saved/recent search ─────────────────────────────────────
+  const handleRerunSearch = useCallback(
+    (rerunFilters: SearchFilters) => {
+      setFilters(rerunFilters);
+      handleSearch(rerunFilters);
+    },
+    [handleSearch]
   );
 
   /** Save one lead via single create (returns ID for routing) */
@@ -338,6 +407,23 @@ export default function SearchGoogleMaps() {
               initialFilters={filters}
               onClearForm={handleClearSearch}
             />
+
+            {/* Search history panel — visible when form is expanded, hidden when collapsed */}
+            {!loading && (
+              <div className="mt-3">
+                <SearchHistoryPanel
+                  recent={historyRecent}
+                  saved={historySaved}
+                  loading={historyLoading}
+                  onRerun={handleRerunSearch}
+                  onDeleteSaved={handleDeleteSaved}
+                  onSaveCurrent={hasSearched ? handleSaveSearch : undefined}
+                  hasCurrentSearch={hasSearched}
+                  currentFilters={hasSearched ? filters : null}
+                  hideRecent={hasSearched}
+                />
+              </div>
+            )}
           </div>
         )}
 

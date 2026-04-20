@@ -91,6 +91,13 @@ export default function LeadsPage() {
         source: l.source ?? "outscraper",
         notes: l.notes ?? null,
         created_at: l.created_at,
+        lastActivity: l.lastActivity
+          ? {
+              label: l.lastActivity.label,
+              timestamp: new Date(l.lastActivity.timestamp),
+              ...(l.lastActivity.replyIntent ? { replyIntent: l.lastActivity.replyIntent } : {}),
+            }
+          : null,
       }));
 
       return { leads: mapped, total: result.total };

@@ -16,6 +16,7 @@ import { useProfile } from "@/contexts/profile-context";
 import type { Lead, ReviewSummary } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
 import { NotesEditor } from "@/components/leads/NotesEditor";
+import { formatRelativeTime, REPLY_INTENT_CHIP } from "@/lib/activity-utils";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 
 // ─── Fallback subjects/body ─────────────────────────────────────────────────
@@ -192,7 +193,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
 
   // Memoized derived values — avoid recalculating on every render
   const hasEmail = useMemo(() => !!(lead?.email && lead.email.trim().length > 0), [lead?.email]);
-  const canSend = useMemo(() => hasEmail && lead?.email_status !== "invalid" && lead?.email_status !== "spamtrap", [hasEmail, lead?.email_status]);
+  const canSend = useMemo(() => lead?.email_deliverability === 'deliverable' || lead?.email_deliverability === 'risky', [lead?.email_deliverability]);
   const emailBadge = useMemo(() => lead?.email_status ? EMAIL_STATUS_BADGE[lead.email_status] : undefined, [lead?.email_status]);
   const isRecontact = router.query.action === "compose";
 
@@ -704,6 +705,20 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
         </div>
         <div className="flex items-center gap-2">
           <Badge className="capitalize">{lead.status}</Badge>
+          {lead.lastActivity && (
+            <span className="text-[11px] text-text-muted flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
+              {lead.lastActivity.replyIntent && (() => {
+                const chip = REPLY_INTENT_CHIP[lead.lastActivity.replyIntent!];
+                return chip ? (
+                  <span className={`inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium leading-tight ${chip.className}`}>
+                    {chip.label}
+                  </span>
+                ) : null;
+              })()}
+            </span>
+          )}
           {repliesQuery.data?.replies?.length ? (
             <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-full flex items-center gap-1">
               <MessageSquare className="w-2.5 h-2.5" />

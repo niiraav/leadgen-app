@@ -111,11 +111,30 @@ export const handleInboundReply = inngest.createFunction(
             return { type: 'out_of_office', status: 'updated' }
           }
           case 'bounce_hard': {
+            // Sprint 2 patch: do NOT overwrite lead status with 'bounced_hard'
+            // (not in LeadStatus union). Only update email_status.
+            // If email_status was already 'bounced', skip the activity log.
+            const prevStatus = lead.email_status
             await supabaseAdmin
               .from('leads')
-              .update({ status: 'bounced_hard', email_status: 'bounced' })
+              .update({ email_status: 'bounced' })
               .eq('id', d.leadId)
               .eq('user_id', lead.user_id)
+            // Log activity only if email_status actually changed
+            if (prevStatus !== 'bounced') {
+              try {
+                await supabaseAdmin
+                  .from('lead_activities')
+                  .insert({
+                    lead_id: d.leadId,
+                    user_id: lead.user_id,
+                    type: 'status_changed',
+                    description: 'Email bounced (hard bounce)',
+                  })
+              } catch (actErr) {
+                console.warn('[handleInboundReply] Activity log failed for bounce_hard:', actErr)
+              }
+            }
             return { type: 'bounce_hard', status: 'updated' }
           }
           case 'bounce_soft': {
