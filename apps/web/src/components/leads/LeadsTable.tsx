@@ -51,6 +51,7 @@ export interface LeadsTableRow {
   status: string;
   engagementStatus?: string | null;
   pipelineStage?: string | null;
+  doNotContact?: boolean;
   notes?: string | null;
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | null;
   // Enriched contact fields
@@ -94,7 +95,10 @@ const StatusBadge = memo(function StatusBadge({ status, engagementStatus, pipeli
     closed: "bg-surface-2 text-text-faint",
     archived: "bg-surface-2 text-text-faint",
   };
-  const primary = pipelineStage || status;
+  // Phase 4: primary = pipeline_stage (sales), then engagement_status (outreach), then legacy status (fallback)
+  const primary = pipelineStage || engagementStatus || status;
+  // Show secondary engagement pill when pipeline_stage is primary and engagement differs
+  const showSecondary = !!pipelineStage && !!engagementStatus && engagementStatus !== pipelineStage;
   return (
     <span className="inline-flex items-center gap-1">
       <span
@@ -105,7 +109,7 @@ const StatusBadge = memo(function StatusBadge({ status, engagementStatus, pipeli
       >
         {primary}
       </span>
-      {engagementStatus && engagementStatus !== status && !pipelineStage && (
+      {showSecondary && (
         <span
           className={cn(
             "inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider opacity-70",
@@ -429,7 +433,7 @@ export const LeadsTable = memo(function LeadsTable({
                     "border-b border-border/20 hover:bg-surface-2 transition-colors group relative",
                     selected.has(lead.id) && "bg-blue/5",
                     "border-l-4",
-                    statusColors[lead.pipelineStage || lead.status] ?? "border-l-transparent"
+                    statusColors[lead.pipelineStage || lead.engagementStatus || lead.status] ?? "border-l-transparent"
                   )}
                 >
                   {/* Checkbox */}
@@ -571,6 +575,7 @@ export const LeadsTable = memo(function LeadsTable({
                           phone: lead.phone ?? undefined,
                         }}
                         compact
+                        doNotContact={!!lead.doNotContact}
                       />
                     </div>
                   </td>

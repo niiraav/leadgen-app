@@ -5,7 +5,7 @@ import {
   type SavedLead,
   type ActivityLogEntry,
 } from '@/components/leads/SavedLeadsTable';
-import type { LeadStatus } from '@leadgen/shared';
+import type { LeadStatus, EngagementStatus, PipelineStage } from '@leadgen/shared';
 
 export default function SavedLeadsTestPage() {
   const [leads, setLeads] = React.useState<SavedLead[]>(MOCK_SAVED_LEADS);
@@ -20,10 +20,19 @@ export default function SavedLeadsTestPage() {
       console.log('Remove:', leadId);
       setLeads((prev) => prev.filter((l) => l.id !== leadId));
     },
-    onStatusChange: (leadId: string, newStatus: LeadStatus) => {
-      console.log('Status change:', leadId, newStatus);
+    onStatusChange: (leadId: string, newStatus: LeadStatus, field?: 'engagement_status' | 'pipeline_stage') => {
+      console.log('Status change:', leadId, newStatus, field);
       setLeads((prev) =>
-        prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l)),
+        prev.map((l) => {
+          if (l.id !== leadId) return l;
+          // Phase 4: update domain field + legacy status for compat
+          return {
+            ...l,
+            status: newStatus,
+            ...(field === 'engagement_status' ? { engagementStatus: newStatus as EngagementStatus } : {}),
+            ...(field === 'pipeline_stage' ? { pipelineStage: newStatus as PipelineStage } : {}),
+          };
+        }),
       );
     },
     onLogActivity: (leadId: string, entry: ActivityLogEntry) => {

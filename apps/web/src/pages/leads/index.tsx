@@ -88,6 +88,7 @@ export default function LeadsPage() {
         status: l.status,
         engagementStatus: l.engagement_status ?? null,
         pipelineStage: l.pipeline_stage ?? null,
+        doNotContact: l.do_not_contact ?? false,
         hot_score: l.hot_score ?? 0,
         list_id: l.list_id ?? null,
         source: l.source ?? "outscraper",

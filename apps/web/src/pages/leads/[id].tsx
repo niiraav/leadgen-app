@@ -5,7 +5,7 @@ import { HotScoreBadge } from "@/components/ui/badge";
 import {
   Mail, Phone, MapPin, Globe, ExternalLink, Sparkles, Send, Loader2, Copy,
   Check, MessageSquare, Clock, AlertCircle, Pencil, ChevronDown, X,
-  Linkedin, Search, Info, RefreshCw, Star,
+  Linkedin, Search, Info, RefreshCw, Star, AlertTriangle,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
@@ -201,7 +201,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
 
   // Memoized derived values — avoid recalculating on every render
   const hasEmail = useMemo(() => !!(lead?.email && lead.email.trim().length > 0), [lead?.email]);
-  const canSend = useMemo(() => lead?.email_deliverability === 'deliverable' || lead?.email_deliverability === 'risky', [lead?.email_deliverability]);
+  const canSend = useMemo(() =>
+    (lead?.email_deliverability === 'deliverable' || lead?.email_deliverability === 'risky') && !lead?.doNotContact,
+    [lead?.email_deliverability, lead?.doNotContact]
+  );
   const emailBadge = useMemo(() => lead?.email_status ? EMAIL_STATUS_BADGE[lead.email_status] : undefined, [lead?.email_status]);
   const isRecontact = router.query.action === "compose";
 
@@ -426,10 +429,13 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     const mailtoUri = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}${replyCc}`;
     window.location.href = mailtoUri;
 
-    if (lead.status === "new") {
+    // Phase 4: use engagement_status first, fallback to legacy status
+    if ((lead.engagementStatus ?? lead.status) === "new") {
       try {
         await api.pipeline.updateStatus(leadId, "contacted", `Email sent: ${subject}`);
-        queryClient.setQueryData(["lead", leadId], (prev: Lead | undefined) => prev ? { ...prev, status: "contacted" } : undefined);
+        queryClient.setQueryData(["lead", leadId], (prev: Lead | undefined) =>
+          prev ? { ...prev, engagement_status: "contacted", status: "contacted" } : undefined
+        );
       } catch (err) {
         console.warn("[LeadProfile] Failed to update status:", err);
       }
@@ -711,8 +717,27 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             {lead.review_count !== undefined && <span>{lead.review_count} reviews</span>}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className="capitalize">{lead.status}</Badge>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Phase 4: domain-split badges */}
+          {lead.pipelineStage && (
+            <Badge className="capitalize bg-blue-100 text-blue-800">{lead.pipelineStage.replace(/_/g, ' ')}</Badge>
+          )}
+          {(() => {
+            const eng = lead.engagementStatus ?? lead.status;
+            // Only show engagement badge if it differs from pipeline stage
+            // "contacted" is valid in both domains — show if pipeline_stage is different
+            if (eng && eng !== lead.pipelineStage) {
+              return <Badge className="capitalize">{eng.replace(/_/g, ' ')}</Badge>;
+            }
+            // If no pipeline stage but engagement has a value, show it
+            if (eng && !lead.pipelineStage) {
+              return <Badge className="capitalize">{eng.replace(/_/g, ' ')}</Badge>;
+            }
+            return null;
+          })()}
+          {lead.doNotContact && (
+            <Badge className="bg-red-100 text-red-800 text-[11px]">Do Not Contact</Badge>
+          )}
           {lead.lastActivity && (
             <span className="text-[11px] text-text-muted flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -735,11 +760,13 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
           ) : null}
           <div className="relative">
             <button
-              onClick={() => { setSequencesDropdown(!sequencesDropdown); if (!sequencesDropdown) loadSequences(); }}
+              onClick={() => { if (!lead.doNotContact) { setSequencesDropdown(!sequencesDropdown); if (!sequencesDropdown) loadSequences(); } }}
               className="btn btn-ghost text-xs py-1 h-7 px-2"
-              title="Enroll in sequence"
+              title={lead.doNotContact ? 'Cannot enroll — do not contact' : 'Enroll in sequence'}
+              disabled={!!lead.doNotContact}
             >
               Enroll in Sequence
+              {lead.doNotContact && <AlertTriangle className="w-3 h-3 ml-1 text-amber-500" />}
               <ChevronDown className="w-3 h-3" />
             </button>
             {sequencesDropdown && (
@@ -1352,6 +1379,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     if (el) el.scrollIntoView({ behavior: "smooth" });
                     if (!draftEmail) handleAISuggest(false);
                   }}
+                  doNotContact={!!lead.doNotContact}
                 />
               </div>
             </div>
@@ -1651,8 +1679,9 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     )}
                     <button
                       onClick={handleSend}
-                      disabled={emailLoading || !draftEmail}
+                      disabled={emailLoading || !draftEmail || !!lead.doNotContact}
                       className="btn btn-primary text-xs py-1.5 h-8 disabled:opacity-50"
+                      title={lead.doNotContact ? 'Cannot send — do not contact' : undefined}
                     >
                       {emailLoading ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />

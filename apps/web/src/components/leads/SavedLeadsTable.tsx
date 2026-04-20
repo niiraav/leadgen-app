@@ -28,6 +28,8 @@ import {
 import { NotesEditor } from './NotesEditor';
 import type {
   LeadStatus,
+  EngagementStatus,
+  PipelineStage,
   EmailDeliverabilityState,
   ActivityEntry,
   ReplyIntent,
@@ -57,6 +59,10 @@ export interface SavedLead {
     facebook?: string;
   };
   status: LeadStatus;
+  // Phase 4: domain-specific status fields (preferred over legacy status)
+  engagementStatus?: EngagementStatus | null;
+  pipelineStage?: PipelineStage | null;
+  doNotContact?: boolean;
   lastActivity?: ActivityEntry | null;
   phone?: string;
   whatsapp?: string;
@@ -79,15 +85,33 @@ export interface SavedLeadsTableProps {
   onEnrichClick: (lead: SavedLead) => void;
   onOpenLead: (lead: SavedLead) => void;
   onRemoveLead: (leadId: string) => void;
-  onStatusChange: (leadId: string, newStatus: LeadStatus) => void;
+  // Phase 4: status change can target a specific domain field
+  onStatusChange: (leadId: string, newStatus: LeadStatus, field?: 'engagement_status' | 'pipeline_stage') => void;
   onLogActivity: (leadId: string, entry: ActivityLogEntry) => void;
   onSearchClick?: () => void;
   onRetry?: () => void;
 }
 
-// ── Status badge config ──────────────────────────────────────────
+// ── Status badge config (Phase 4: domain-split) ─────────────────
 
-const STATUS_BADGE_CONFIG: Record<LeadStatus, { label: string; className: string }> = {
+const PIPELINE_BADGE_CONFIG: Record<string, { label: string; className: string }> = {
+  qualified:        { label: 'Qualified',       className: 'bg-purple-100 text-purple-700' },
+  proposal_sent:    { label: 'Proposal Sent',   className: 'bg-violet-100 text-violet-700' },
+  converted:        { label: 'Converted',       className: 'bg-teal-100 text-teal-700' },
+  lost:             { label: 'Lost',            className: 'bg-red-100 text-red-400' },
+};
+
+const ENGAGEMENT_BADGE_CONFIG: Record<string, { label: string; className: string }> = {
+  new:              { label: 'New',              className: 'bg-blue-100 text-blue-700' },
+  contacted:        { label: 'Contacted',        className: 'bg-amber-100 text-amber-700' },
+  replied:          { label: 'Replied',          className: 'bg-green-100 text-green-700' },
+  interested:       { label: 'Interested',       className: 'bg-emerald-100 text-emerald-700' },
+  not_interested:   { label: 'Not Interested',  className: 'bg-gray-100 text-gray-500' },
+  out_of_office:    { label: 'Out of Office',   className: 'bg-yellow-100 text-yellow-600' },
+};
+
+// Phase 4: legacy fallback for old rows without domain columns
+const LEGACY_BADGE_CONFIG: Record<string, { label: string; className: string }> = {
   new:              { label: 'New',              className: 'bg-blue-100 text-blue-700' },
   contacted:        { label: 'Contacted',        className: 'bg-amber-100 text-amber-700' },
   replied:          { label: 'Replied',          className: 'bg-green-100 text-green-700' },
@@ -102,6 +126,15 @@ const STATUS_BADGE_CONFIG: Record<LeadStatus, { label: string; className: string
   out_of_office:    { label: 'Out of Office',   className: 'bg-yellow-100 text-yellow-600' },
   do_not_contact:   { label: 'Do Not Contact',  className: 'bg-red-100 text-red-600' },
 };
+
+// Phase 4: classify a LeadStatus value into its domain
+function classifyStatus(s: LeadStatus): 'engagement' | 'pipeline' | 'lifecycle' | 'compliance' {
+  if (['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'].includes(s)) return 'engagement';
+  if (['qualified', 'proposal_sent', 'converted', 'lost'].includes(s)) return 'pipeline';
+  if (['closed', 'archived'].includes(s)) return 'lifecycle';
+  if (s === 'do_not_contact') return 'compliance';
+  return 'lifecycle'; // fallback
+}
 
 // ── Relative time formatting ─────────────────────────────────────
 
@@ -147,8 +180,10 @@ function handleAutoStatusUpdate(
   onStatusChange: SavedLeadsTableProps['onStatusChange'],
   onLogActivity: SavedLeadsTableProps['onLogActivity']
 ) {
-  if (lead.status !== 'new') return;
-  onStatusChange(lead.id, 'contacted');
+  // Phase 4: use engagement_status first, fallback to legacy status
+  const isEngagementNew = (lead.engagementStatus ?? lead.status) === 'new';
+  if (!isEngagementNew) return;
+  onStatusChange(lead.id, 'contacted', 'engagement_status');
   onLogActivity(lead.id, {
     label: messageType === 'email' ? 'Email sent' : 'WhatsApp sent',
     timestamp: new Date(),
@@ -194,7 +229,7 @@ function LogForm({
       label: 'Email logged',
       timestamp: new Date(date),
     });
-    if (lead.status === 'new') {
+    if ((lead.engagementStatus ?? lead.status) === 'new') {
       setShowStatusPrompt(true);
     } else {
       onClose();
@@ -202,7 +237,7 @@ function LogForm({
   };
 
   const handleStatusYes = () => {
-    onStatusChange(lead.id, 'contacted');
+    onStatusChange(lead.id, 'contacted', 'engagement_status');
     onLogActivity(lead.id, { label: 'Status changed', timestamp: new Date() });
     onClose();
   };
@@ -420,18 +455,29 @@ function EmailCell({
             <div className="space-y-2">
               <button
                 onClick={() => {
+                  if (lead.doNotContact) return;
                   onEmailClick(lead);
                   handleAutoStatusUpdate(lead, 'email', onStatusChange, onLogActivity);
                 }}
-                className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                disabled={lead.doNotContact}
+                className={`w-full rounded px-3 py-1.5 text-sm font-medium ${
+                  lead.doNotContact
+                    ? 'bg-red-200 text-red-400 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                Send email
+                {lead.doNotContact ? 'Do Not Contact' : 'Send email'}
               </button>
               <button
-                onClick={() => onSequenceClick(lead)}
-                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => { if (!lead.doNotContact) onSequenceClick(lead); }}
+                disabled={lead.doNotContact}
+                className={`w-full rounded border px-3 py-1.5 text-sm font-medium ${
+                  lead.doNotContact
+                    ? 'border-red-200 text-red-400 cursor-not-allowed'
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                Add to sequence
+                {lead.doNotContact ? 'Enrollment blocked' : 'Add to sequence'}
               </button>
               <button
                 type="button"
@@ -503,18 +549,29 @@ function EmailCell({
             <div className="space-y-2">
               <button
                 onClick={() => {
+                  if (lead.doNotContact) return;
                   onEmailClick(lead);
                   handleAutoStatusUpdate(lead, 'email', onStatusChange, onLogActivity);
                 }}
-                className="w-full rounded bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+                disabled={lead.doNotContact}
+                className={`w-full rounded px-3 py-1.5 text-sm font-medium ${
+                  lead.doNotContact
+                    ? 'bg-red-200 text-red-400 cursor-not-allowed'
+                    : 'bg-amber-500 text-white hover:bg-amber-600'
+                }`}
               >
-                Send anyway
+                {lead.doNotContact ? 'Do Not Contact' : 'Send anyway'}
               </button>
               <button
-                onClick={() => onSequenceClick(lead)}
-                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                onClick={() => { if (!lead.doNotContact) onSequenceClick(lead); }}
+                disabled={lead.doNotContact}
+                className={`w-full rounded border px-3 py-1.5 text-sm font-medium ${
+                  lead.doNotContact
+                    ? 'border-red-200 text-red-400 cursor-not-allowed'
+                    : 'border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
               >
-                Add to sequence
+                {lead.doNotContact ? 'Enrollment blocked' : 'Add to sequence'}
               </button>
               <button
                 type="button"
@@ -732,10 +789,9 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
     );
   }
 
-  // ── Status submenu items split ─────────────────────────────
-  const mainStatuses = STATUS_ORDER.filter(
-    (s) => s !== 'do_not_contact' && s !== 'archived'
-  );
+  // ── Status submenu items split (Phase 4: domain-split) ────────
+  const engagementStatusOptions: LeadStatus[] = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
+  const pipelineStatusOptions: LeadStatus[] = ['qualified', 'proposal_sent', 'converted', 'lost'];
   const warningStatuses: LeadStatus[] = ['do_not_contact', 'archived'];
 
   return (
@@ -910,26 +966,70 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                     )}
                   </td>
 
-                  {/* Col 7 — Status */}
+                  {/* Col 7 — Status (Phase 4: domain-split) */}
                   <td className="px-3 py-3">
-                    {(() => {
-                      const config = STATUS_BADGE_CONFIG[lead.status];
-                      if (config) {
-                        return (
-                          <span
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${config.className}`}
-                            aria-label={config.label}
-                          >
-                            {config.label}
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-400">
-                          {lead.status}
+                    <div className="flex flex-wrap gap-1 items-center">
+                      {/* do_not_contact restriction badge */}
+                      {lead.doNotContact && (
+                        <span
+                          className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-600"
+                          aria-label="Do Not Contact"
+                        >
+                          DNC
                         </span>
-                      );
-                    })()}
+                      )}
+                      {/* pipeline_stage badge (primary) */}
+                      {(lead.pipelineStage != null)
+                        ? (() => {
+                            const cfg = PIPELINE_BADGE_CONFIG[lead.pipelineStage!];
+                            return cfg ? (
+                              <span
+                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${cfg.className}`}
+                                aria-label={cfg.label}
+                              >
+                                {cfg.label}
+                              </span>
+                            ) : (
+                              <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-400">
+                                {lead.pipelineStage}
+                              </span>
+                            );
+                          })()
+                        : null}
+                      {/* engagement_status badge */}
+                      {(lead.engagementStatus != null)
+                        ? (() => {
+                            const cfg = ENGAGEMENT_BADGE_CONFIG[lead.engagementStatus!];
+                            return cfg ? (
+                              <span
+                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${cfg.className}`}
+                                aria-label={cfg.label}
+                              >
+                                {cfg.label}
+                              </span>
+                            ) : (
+                              <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-400">
+                                {lead.engagementStatus}
+                              </span>
+                            );
+                          })()
+                        /* Phase 4: legacy fallback for old rows with no domain columns */
+                        : (() => {
+                            const cfg = LEGACY_BADGE_CONFIG[lead.status];
+                            return cfg ? (
+                              <span
+                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${cfg.className}`}
+                                aria-label={cfg.label}
+                              >
+                                {cfg.label}
+                              </span>
+                            ) : (
+                              <span className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-400">
+                                {lead.status}
+                              </span>
+                            );
+                          })()}
+                    </div>
                   </td>
 
                   {/* Col 8 — Last Activity */}
@@ -1075,8 +1175,27 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               </div>
                             ) : (
                             <>
-                            {/* Send email */}
-                            {lead.email.deliverability === 'none' ? (
+                            {/* Send email — Phase 4: blocked if do_not_contact */}
+                            {lead.doNotContact ? (
+                              <Tooltip.Root>
+                                <Tooltip.Trigger asChild>
+                                  <DropdownMenu.Item
+                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-300 cursor-not-allowed outline-none"
+                                    disabled
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Mail className="w-4 h-4" />
+                                    Send email
+                                  </DropdownMenu.Item>
+                                </Tooltip.Trigger>
+                                <Tooltip.Portal>
+                                  <Tooltip.Content className="rounded bg-red-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
+                                    Do Not Contact — sends blocked
+                                    <Tooltip.Arrow className="fill-red-900" />
+                                  </Tooltip.Content>
+                                </Tooltip.Portal>
+                              </Tooltip.Root>
+                            ) : lead.email.deliverability === 'none' ? (
                               <DropdownMenu.Item
                                 className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
                                 onSelect={() => onEnrichClick(lead)}
@@ -1135,8 +1254,27 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               </DropdownMenu.Item>
                             )}
 
-                            {/* Send WhatsApp */}
-                            {lead.whatsapp ? (
+                            {/* Send WhatsApp — Phase 4: blocked if do_not_contact */}
+                            {lead.doNotContact ? (
+                              <Tooltip.Root>
+                                <Tooltip.Trigger asChild>
+                                  <DropdownMenu.Item
+                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-300 cursor-not-allowed outline-none"
+                                    disabled
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <MessageCircle className="w-4 h-4" />
+                                    Send WhatsApp
+                                  </DropdownMenu.Item>
+                                </Tooltip.Trigger>
+                                <Tooltip.Portal>
+                                  <Tooltip.Content className="rounded bg-red-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
+                                    Do Not Contact — sends blocked
+                                    <Tooltip.Arrow className="fill-red-900" />
+                                  </Tooltip.Content>
+                                </Tooltip.Portal>
+                              </Tooltip.Root>
+                            ) : lead.whatsapp ? (
                               <DropdownMenu.Item
                                 className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
                                 onSelect={() => {
@@ -1168,14 +1306,35 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               </Tooltip.Root>
                             )}
 
-                            {/* Add to sequence */}
-                            <DropdownMenu.Item
-                              className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
-                              onSelect={() => onSequenceClick(lead)}
-                            >
-                              <ListPlus className="w-4 h-4" />
-                              Add to sequence
-                            </DropdownMenu.Item>
+                            {/* Add to sequence — Phase 4: blocked if do_not_contact */}
+                            {lead.doNotContact ? (
+                              <Tooltip.Root>
+                                <Tooltip.Trigger asChild>
+                                  <DropdownMenu.Item
+                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-300 cursor-not-allowed outline-none"
+                                    disabled
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <ListPlus className="w-4 h-4" />
+                                    Add to sequence
+                                  </DropdownMenu.Item>
+                                </Tooltip.Trigger>
+                                <Tooltip.Portal>
+                                  <Tooltip.Content className="rounded bg-red-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
+                                    Do Not Contact — enrollment blocked
+                                    <Tooltip.Arrow className="fill-red-900" />
+                                  </Tooltip.Content>
+                                </Tooltip.Portal>
+                              </Tooltip.Root>
+                            ) : (
+                              <DropdownMenu.Item
+                                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
+                                onSelect={() => onSequenceClick(lead)}
+                              >
+                                <ListPlus className="w-4 h-4" />
+                                Add to sequence
+                              </DropdownMenu.Item>
+                            )}
 
                             <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
 
@@ -1195,25 +1354,45 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               </DropdownMenu.SubTrigger>
                               <DropdownMenu.Portal>
                                 <DropdownMenu.SubContent
-                                  className="rounded-lg border border-gray-200 bg-white p-1 shadow-xl z-50 min-w-[180px]"
+                                  className="rounded-lg border border-gray-200 bg-white p-1 shadow-xl z-50 min-w-[200px]"
                                   sideOffset={2}
                                   alignOffset={-5}
                                 >
-                                  {mainStatuses.map((s) => (
+                                  {/* Engagement status section */}
+                                  <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Engagement</div>
+                                  {engagementStatusOptions.map((s) => (
                                     <DropdownMenu.Item
                                       key={s}
                                       className="flex items-center justify-between rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
                                       onSelect={() => {
-                                        onStatusChange(lead.id, s);
+                                        onStatusChange(lead.id, s, 'engagement_status');
                                         onLogActivity(lead.id, { label: 'Status changed', timestamp: new Date() });
                                         closePopover();
                                       }}
                                     >
-                                      <span>{STATUS_BADGE_CONFIG[s]?.label ?? s}</span>
-                                      {lead.status === s && <Check className="w-3 h-3 text-blue-600" />}
+                                      <span>{ENGAGEMENT_BADGE_CONFIG[s]?.label ?? s}</span>
+                                      {(lead.engagementStatus ?? lead.status) === s && <Check className="w-3 h-3 text-blue-600" />}
                                     </DropdownMenu.Item>
                                   ))}
                                   <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
+                                  {/* Pipeline stage section */}
+                                  <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pipeline</div>
+                                  {pipelineStatusOptions.map((s) => (
+                                    <DropdownMenu.Item
+                                      key={s}
+                                      className="flex items-center justify-between rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer outline-none"
+                                      onSelect={() => {
+                                        onStatusChange(lead.id, s, 'pipeline_stage');
+                                        onLogActivity(lead.id, { label: 'Status changed', timestamp: new Date() });
+                                        closePopover();
+                                      }}
+                                    >
+                                      <span>{PIPELINE_BADGE_CONFIG[s]?.label ?? s}</span>
+                                      {lead.pipelineStage === s && <Check className="w-3 h-3 text-blue-600" />}
+                                    </DropdownMenu.Item>
+                                  ))}
+                                  <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
+                                  {/* Warning / compliance section */}
                                   {warningStatuses.map((s) => (
                                     <DropdownMenu.Item
                                       key={s}
@@ -1224,7 +1403,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                         closePopover();
                                       }}
                                     >
-                                      <span>{STATUS_BADGE_CONFIG[s]?.label ?? s}</span>
+                                      <span>{LEGACY_BADGE_CONFIG[s]?.label ?? s}</span>
                                       {lead.status === s && <Check className="w-3 h-3 text-blue-600" />}
                                     </DropdownMenu.Item>
                                   ))}
@@ -1353,6 +1532,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
       facebook: 'https://facebook.com/acmecorp',
     },
     status: 'new',
+    engagementStatus: 'new',
     lastActivity: null,
     phone: '+44 20 1234 5678',
     whatsapp: '+44 7911 123456',
@@ -1372,6 +1552,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
       linkedin: 'https://linkedin.com/company/beta-solutions',
     },
     status: 'contacted',
+    engagementStatus: 'contacted',
     lastActivity: null,
     phone: '+44 161 987 6543',
     whatsapp: '+44 7911 654321',
@@ -1390,6 +1571,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
       website: 'https://gammatech.io',
     },
     status: 'replied',
+    engagementStatus: 'replied',
     lastActivity: null,
     phone: '+44 121 555 1234',
     whatsapp: undefined,
@@ -1406,6 +1588,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     email: { address: 'dave@deltaservices.com', deliverability: 'verifying' },
     links: {},
     status: 'interested',
+    engagementStatus: 'interested',
     lastActivity: null,
     phone: '+44 131 222 3333',
     whatsapp: '+44 7911 999888',
@@ -1422,6 +1605,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     email: { deliverability: 'none' },
     links: {},
     status: 'not_interested',
+    engagementStatus: 'not_interested',
     lastActivity: null,
     phone: '+44 117 444 5555',
     whatsapp: undefined,
@@ -1441,6 +1625,8 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
       linkedin: 'https://linkedin.com/in/frankmiller',
     },
     status: 'qualified',
+    engagementStatus: 'contacted',
+    pipelineStage: 'qualified',
     lastActivity: null,
     phone: '+44 113 666 7777',
     whatsapp: undefined,
@@ -1456,6 +1642,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     email: { address: 'hello@etadesign.com', deliverability: 'deliverable' },
     links: { website: 'https://etadesign.com' },
     status: 'proposal_sent',
+    pipelineStage: 'proposal_sent',
     lastActivity: null,
     phone: '+44 141 888 9999',
     whatsapp: '+44 7911 111222',
@@ -1470,6 +1657,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     email: { address: 'team@thetaanalytics.wales', deliverability: 'risky' },
     links: {},
     status: 'converted',
+    pipelineStage: 'converted',
     lastActivity: null,
     phone: '+44 29 222 3333',
     notes: '',
@@ -1495,6 +1683,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     email: { address: 'ops@kappalog.co.uk', deliverability: 'risky' },
     links: { website: 'https://kappalog.co.uk' },
     status: 'lost',
+    pipelineStage: 'lost',
     lastActivity: null,
     whatsapp: '+44 7911 333444',
     notes: '',
@@ -1508,6 +1697,7 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     email: { address: 'press@lambdamedia.co', deliverability: 'deliverable' },
     links: { website: 'https://lambdamedia.co', instagram: 'https://instagram.com/lambdamedia' },
     status: 'out_of_office',
+    engagementStatus: 'out_of_office',
     lastActivity: null,
     whatsapp: '+44 7911 555666',
     notes: '',
@@ -1520,7 +1710,9 @@ export const MOCK_SAVED_LEADS: SavedLead[] = [
     score: 30,
     email: { address: 'abuse@ musec.co.uk', deliverability: 'undeliverable' },
     links: {},
-    status: 'do_not_contact',
+    status: 'not_interested',
+    engagementStatus: 'not_interested',
+    doNotContact: true,
     lastActivity: null,
     notes: 'Requested removal from mailing list',
   },

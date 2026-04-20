@@ -12,6 +12,10 @@ interface Lead {
   city: string | null;
   category: string | null;
   status: string;
+  // Phase 4: domain-specific fields (preferred)
+  engagement_status?: string | null;
+  pipeline_stage?: string | null;
+  do_not_contact?: boolean | null;
 }
 
 export default function EnrollPage() {
@@ -36,7 +40,11 @@ export default function EnrollPage() {
     ]).then(([seq, leadsRes]) => {
       setSeqName(seq.name);
       const available = (leadsRes.data ?? []).filter(
-        (l: Lead) => l.status === "new" || l.status === "contacted"
+        // Phase 4: use engagement_status first, fallback to legacy status
+        // do_not_contact blocks enrollment; pipeline_stage does not affect eligibility
+        (l: Lead) =>
+          !l.do_not_contact &&
+          ((l.engagement_status ?? l.status) === "new" || (l.engagement_status ?? l.status) === "contacted")
       );
       setAllLeads(available);
       setLeads(available);
@@ -178,7 +186,9 @@ export default function EnrollPage() {
                   {lead.email ?? "No email"}{lead.city ? ` · ${lead.city}` : ""}
                 </p>
               </div>
-              <span className="text-xs text-text-faint capitalize">{lead.status}</span>
+              <span className="text-xs text-text-faint capitalize">
+                {lead.do_not_contact ? 'DNC' : (lead.engagement_status ?? lead.status)}
+              </span>
             </div>
           </div>
         ))}

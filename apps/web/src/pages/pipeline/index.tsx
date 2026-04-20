@@ -64,8 +64,9 @@ export default function PipelinePage() {
         country: l.country || "",
         hotScore: l.hot_score,
         status: l.status,
-        engagementStatus: (l as any).engagementStatus ?? null,
-        pipelineStage: (l as any).pipelineStage ?? null,
+        // Phase 4: use domain fields directly (mapBackendLead already maps them)
+        engagementStatus: l.engagement_status ?? null,
+        pipelineStage: l.pipeline_stage ?? null,
       }));
       setLeads(mapped);
       setLoading(false);
@@ -80,6 +81,8 @@ export default function PipelinePage() {
     fetchLeads();
   }, [fetchLeads]);
 
+  const PIPELINE_STAGES = ['qualified', 'proposal_sent', 'converted', 'lost'] as const;
+
   const handleMoveLead = async (leadId: string, newStatus: string) => {
     setMovingId(leadId);
     try {
@@ -88,11 +91,13 @@ export default function PipelinePage() {
       setLeads((prev) =>
         prev.map((l) => {
           if (l.id !== leadId) return l;
-          const isPipelineStage = ["qualified", "proposal_sent", "converted", "lost"].includes(newStatus);
+          const isPipelineStage = (PIPELINE_STAGES as readonly string[]).includes(newStatus);
           return {
             ...l,
-            status: isPipelineStage ? l.status : newStatus,
-            pipelineStage: isPipelineStage ? newStatus : null,
+            // Phase 4: update the correct domain field optimistically
+            status: newStatus, // legacy compat
+            pipelineStage: isPipelineStage ? newStatus : l.pipelineStage,
+            engagementStatus: isPipelineStage ? l.engagementStatus : newStatus,
           };
         })
       );
@@ -135,8 +140,9 @@ export default function PipelinePage() {
               if (['qualified', 'proposal_sent', 'converted', 'lost'].includes(col.id)) {
                 return l.pipelineStage === col.id;
               }
-              // "new" or "contacted" — no pipeline stage yet
-              return l.status === col.id && !l.pipelineStage;
+              // Phase 4: use engagementStatus first, fallback to legacy status
+              const effectiveEngagement = l.engagementStatus ?? l.status;
+              return effectiveEngagement === col.id && !l.pipelineStage;
             });
 
             return (
@@ -199,7 +205,7 @@ export default function PipelinePage() {
                       {/* Status Dropdown */}
                       <div className="mt-3">
                         <select
-                          value={lead.pipelineStage || lead.status}
+                          value={lead.pipelineStage || lead.engagementStatus || lead.status}
                           disabled={movingId === lead.id}
                           onChange={(e) => handleMoveLead(lead.id, e.target.value)}
                           className="w-full h-7 px-2 text-[10px] font-medium rounded-md bg-surface-2 border border-border text-text-muted focus:outline-none focus:ring-1 focus:ring-blue/20 cursor-pointer uppercase tracking-wider disabled:opacity-50"

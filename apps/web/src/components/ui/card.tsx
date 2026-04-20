@@ -135,6 +135,39 @@ export function KPICard({
 import Link from "next/link";
 import { HotScoreBadge } from "@/components/ui/badge";
 
+// Phase 4: badge color maps for domain-specific status fields
+const PIPELINE_BADGE_COLORS: Record<string, string> = {
+  qualified: "bg-purple/10 text-purple",
+  proposal_sent: "bg-violet/10 text-violet",
+  converted: "bg-green/10 text-green",
+  lost: "bg-red/10 text-red",
+};
+
+const ENGAGEMENT_BADGE_COLORS: Record<string, string> = {
+  new: "bg-blue/10 text-blue",
+  contacted: "bg-amber/10 text-amber",
+  replied: "bg-green/10 text-green",
+  interested: "bg-emerald/10 text-emerald",
+  not_interested: "bg-gray-200/10 text-gray-500",
+  out_of_office: "bg-yellow/10 text-yellow-600",
+};
+
+// Phase 4: legacy fallback for old rows without domain columns
+const LEGACY_BADGE_COLORS: Record<string, string> = {
+  new: "bg-blue/10 text-blue",
+  contacted: "bg-amber/10 text-amber",
+  replied: "bg-green/10 text-green",
+  interested: "bg-emerald/10 text-emerald",
+  not_interested: "bg-gray-200/10 text-gray-500",
+  qualified: "bg-purple/10 text-purple",
+  proposal_sent: "bg-violet/10 text-violet",
+  converted: "bg-green/10 text-green",
+  closed: "bg-gray-100/10 text-gray-400",
+  lost: "bg-red/10 text-red",
+  archived: "bg-gray-50/10 text-gray-400",
+  out_of_office: "bg-yellow/10 text-yellow-600",
+};
+
 export function LeadCard({
   lead,
   className,
@@ -148,15 +181,25 @@ export function LeadCard({
     location: string;
     hotScore: number;
     status: string;
+    pipelineStage?: string | null;
+    engagementStatus?: string | null;
+    doNotContact?: boolean;
     addedAt: string;
   };
   className?: string;
 }) {
+  // Phase 4: primary badge = pipeline_stage, secondary = engagement_status
+  const primaryBadge = lead.pipelineStage || null;
+  const secondaryBadge = lead.engagementStatus || null;
+  // Fallback: if no domain columns, use legacy status
+  const fallbackBadge = !primaryBadge && !secondaryBadge ? lead.status : null;
+
   return (
     <Link
       href={`/leads/${lead.id}`}
       className={cn(
         "block rounded-xl border border-border/60 bg-surface p-4 hover:shadow-md hover:border-border-strong transition-all duration-200 cursor-pointer group",
+        lead.doNotContact && "border-red/30",
         className
       )}
     >
@@ -173,19 +216,36 @@ export function LeadCard({
           <p className="text-xs text-text-faint mt-0.5">{lead.location}</p>
         </div>
         <div className="text-right shrink-0">
-          <span
-            className={cn(
-              "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-              lead.status === "new" && "bg-blue/10 text-blue",
-              lead.status === "contacted" && "bg-amber/10 text-amber",
-              lead.status === "replied" && "bg-green/10 text-green",
-              lead.status === "meeting" && "bg-accent/10 text-green",
-              lead.status === "won" && "bg-green/10 text-green",
-              lead.status === "lost" && "bg-red/10 text-red"
-            )}
-          >
-            {lead.status}
-          </span>
+          {/* Phase 4: do_not_contact warning badge */}
+          {lead.doNotContact && (
+            <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-red/10 text-red mb-1">
+              Do Not Contact
+            </span>
+          )}
+          {/* Primary badge: pipeline_stage (or legacy fallback) */}
+          {(primaryBadge || fallbackBadge) && (
+            <span
+              className={cn(
+                "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                primaryBadge
+                  ? PIPELINE_BADGE_COLORS[primaryBadge] || "bg-gray-100/10 text-gray-500"
+                  : LEGACY_BADGE_COLORS[fallbackBadge!] || "bg-gray-100/10 text-gray-500"
+              )}
+            >
+              {primaryBadge || fallbackBadge}
+            </span>
+          )}
+          {/* Secondary badge: engagement_status */}
+          {secondaryBadge && (
+            <span
+              className={cn(
+                "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ml-1",
+                ENGAGEMENT_BADGE_COLORS[secondaryBadge] || "bg-gray-100/10 text-gray-500"
+              )}
+            >
+              {secondaryBadge}
+            </span>
+          )}
           <p className="text-[10px] text-text-faint mt-1.5">
             {lead.addedAt}
           </p>
