@@ -5,6 +5,7 @@ import { HotScoreBadge } from "@/components/ui/badge";
 import { api, BackendPaginatedLeads } from "@/lib/api";
 import { Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { resolveStatusPatch, type LeadDomainFields } from "@/lib/lead-domains";
 
 const statusOptions = [
   { id: "new", title: "New Leads", color: "#1d6fa8" },
@@ -86,15 +87,27 @@ export default function PipelinePage() {
   const handleMoveLead = async (leadId: string, newStatus: string) => {
     setMovingId(leadId);
     try {
-      await api.pipeline.updateStatus(leadId, newStatus);
-      // Update local state — backend routes the value to the correct field
+      // Find the lead to resolve the correct domain patch
+      const lead = leads.find((l) => l.id === leadId);
+      if (!lead) throw new Error("Lead not found in local state");
+
+      const domainFields: LeadDomainFields = {
+        engagementStatus: lead.engagementStatus,
+        pipelineStage: lead.pipelineStage,
+        status: lead.status,
+        doNotContact: false,
+      };
+      const patch = resolveStatusPatch(domainFields, newStatus);
+      if (!patch) throw new Error("Invalid status transition");
+      await api.leads.update(leadId, patch as Record<string, unknown>);
+
+      // Optimistic local update
       setLeads((prev) =>
         prev.map((l) => {
           if (l.id !== leadId) return l;
           const isPipelineStage = (PIPELINE_STAGES as readonly string[]).includes(newStatus);
           return {
             ...l,
-            // Phase 4: update the correct domain field optimistically
             status: newStatus, // legacy compat
             pipelineStage: isPipelineStage ? newStatus : l.pipelineStage,
             engagementStatus: isPipelineStage ? l.engagementStatus : newStatus,

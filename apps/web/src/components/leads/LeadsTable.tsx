@@ -18,11 +18,13 @@ import {
   Facebook,
   Instagram,
   Twitter,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HotScoreBadge } from "@/components/ui/badge";
 import { SCORE_THRESHOLDS, type ReplyIntent } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
+import { StatusDropdown } from "@/components/leads/StatusDropdown";
 import { formatRelativeTime, REPLY_INTENT_CHIP } from "@/lib/activity-utils";
 
 const EMPTY_SET: Set<string> = new Set();
@@ -75,53 +77,8 @@ interface LeadsTableProps {
   onEnrich?: (id: string) => void;
   onVerify?: (id: string) => void;
   onRefresh?: () => void;
+  onStatusChange?: (leadId: string, patch: Record<string, unknown>) => void;
 }
-
-// --- Status badge helper ---
-
-const StatusBadge = memo(function StatusBadge({ status, engagementStatus, pipelineStage }: { status: string; engagementStatus?: string | null; pipelineStage?: string | null }) {
-  const map: Record<string, string> = {
-    new: "bg-blue/10 text-blue",
-    contacted: "bg-amber/10 text-amber",
-    responded: "bg-green/10 text-green",
-    interested: "bg-emerald/10 text-emerald",
-    not_interested: "bg-red/10 text-red",
-    out_of_office: "bg-surface-2 text-text-faint",
-    qualified: "bg-blue/10 text-blue",
-    proposal_sent: "bg-purple/10 text-purple",
-    converted: "bg-green/10 text-green",
-    won: "bg-green/10 text-green",
-    lost: "bg-red/10 text-red",
-    closed: "bg-surface-2 text-text-faint",
-    archived: "bg-surface-2 text-text-faint",
-  };
-  // Phase 4: primary = pipeline_stage (sales), then engagement_status (outreach), then legacy status (fallback)
-  const primary = pipelineStage || engagementStatus || status;
-  // Show secondary engagement pill when pipeline_stage is primary and engagement differs
-  const showSecondary = !!pipelineStage && !!engagementStatus && engagementStatus !== pipelineStage;
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span
-        className={cn(
-          "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-          map[primary] ?? "bg-surface-2 text-text-faint"
-        )}
-      >
-        {primary}
-      </span>
-      {showSecondary && (
-        <span
-          className={cn(
-            "inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider opacity-70",
-            map[engagementStatus] ?? "bg-surface-2 text-text-faint"
-          )}
-        >
-          {engagementStatus}
-        </span>
-      )}
-    </span>
-  );
-});
 
 // --- Email status icon ---
 
@@ -328,6 +285,7 @@ export const LeadsTable = memo(function LeadsTable({
   onEnrich,
   onVerify,
   onNotesSave,
+  onStatusChange,
 }: LeadsTableProps & {
   onNotesSave?: (id: string, notes: string) => void;
 }) {
@@ -432,6 +390,7 @@ export const LeadsTable = memo(function LeadsTable({
                   className={cn(
                     "border-b border-border/20 hover:bg-surface-2 transition-colors group relative",
                     selected.has(lead.id) && "bg-blue/5",
+                    lead.doNotContact && "opacity-60 bg-red/[0.03]",
                     "border-l-4",
                     statusColors[lead.pipelineStage || lead.engagementStatus || lead.status] ?? "border-l-transparent"
                   )}
@@ -614,7 +573,24 @@ export const LeadsTable = memo(function LeadsTable({
                   {/* Status + notes toggle */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <StatusBadge status={lead.status} engagementStatus={lead.engagementStatus} pipelineStage={lead.pipelineStage} />
+                      <StatusDropdown
+                        lead={{
+                          id: lead.id,
+                          engagementStatus: lead.engagementStatus,
+                          pipelineStage: lead.pipelineStage,
+                          lifecycleState: null,
+                          status: lead.status,
+                          doNotContact: !!lead.doNotContact,
+                        }}
+                        compact
+                        onStatusChange={(_leadId, patch) => onStatusChange?.(lead.id, patch)}
+                      />
+                      {lead.doNotContact && (
+                        <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-red/10 text-red px-1 py-0.5 rounded-full" title="Do not contact">
+                          <AlertTriangle className="w-2.5 h-2.5" />
+                          DNC
+                        </span>
+                      )}
                       {lead.contact_enrichment_status === "success" && (
                         <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-green/10 text-green px-1 py-0.5 rounded-full" title="Contact enriched">
                           <Sparkles className="w-2.5 h-2.5" />

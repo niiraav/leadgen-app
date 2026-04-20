@@ -16,8 +16,10 @@ import { useProfile } from "@/contexts/profile-context";
 import type { Lead, ReviewSummary } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
 import { NotesEditor } from "@/components/leads/NotesEditor";
+import { StatusDropdown } from "@/components/leads/StatusDropdown";
 import { formatRelativeTime, REPLY_INTENT_CHIP } from "@/lib/activity-utils";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
+import { getLeadDomain, resolveStatusPatch, type LeadDomainFields, DOMAIN_LABELS } from "@/lib/lead-domains";
 
 // ── Phase 3: Field-aware labels for status_changed activities ────────────────
 const FIELD_LABELS: Record<string, string> = {
@@ -429,12 +431,12 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     const mailtoUri = `mailto:${lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}${replyCc}`;
     window.location.href = mailtoUri;
 
-    // Phase 4: use engagement_status first, fallback to legacy status
+    // Phase 4.1: use api.leads.update for consistent domain resolution
     if ((lead.engagementStatus ?? lead.status) === "new") {
       try {
-        await api.pipeline.updateStatus(leadId, "contacted", `Email sent: ${subject}`);
+        await api.leads.update(leadId, { engagement_status: "contacted", status: "contacted" });
         queryClient.setQueryData(["lead", leadId], (prev: Lead | undefined) =>
-          prev ? { ...prev, engagement_status: "contacted", status: "contacted" } : undefined
+          prev ? { ...prev, engagement_status: "contacted", engagementStatus: "contacted", status: "contacted" } : undefined
         );
       } catch (err) {
         console.warn("[LeadProfile] Failed to update status:", err);
@@ -718,23 +720,33 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Phase 4: domain-split badges */}
-          {lead.pipelineStage && (
-            <Badge className="capitalize bg-blue-100 text-blue-800">{lead.pipelineStage.replace(/_/g, ' ')}</Badge>
-          )}
-          {(() => {
-            const eng = lead.engagementStatus ?? lead.status;
-            // Only show engagement badge if it differs from pipeline stage
-            // "contacted" is valid in both domains — show if pipeline_stage is different
-            if (eng && eng !== lead.pipelineStage) {
-              return <Badge className="capitalize">{eng.replace(/_/g, ' ')}</Badge>;
-            }
-            // If no pipeline stage but engagement has a value, show it
-            if (eng && !lead.pipelineStage) {
-              return <Badge className="capitalize">{eng.replace(/_/g, ' ')}</Badge>;
-            }
-            return null;
-          })()}
+          {/* Phase 4.1: StatusDropdown + domain context */}
+          <StatusDropdown
+            lead={{
+              id: leadId,
+              engagementStatus: lead.engagementStatus ?? null,
+              pipelineStage: lead.pipelineStage ?? null,
+              lifecycleState: null,
+              status: lead.status ?? null,
+              doNotContact: !!lead.doNotContact,
+            }}
+            onStatusChange={async (_leadId, patch) => {
+              try {
+                await api.leads.update(leadId, patch);
+                queryClient.invalidateQueries({ queryKey: ["lead", leadId] });
+              } catch (e: any) {
+                setToast(e.message || "Failed to update status");
+              }
+            }}
+          />
+          <span className="text-[10px] uppercase tracking-wider text-text-faint font-medium">
+            {DOMAIN_LABELS[getLeadDomain({
+              engagementStatus: lead.engagementStatus ?? null,
+              pipelineStage: lead.pipelineStage ?? null,
+              lifecycleState: null,
+              status: lead.status ?? null,
+            })]}
+          </span>
           {lead.doNotContact && (
             <Badge className="bg-red-100 text-red-800 text-[11px]">Do Not Contact</Badge>
           )}
@@ -1690,6 +1702,12 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       )}
                       {emailSent ? "Queued" : "Send Email"}
                     </button>
+                    {lead.doNotContact && (
+                      <span className="text-[10px] text-red flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Blocked — do not contact
+                      </span>
+                    )}
                   </>
                 )}
               </div>

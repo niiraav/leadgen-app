@@ -6,6 +6,8 @@ import { Search, ArrowUpDown, Download, Plus, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { LeadsTable, type LeadsTableRow } from "@/components/leads/LeadsTable";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
+import { BulkStatusDropdown } from "@/components/leads/BulkStatusDropdown";
+import { resolveStatusPatch, type LeadDomainFields, getLeadDomain } from "@/lib/lead-domains";
 
 const PAGE_SIZE = 20;
 
@@ -193,6 +195,65 @@ export default function LeadsPage() {
     setSelectedIds(new Set());
   }, []);
 
+  // ── Status change (single row) ──
+  const handleStatusChange = useCallback(async (leadId: string, patch: Record<string, unknown>) => {
+    try {
+      await api.leads.update(leadId, patch);
+      triggerRefetch();
+    } catch (e: any) {
+      alert(e.message || "Failed to update status");
+    }
+  }, [triggerRefetch]);
+
+  // ── Bulk status change ──
+  const [bulkStatusMsg, setBulkStatusMsg] = useState<string | null>(null);
+
+  const handleBulkStatusChange = useCallback(async (chosenValue: string) => {
+    let moved = 0;
+    let skipped = 0;
+
+    for (const lead of selectedLeads) {
+      const fields: LeadDomainFields = {
+        engagementStatus: lead.engagementStatus,
+        pipelineStage: lead.pipelineStage,
+        lifecycleState: null,
+        status: lead.status,
+        doNotContact: !!lead.doNotContact,
+      };
+
+      const patch = resolveStatusPatch(fields, chosenValue);
+      if (!patch) {
+        skipped++;
+        continue;
+      }
+
+      // Handle DNC toggle sentinel
+      if ("__toggle_dnc__" in patch) {
+        try {
+          await api.leads.update(lead.id, { do_not_contact: !fields.doNotContact });
+          moved++;
+        } catch { skipped++; }
+        continue;
+      }
+
+      try {
+        await api.leads.update(lead.id, patch);
+        moved++;
+      } catch {
+        skipped++;
+      }
+    }
+
+    const parts: string[] = [];
+    if (moved > 0) parts.push(`${moved} lead${moved === 1 ? "" : "s"} updated`);
+    if (skipped > 0) parts.push(`${skipped} skipped (wrong domain or error)`);
+    setBulkStatusMsg(parts.join(". ") || "No changes made");
+    setTimeout(() => setBulkStatusMsg(null), 5000);
+
+    setSelectedIds(new Set());
+    triggerRefetch();
+  }, [selectedLeads, triggerRefetch]);
+
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col">
       {/* Main content */}
@@ -282,6 +343,7 @@ export default function LeadsPage() {
             onRowClick={handleRowClick}
             onEnrich={handleEnrich}
             onVerify={handleVerify}
+            onStatusChange={handleStatusChange}
           />
         )}
 
@@ -290,8 +352,12 @@ export default function LeadsPage() {
           <div className="flex items-center justify-between mt-3 p-3 rounded-xl bg-blue/5 border border-blue/20">
             <span className="text-sm text-text">
               <strong>{selectedIds.size}</strong> selected
+              {bulkStatusMsg && (
+                <span className="ml-3 text-xs text-blue"> {bulkStatusMsg}</span>
+              )}
             </span>
             <div className="flex items-center gap-2">
+              <BulkStatusDropdown onApply={handleBulkStatusChange} />
               <button
                 onClick={handleBulkEnrich}
                 className="btn btn-primary text-xs"
