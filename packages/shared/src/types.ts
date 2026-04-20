@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 // ════════════════════════════════════════════
 // Core shared types for LeadGen App
 // ════════════════════════════════════════════
@@ -5,27 +7,23 @@
 // TECH DEBT: LeadStatus currently combines engagement statuses
 // (new, contacted, replied, interested, not_interested),
 // pipeline stages (qualified, proposal_sent, converted, lost),
-// automation statuses (out_of_office, do_not_contact),
+// compliance statuses (out_of_office, do_not_contact),
 // and lifecycle states (closed, archived).
-// Future refactor: split into LeadEngagementStatus +
-// PipelineStage + LeadLifecycleState.
-// Requires: pipeline page, dashboard, analytics, all badge
-// mappings. Do not change without a migration plan.
+// Phase 2 adds domain-specific columns: engagement_status, pipeline_stage,
+// lifecycle_state, do_not_contact (boolean). Old `status` column stays
+// writable during dual-write (Phase 4). Do not drop `status` until
+// Phase 6 backfill confirms completeness.
 
-export type LeadStatus =
-  | 'new'
-  | 'contacted'
-  | 'replied'
-  | 'interested'
-  | 'not_interested'
-  | 'qualified'
-  | 'proposal_sent'
-  | 'converted'
-  | 'closed'
-  | 'lost'
-  | 'archived'
-  | 'out_of_office'
-  | 'do_not_contact';
+// LeadStatus is derived from leadStatusSchema in schemas.ts.
+// The single source of truth is leadStatusSchema — this type is
+// re-exported from there for convenience. Do NOT add values here
+// without updating leadStatusSchema first.
+export type LeadStatus = z.infer<typeof import('./schemas').leadStatusSchema>;
+
+// Phase 2 domain types — canonical definitions live in schemas.ts
+type EngagementStatus = z.infer<typeof import('./schemas').engagementStatusSchema>;
+type PipelineStage = z.infer<typeof import('./schemas').pipelineStageSchema>;
+type LifecycleState = z.infer<typeof import('./schemas').lifecycleStateSchema>;
 
 export type LeadSource = 'outscraper' | 'csv' | 'apollo' | 'manual';
 
@@ -63,6 +61,12 @@ export interface Lead {
   readiness_flags: string[];
   status: LeadStatus;
   source: LeadSource;
+  // Phase 2: domain-specific status columns (nullable until backfilled)
+  // Types are exported from schemas.ts: EngagementStatus, PipelineStage, LifecycleState
+  engagementStatus?: EngagementStatus;
+  pipelineStage?: PipelineStage;
+  lifecycleState?: LifecycleState;
+  doNotContact: boolean;
   notes?: string;
   tags: string[];
   metadata?: Record<string, unknown>;

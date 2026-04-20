@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { getLeadById, getUserId, createLead, createActivity, type JsonValue } from '../db';
+import { getLeadById, getUserId, supabaseAdmin, createActivity, type JsonValue } from '../db';
 import { generateEmailWithAI } from '../services/ai-email';
 import { enforceCredits, enforceFeatureGate, EnforcementError } from '../lib/billing/enforce';
 import { incrementAIEmails } from '../lib/usage';
@@ -58,10 +58,59 @@ router.post('/:id/ai-email', async (c) => {
       return c.json({ error: 'Lead not found' }, 404);
     }
 
-    const { tone, purpose, customInstructions, recontact, bio, owner_first_name, profile_usp, profile_services, profile_full_name, profile_signoff, profile_cta, profile_calendly, profile_linkedin, review_summary } = parsed.data;
+    const { tone, purpose, customInstructions, recontact, bio: requestBio, owner_first_name, profile_usp, profile_services, profile_full_name, profile_signoff, profile_cta, profile_calendly, profile_linkedin, review_summary } = parsed.data;
 
     // Use bio from request body, or fall back to the lead's cached ai_bio
-    const leadBio = bio || (lead as any).ai_bio || undefined;
+    let bio: string | null | undefined = requestBio || ((lead as any).ai_bio ?? null);
+
+    // Auto-generate bio if not cached (invisible to frontend)
+    if (!bio) {
+      try {
+        const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
+        const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
+        const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
+        if (llmKey) {
+          const bioPrompt = 'Write a concise business bio (max 200 characters) for:\n'
+            + 'Name: ' + (lead.business_name || 'Unknown') + '\n'
+            + 'Category: ' + (lead.category || 'Unknown') + '\n'
+            + 'Location: ' + (lead.city || 'Unknown') + '\n'
+            + 'Description: ' + ((lead as any).description || 'No description available') + '\n'
+            + 'Rating: ' + (lead.rating || 'N/A') + '\n'
+            + 'Website: ' + (lead.website_url || 'No website');
+          const resp = await fetch(llmBase + '/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + llmKey,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': 'https://leadgen.app',
+              'X-Title': 'LeadGen App',
+            },
+            body: JSON.stringify({
+              model: llmModel,
+              messages: [
+                { role: 'system', content: 'Write concise, professional business bios. Max 200 chars.' },
+                { role: 'user', content: bioPrompt },
+              ],
+              max_tokens: 300,
+            }),
+          });
+          if (resp.ok) {
+            const completion = await resp.json() as { choices?: { message?: { content?: string } }[] };
+            bio = completion.choices?.[0]?.message?.content?.trim() ?? null;
+            if (bio) {
+              // Cache bio for future use — no activity log (invisible operation)
+              await supabaseAdmin
+                .from('leads')
+                .update({ ai_bio: bio, ai_bio_generated_at: new Date().toISOString() })
+                .eq('id', id)
+                .eq('user_id', userId);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[AI Email] Bio generation failed, continuing without bio:', e instanceof Error ? e.message : e);
+      }
+    }
 
     // Parse review summary JSON if provided
     const leadReviewSummary = review_summary ? JSON.parse(review_summary) : (lead as any).review_summary || undefined;
@@ -83,7 +132,7 @@ router.post('/:id/ai-email', async (c) => {
       purpose,
       customInstructions,
       recontact,
-      bio: leadBio,
+      bio: bio || undefined,
       profile: {
         usp: profile_usp ?? null,
         services: profile_services,

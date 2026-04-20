@@ -136,7 +136,7 @@ export function mapAndMergeEnrichment(
     ? (contact.socials?.linkedin || contact.contact_linkedin).trim()
     : null;
   const companyLinkedin = isValidUrl(contact.company_linkedin) ? contact.company_linkedin.trim() : null;
-  const companySize = clean(contact.company_size || (contact as any).companySize);
+  const companySize = clean(contact.company_size);
   const contactDomain = clean(contact.domain);
 
   updates.contact_full_name = contactFullName;
@@ -165,7 +165,7 @@ export function mapAndMergeEnrichment(
     linkedin_url: c.socials?.linkedin || c.contact_linkedin || null,
     company_linkedin: c.company_linkedin || null,
     domain: c.domain || null,
-    company_size: c.company_size || (c as any).companySize || null,
+    company_size: c.company_size || null,
     socials: c.socials || null,
   }));
 

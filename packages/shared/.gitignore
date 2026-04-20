@@ -1,0 +1,7 @@
+# Build artifacts (tsc output)
+*.js
+*.js.map
+*.d.ts
+*.d.ts.map
+# Keep source
+!src/

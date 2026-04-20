@@ -359,11 +359,22 @@ router.post('/:id/pause', async (c) => {
       .eq('sequence_id', sequenceId)
       .in('status', ['active']);
 
-    // Cancel pending jobs
+    // Cancel pending jobs for THIS sequence only
     if (schedulerQueue) {
-      const jobs = await schedulerQueue.getJobs(['delayed', 'waiting']);
-      for (const job of jobs) {
-        await job.remove();
+      // Look up enrollment IDs for this sequence so we only cancel matching jobs
+      const { data: enrollments } = await supabaseAdmin
+        .from('sequence_enrollments')
+        .select('id')
+        .eq('sequence_id', sequenceId);
+      const enrollmentIds = new Set((enrollments ?? []).map((e: any) => e.id));
+
+      if (enrollmentIds.size > 0) {
+        const jobs = await schedulerQueue.getJobs(['delayed', 'waiting']);
+        for (const job of jobs) {
+          if (enrollmentIds.has(job.data?.enrollment_id)) {
+            await job.remove();
+          }
+        }
       }
     }
 

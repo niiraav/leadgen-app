@@ -84,6 +84,13 @@ export const leads = pgTable('leads', {
   ownerName: text('owner_name'),
   ownerFirstName: text('owner_first_name'),
   ownerNameSource: text('owner_name_source'),
+
+  // Phase 2: Domain-specific status columns (nullable until backfilled)
+  // Old `status` column remains writable during dual-write (Phase 4).
+  engagementStatus: text('engagement_status'),
+  pipelineStage: text('pipeline_stage'),
+  lifecycleState: text('lifecycle_state'),
+  doNotContact: boolean('do_not_contact').default(false),
   enrichedAt: timestamp('enriched_at', { withTimezone: true }),
   enrichmentAttemptedAt: timestamp('enrichment_attempted_at', { withTimezone: true }),
   gmbUrl: text('gmb_url'),

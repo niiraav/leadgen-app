@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { leadStatusSchema } from '@leadgen/shared';
 import {
   getLeadById,
   createLead,
@@ -37,7 +38,7 @@ const createLeadSchema = z.object({
   review_count: z.number().optional(),
   hot_score: z.number().optional(),
   readiness_flags: z.array(z.string()).optional(),
-  status: z.string().default('new'),
+  status: leadStatusSchema.default('new'),
   source: z.string().default('manual'),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional(),
@@ -905,122 +906,6 @@ router.get('/export/csv', async (c) => {
   }
 });
 
-// ─── POST /leads/:id/ai-email ─────────────────────────────────────────────
-
-const aiEmailSchema = z.object({
-  tone: z.enum(['professional', 'friendly', 'casual', 'persuasive']).default('professional'),
-  purpose: z.string().min(1).max(200),
-  customInstructions: z.string().max(500).optional(),
-  recontact: z.boolean().optional(),
-  profile_usp: z.string().optional(),
-  profile_services: z.array(z.string()).optional(),
-  profile_full_name: z.string().optional(),
-  profile_signoff: z.string().optional(),
-  profile_cta: z.string().optional(),
-  profile_calendly: z.string().optional(),
-  profile_linkedin: z.string().optional(),
-  owner_first_name: z.string().optional(),
-  review_summary: z.string().max(5000).optional(),
-});
-
-router.post('/:id/ai-email', async (c) => {
-  try {
-    const userId = getUserId(c);
-    const id = c.req.param('id');
-
-    // ── Feature gate: AI emails require outreach+ plan ──
-    const gate = await enforceFeatureGate(userId, 'ai_emails');
-    if (!gate.allowed) {
-      return c.json({ error: gate.upgradeRequired, upgrade_required: true }, 402);
-    }
-
-    // ── Credit enforcement: check AI email limit ──
-    try {
-      await enforceCredits(userId, 'ai_email');
-    } catch (err) {
-      if (err instanceof EnforcementError) {
-        const status = err.upgradeRequired ? 402 : 403;
-        return c.json({ error: err.message, upgrade_required: err.upgradeRequired, limit: err.limit, remaining: err.remaining }, status);
-      }
-      throw err;
-    }
-
-    const body = await c.req.json();
-    const parsed = aiEmailSchema.safeParse(body);
-    if (!parsed.success) return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
-    const lead = await getLeadById(userId, id);
-    if (!lead) return c.json({ error: 'Lead not found' }, 404);
-
-    // Auto-fetch or generate bio for LLM personalization (invisible to frontend)
-    let bio: string | null = (lead as any).ai_bio ?? null;
-    if (!bio) {
-      try {
-        const llmKey = process.env.FIREWORKS_API_KEY || process.env.OPENROUTER_API_KEY || '';
-        const llmBase = process.env.FIREWORKS_BASE_URL || 'https://api.fireworks.ai/inference/v1';
-        const llmModel = process.env.FIREWORKS_MODEL || 'fireworks/minimax-m2p7';
-        if (llmKey) {
-          const bioPrompt = 'Write a concise business bio (max 200 characters) for:\n'
-            + 'Name: ' + (lead.business_name || 'Unknown') + '\n'
-            + 'Category: ' + (lead.category || 'Unknown') + '\n'
-            + 'Location: ' + (lead.city || 'Unknown') + '\n'
-            + 'Description: ' + (lead.description || 'No description available') + '\n'
-            + 'Rating: ' + (lead.rating || 'N/A') + '\n'
-            + 'Website: ' + (lead.website_url || 'No website');
-          const resp = await fetch(llmBase + '/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': 'Bearer ' + llmKey,
-              'Content-Type': 'application/json',
-              'HTTP-Referer': 'https://leadgen.app',
-              'X-Title': 'LeadGen App',
-            },
-            body: JSON.stringify({
-              model: llmModel,
-              messages: [
-                { role: 'system', content: 'Write concise, professional business bios. Max 200 chars.' },
-                { role: 'user', content: bioPrompt },
-              ],
-              max_tokens: 300,
-            }),
-          });
-          if (resp.ok) {
-            const completion = await resp.json() as { choices?: { message?: { content?: string } }[] };
-            bio = completion.choices?.[0]?.message?.content?.trim() ?? null;
-            if (bio) {
-              // Cache bio for future use — no activity log (invisible operation)
-              await supabaseAdmin
-                .from('leads')
-                .update({ ai_bio: bio, ai_bio_generated_at: new Date().toISOString() })
-                .eq('id', id)
-                .eq('user_id', userId);
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('[AI Email] Bio generation failed, continuing without bio:', e instanceof Error ? e.message : e);
-      }
-    }
-
-    const { generateEmailWithAI } = await import('../services/ai-email');
-    const emailData = await generateEmailWithAI({
-      lead: { business_name: lead.business_name, email: lead.email ?? undefined, phone: lead.phone ?? undefined, website_url: lead.website_url ?? undefined, category: lead.category ?? undefined, city: lead.city ?? undefined, country: lead.country ?? undefined, rating: lead.rating ?? undefined } as any,
-      tone: parsed.data.tone, purpose: parsed.data.purpose, customInstructions: parsed.data.customInstructions, recontact: parsed.data.recontact,
-      bio: bio || undefined,
-      review_summary: parsed.data.review_summary ? JSON.parse(parsed.data.review_summary) : (lead as any).review_summary || undefined,
-      profile: {
-        usp: parsed.data.profile_usp || null,
-        services: parsed.data.profile_services || [],
-        full_name: parsed.data.profile_full_name || null,
-        signoff: parsed.data.profile_signoff || null,
-        cta: parsed.data.profile_cta || null,
-        calendly: parsed.data.profile_calendly || null,
-        linkedin: parsed.data.profile_linkedin || null,
-        owner_first_name: parsed.data.owner_first_name || null,
-      } as any,
-    });
-    return c.json({ lead_id: id, email: emailData });
-  } catch (e: any) { return c.json({ error: 'Failed to generate email', details: e.message }, 500); }
-});
 
 // ─── POST /leads/:id/classify-reply ────────────────────────────────────────
 const classifySchema = z.object({ reply_text: z.string().min(1) });
@@ -1055,7 +940,10 @@ router.post('/:id/classify-reply', async (c) => {
 router.post('/:id/undo-status', async (c) => {
   try {
     const userId = getUserId(c); const id = c.req.param('id');
-    const body = await c.req.json(); const { revert_to } = body as { revert_to: string };
+    const body = await c.req.json();
+    const parsed = z.object({ revert_to: leadStatusSchema }).safeParse(body);
+    if (!parsed.success) return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
+    const { revert_to } = parsed.data;
     const lead = await getLeadById(userId, id);
     if (!lead) return c.json({ error: 'Lead not found' }, 404);
     await supabaseAdmin.from('leads').update({ status: revert_to, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId);

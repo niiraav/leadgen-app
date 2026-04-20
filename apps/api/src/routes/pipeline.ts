@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { leadStatusSchema } from '@leadgen/shared';
 import { getUserId, getLeadById, updateLead, createActivity, getActivitiesForLead } from '../db';
 
 const router = new Hono();
 
 const statusUpdateSchema = z.object({
-  status: z.string(),
+  status: leadStatusSchema,
   notes: z.string().optional(),
 });
 

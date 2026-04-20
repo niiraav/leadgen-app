@@ -59,6 +59,7 @@ import enrichmentRouter from './routes/enrichment';
 import billingRouter from './routes/billing';
 import listsRouter from './routes/lists';
 import savedFiltersRouter from './routes/saved-filters';
+import adminRouter from './routes/admin';
 
 app.route('/leads', enrichmentRouter);
 app.route('/leads/lists', listsRouter);
@@ -71,6 +72,9 @@ app.route('/import', importRouter);
 app.route('/analytics', analyticsRouter);
 app.route('/profile', profileRouter);
 app.route('/billing', billingRouter);
+
+// Admin routes — NOT under authMiddleware; protected by x-admin-key header
+app.route('/admin', adminRouter);
 
 // KPI endpoint
 import { getKPI, getUserId } from './db';

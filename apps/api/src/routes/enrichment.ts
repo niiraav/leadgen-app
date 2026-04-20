@@ -102,7 +102,8 @@ router.patch('/:id/social-links', async (c) => {
     } else {
       updates.facebook_url = body.facebook_url;
     }
-  } else if (body.linkedin_url !== undefined) {
+  }
+  if (body.linkedin_url !== undefined) {
     if (body.linkedin_url === '' || body.linkedin_url === null) {
       updates.linkedin_url = null;
     } else if (!body.linkedin_url.startsWith('https://') || !body.linkedin_url.includes('linkedin.com')) {
@@ -147,25 +148,6 @@ router.patch('/:id/social-links', async (c) => {
     owner_first_name: updated?.owner_first_name,
     owner_name_source: updated?.owner_name_source,
   });
-});
-
-// POST /admin/backfill-gmb-urls
-router.post('/admin/backfill-gmb-urls', async (c) => {
-  try {
-    const { data: leads } = await supabaseAdmin.from('leads').select('id, place_id, business_name, address, gmb_url');
-    if (!leads) return c.json({ error: 'No leads' }, 404);
-    let updated = 0, skipped = 0, fallbackUsed = 0;
-    for (const lead of leads) {
-      if (lead.gmb_url) { skipped++; continue; }
-      const url = buildGmbUrl(lead);
-      await supabaseAdmin.from('leads').update({ gmb_url: url }).eq('id', lead.id);
-      updated++;
-      if (!lead.place_id) fallbackUsed++;
-    }
-    return c.json({ updated, skipped, fallback_used: fallbackUsed });
-  } catch (err: any) {
-    return c.json({ error: 'Backfill failed', details: err.message }, 500);
-  }
 });
 
 export default router;

@@ -1,12 +1,50 @@
 import { z } from 'zod';
-import type { LeadStatus, LeadSource, EmailTone } from './types';
 
 export const leadStatusSchema = z.enum([
-  'new', 'contacted', 'replied', 'interested', 'closed', 'not_interested', 'archived'
-]) satisfies z.ZodSchema<LeadStatus>;
+  'new',
+  'contacted',
+  'replied',
+  'interested',
+  'not_interested',
+  'qualified',
+  'proposal_sent',
+  'converted',
+  'closed',
+  'lost',
+  'archived',
+  'out_of_office',
+  'do_not_contact',
+]);
 
-export const leadSourceSchema = z.enum(['outscraper', 'csv', 'apollo', 'manual']) satisfies z.ZodSchema<LeadSource>;
-export const emailToneSchema = z.enum(['professional', 'friendly', 'direct']) satisfies z.ZodSchema<EmailTone>;
+// ── Domain-specific status schemas (Phase 2 status model refactor) ──────────
+// These split the monolithic LeadStatus into three orthogonal dimensions.
+// The old `status` column remains writable during dual-write (Phase 4).
+// `do_not_contact` is a separate boolean column, not an enum value here.
+
+export const engagementStatusSchema = z.enum([
+  'new',
+  'contacted',
+  'replied',
+  'interested',
+  'not_interested',
+  'out_of_office',
+]);
+
+export const pipelineStageSchema = z.enum([
+  'qualified',
+  'proposal_sent',
+  'converted',
+  'lost',
+]);
+
+export const lifecycleStateSchema = z.enum([
+  'active',
+  'closed',
+  'archived',
+]);
+
+export const leadSourceSchema = z.enum(['outscraper', 'csv', 'apollo', 'manual']);
+export const emailToneSchema = z.enum(['professional', 'friendly', 'direct']);
 
 export const searchParamsSchema = z.object({
   businessType: z.string().min(1, 'Business type is required'),
@@ -35,6 +73,10 @@ export const leadCreateSchema = z.object({
 
 export const leadUpdateSchema = leadCreateSchema.partial().extend({
   status: leadStatusSchema.optional(),
+  engagementStatus: engagementStatusSchema.optional(),
+  pipelineStage: pipelineStageSchema.optional(),
+  lifecycleState: lifecycleStateSchema.optional(),
+  doNotContact: z.boolean().optional(),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional(),
 });
@@ -80,3 +122,6 @@ export type StatusChange = z.infer<typeof statusChangeSchema>;
 export type CSVImport = z.infer<typeof csvImportSchema>;
 export type SequenceCreate = z.infer<typeof sequenceCreateSchema>;
 export type SequenceEnroll = z.infer<typeof sequenceEnrollSchema>;
+export type EngagementStatus = z.infer<typeof engagementStatusSchema>;
+export type PipelineStage = z.infer<typeof pipelineStageSchema>;
+export type LifecycleState = z.infer<typeof lifecycleStateSchema>;

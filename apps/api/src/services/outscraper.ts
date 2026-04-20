@@ -315,7 +315,7 @@ export async function enrichmentMultiple(
         c.instagram = companySocials.instagram || c.instagram
         c.twitter = companySocials.twitter || c.twitter
       }
-      c.companySize = entry.details?.type ?? c.company_size
+      c.company_size = entry.details?.type ?? c.company_size
     }
 
     console.log(`[Outscraper] enrichmentMultiple: found ${contacts.length} contacts for ${entry.details?.name ?? domain}`)
