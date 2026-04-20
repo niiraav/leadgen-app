@@ -28,13 +28,27 @@ const TYPE_LABELS: Record<string, string> = {
   bio_generated: "Bio generated",
 };
 
-export const ActivityLog = React.memo(function ActivityLog({ activities }: { activities: { id: string; type: string; description: string; created_at: string }[] }) {
+const FIELD_LABELS: Record<string, string> = {
+  engagement_status: "Engagement status changed",
+  pipeline_stage: "Pipeline stage changed",
+  lifecycle_state: "Lifecycle state changed",
+  do_not_contact: "Marked do not contact",
+};
+
+export const ActivityLog = React.memo(function ActivityLog({ activities }: { activities: { id: string; type: string; description: string; created_at: string; field?: string | null }[] }) {
   if (!activities || activities.length === 0) {
     return (
       <div className="text-center py-6 text-sm text-text-faint">
         No activity yet
       </div>
     );
+  }
+
+  function activityLabel(a: { type: string; field?: string | null; description?: string }): string {
+    if (a.type === 'status_changed' && a.field && FIELD_LABELS[a.field]) {
+      return FIELD_LABELS[a.field];
+    }
+    return TYPE_LABELS[a.type] || a.description || a.type;
   }
 
   return (
@@ -44,7 +58,7 @@ export const ActivityLog = React.memo(function ActivityLog({ activities }: { act
           <div className="w-2 h-2 rounded-full bg-blue mt-1.5 shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="text-text">
-              {TYPE_LABELS[a.type] || a.description}
+              {activityLabel(a)}
             </div>
             <div className="text-xs text-text-faint">
               {formatTime(a.created_at)}

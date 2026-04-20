@@ -49,6 +49,8 @@ export interface LeadsTableRow {
   email_status?: string | null;
   hot_score: number;
   status: string;
+  engagementStatus?: string | null;
+  pipelineStage?: string | null;
   notes?: string | null;
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | null;
   // Enriched contact fields
@@ -76,25 +78,43 @@ interface LeadsTableProps {
 
 // --- Status badge helper ---
 
-const StatusBadge = memo(function StatusBadge({ status }: { status: string }) {
+const StatusBadge = memo(function StatusBadge({ status, engagementStatus, pipelineStage }: { status: string; engagementStatus?: string | null; pipelineStage?: string | null }) {
   const map: Record<string, string> = {
     new: "bg-blue/10 text-blue",
     contacted: "bg-amber/10 text-amber",
+    responded: "bg-green/10 text-green",
+    interested: "bg-emerald/10 text-emerald",
+    not_interested: "bg-red/10 text-red",
+    out_of_office: "bg-surface-2 text-text-faint",
     qualified: "bg-blue/10 text-blue",
     proposal_sent: "bg-purple/10 text-purple",
     converted: "bg-green/10 text-green",
     won: "bg-green/10 text-green",
     lost: "bg-red/10 text-red",
+    closed: "bg-surface-2 text-text-faint",
     archived: "bg-surface-2 text-text-faint",
   };
+  const primary = pipelineStage || status;
   return (
-    <span
-      className={cn(
-        "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-        map[status] ?? "bg-surface-2 text-text-faint"
+    <span className="inline-flex items-center gap-1">
+      <span
+        className={cn(
+          "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+          map[primary] ?? "bg-surface-2 text-text-faint"
+        )}
+      >
+        {primary}
+      </span>
+      {engagementStatus && engagementStatus !== status && !pipelineStage && (
+        <span
+          className={cn(
+            "inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider opacity-70",
+            map[engagementStatus] ?? "bg-surface-2 text-text-faint"
+          )}
+        >
+          {engagementStatus}
+        </span>
       )}
-    >
-      {status}
     </span>
   );
 });
@@ -342,10 +362,15 @@ export const LeadsTable = memo(function LeadsTable({
   const statusColors: Record<string, string> = {
     new: "border-l-blue",
     contacted: "border-l-amber",
+    responded: "border-l-green",
+    interested: "border-l-emerald",
+    not_interested: "border-l-red",
+    out_of_office: "border-l-surface-2",
     qualified: "border-l-blue",
     converted: "border-l-green",
     won: "border-l-green",
     lost: "border-l-red",
+    closed: "border-l-surface-2",
     proposal_sent: "border-l-purple",
   };
 
@@ -404,7 +429,7 @@ export const LeadsTable = memo(function LeadsTable({
                     "border-b border-border/20 hover:bg-surface-2 transition-colors group relative",
                     selected.has(lead.id) && "bg-blue/5",
                     "border-l-4",
-                    statusColors[lead.status] ?? "border-l-transparent"
+                    statusColors[lead.pipelineStage || lead.status] ?? "border-l-transparent"
                   )}
                 >
                   {/* Checkbox */}
@@ -584,7 +609,7 @@ export const LeadsTable = memo(function LeadsTable({
                   {/* Status + notes toggle */}
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
-                      <StatusBadge status={lead.status} />
+                      <StatusBadge status={lead.status} engagementStatus={lead.engagementStatus} pipelineStage={lead.pipelineStage} />
                       {lead.contact_enrichment_status === "success" && (
                         <span className="inline-flex items-center gap-0.5 text-[9px] font-medium bg-green/10 text-green px-1 py-0.5 rounded-full" title="Contact enriched">
                           <Sparkles className="w-2.5 h-2.5" />

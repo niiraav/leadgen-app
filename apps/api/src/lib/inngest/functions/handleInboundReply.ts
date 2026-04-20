@@ -105,9 +105,23 @@ export const handleInboundReply = inngest.createFunction(
           case 'out_of_office': {
             await supabaseAdmin
               .from('leads')
-              .update({ status: 'out_of_office' })
+              .update({ status: 'out_of_office', engagement_status: 'out_of_office' })  // Phase 3: dual-write — out_of_office is an engagement status
               .eq('id', d.leadId)
               .eq('user_id', lead.user_id)
+            // Log activity with field-aware label
+            try {
+              await supabaseAdmin
+                .from('lead_activities')
+                .insert({
+                  lead_id: d.leadId,
+                  user_id: lead.user_id,
+                  type: 'status_changed',
+                  description: 'Out of office auto-reply detected',
+                  field: 'engagement_status',
+                })
+            } catch (actErr) {
+              console.warn('[handleInboundReply] Activity log failed for out_of_office:', actErr)
+            }
             return { type: 'out_of_office', status: 'updated' }
           }
           case 'bounce_hard': {
@@ -148,9 +162,23 @@ export const handleInboundReply = inngest.createFunction(
           case 'unsubscribe': {
             await supabaseAdmin
               .from('leads')
-              .update({ status: 'do_not_contact' })
+              .update({ status: 'do_not_contact', do_not_contact: true })  // Phase 3: dual-write domain column
               .eq('id', d.leadId)
               .eq('user_id', lead.user_id)
+            // Log activity — Phase 3: field-aware label "Marked do not contact"
+            try {
+              await supabaseAdmin
+                .from('lead_activities')
+                .insert({
+                  lead_id: d.leadId,
+                  user_id: lead.user_id,
+                  type: 'status_changed',
+                  description: 'Unsubscribed / marked do not contact',
+                  field: 'do_not_contact',
+                })
+            } catch (actErr) {
+              console.warn('[handleInboundReply] Activity log failed for unsubscribe:', actErr)
+            }
             return { type: 'unsubscribe', status: 'updated' }
           }
           default:

@@ -19,6 +19,14 @@ import { NotesEditor } from "@/components/leads/NotesEditor";
 import { formatRelativeTime, REPLY_INTENT_CHIP } from "@/lib/activity-utils";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 
+// ── Phase 3: Field-aware labels for status_changed activities ────────────────
+const FIELD_LABELS: Record<string, string> = {
+  engagement_status: "Engagement status changed",
+  pipeline_stage: "Pipeline stage changed",
+  lifecycle_state: "Lifecycle state changed",
+  do_not_contact: "Marked do not contact",
+};
+
 // ─── Fallback subjects/body ─────────────────────────────────────────────────
 
 const FALLBACK_SUBJECTS = (lead?: Pick<Lead, "business_name" | "category" | "city">) => [
@@ -1682,7 +1690,13 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {allActivities.map((activity) => (
                   <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
                     <div>
-                      <p className="text-sm font-medium text-text">{activity.description}</p>
+                      <p className="text-sm font-medium text-text">
+                        {activity.type === 'status_changed' && activity.field && FIELD_LABELS[activity.field]
+                          ? FIELD_LABELS[activity.field]
+                          : activity.type === 'status_changed'
+                            ? 'Status changed'
+                            : activity.description}
+                      </p>
                       <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
                         <Clock className="w-3 h-3" />
                         {new Date(activity.created_at).toLocaleString()}

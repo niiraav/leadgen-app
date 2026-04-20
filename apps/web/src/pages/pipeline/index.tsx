@@ -13,8 +13,25 @@ const statusOptions = [
   { id: "proposal_sent", title: "Proposal Sent", color: "#0f0f0e" },
   { id: "converted", title: "Won", color: "#1a7a45" },
   { id: "lost", title: "Lost", color: "#b83232" },
-  { id: "archived", title: "Archived", color: "#6b7280" },
 ];
+
+const engagementColors: Record<string, string> = {
+  new: "#1d6fa8",
+  contacted: "#d97706",
+  responded: "#16a34a",
+  not_interested: "#dc2626",
+  interested: "#16a34a",
+  out_of_office: "#6b7280",
+};
+
+const engagementLabels: Record<string, string> = {
+  new: "New",
+  contacted: "Contacted",
+  responded: "Responded",
+  not_interested: "Not Interested",
+  interested: "Interested",
+  out_of_office: "Out of Office",
+};
 
 interface PipelineLead {
   id: string;
@@ -25,6 +42,8 @@ interface PipelineLead {
   country: string;
   hotScore: number;
   status: string;
+  engagementStatus: string | null;
+  pipelineStage: string | null;
 }
 
 export default function PipelinePage() {
@@ -45,6 +64,8 @@ export default function PipelinePage() {
         country: l.country || "",
         hotScore: l.hot_score,
         status: l.status,
+        engagementStatus: (l as any).engagementStatus ?? null,
+        pipelineStage: (l as any).pipelineStage ?? null,
       }));
       setLeads(mapped);
       setLoading(false);
@@ -63,9 +84,17 @@ export default function PipelinePage() {
     setMovingId(leadId);
     try {
       await api.pipeline.updateStatus(leadId, newStatus);
-      // Update local state
+      // Update local state — backend routes the value to the correct field
       setLeads((prev) =>
-        prev.map((l) => (l.id === leadId ? { ...l, status: newStatus } : l))
+        prev.map((l) => {
+          if (l.id !== leadId) return l;
+          const isPipelineStage = ["qualified", "proposal_sent", "converted", "lost"].includes(newStatus);
+          return {
+            ...l,
+            status: isPipelineStage ? l.status : newStatus,
+            pipelineStage: isPipelineStage ? newStatus : null,
+          };
+        })
       );
     } catch (err: any) {
       console.error("[Pipeline] Failed to update status:", err.message);
@@ -102,7 +131,13 @@ export default function PipelinePage() {
       ) : (
         <div className="flex gap-3 md:gap-4 overflow-x-auto pb-4 scrollbar-none">
           {statusOptions.map((col) => {
-            const leadsInCol = leads.filter((l) => l.status === col.id);
+            const leadsInCol = leads.filter((l) => {
+              if (['qualified', 'proposal_sent', 'converted', 'lost'].includes(col.id)) {
+                return l.pipelineStage === col.id;
+              }
+              // "new" or "contacted" — no pipeline stage yet
+              return l.status === col.id && !l.pipelineStage;
+            });
 
             return (
               <div
@@ -136,9 +171,22 @@ export default function PipelinePage() {
                       className="p-4 group cursor-default"
                     >
                       <div className="flex items-start justify-between mb-2">
-                        <h4 className="text-sm font-semibold text-text truncate flex-1 min-w-0">
-                          {lead.businessName}
-                        </h4>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-semibold text-text truncate">
+                            {lead.businessName}
+                          </h4>
+                          {lead.engagementStatus && (
+                            <span
+                              className="inline-block mt-1 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                              style={{
+                                color: engagementColors[lead.engagementStatus] || "#6b7280",
+                                backgroundColor: `${engagementColors[lead.engagementStatus] || "#6b7280"}18`,
+                              }}
+                            >
+                              {engagementLabels[lead.engagementStatus] || lead.engagementStatus}
+                            </span>
+                          )}
+                        </div>
                         <HotScoreBadge score={lead.hotScore} />
                       </div>
                       <p className="text-xs text-text-muted mb-0.5 truncate">
@@ -151,7 +199,7 @@ export default function PipelinePage() {
                       {/* Status Dropdown */}
                       <div className="mt-3">
                         <select
-                          value={lead.status}
+                          value={lead.pipelineStage || lead.status}
                           disabled={movingId === lead.id}
                           onChange={(e) => handleMoveLead(lead.id, e.target.value)}
                           className="w-full h-7 px-2 text-[10px] font-medium rounded-md bg-surface-2 border border-border text-text-muted focus:outline-none focus:ring-1 focus:ring-blue/20 cursor-pointer uppercase tracking-wider disabled:opacity-50"

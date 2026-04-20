@@ -236,7 +236,18 @@ router.patch('/:id', async (c) => {
     if (parsed.data.rating !== undefined) updateData.rating = parsed.data.rating;
     if (parsed.data.review_count !== undefined) updateData.review_count = parsed.data.review_count;
     if (parsed.data.hot_score !== undefined) updateData.hot_score = parsed.data.hot_score;
-    if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
+    if (parsed.data.status !== undefined) {
+      const s = parsed.data.status;
+      updateData.status = s;
+      // Phase 3: dual-write — map legacy status to the correct domain column
+      const ENGAGEMENT = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
+      const PIPELINE = ['qualified', 'proposal_sent', 'converted', 'lost'];
+      const LIFECYCLE = ['active', 'closed', 'archived'];
+      if (ENGAGEMENT.includes(s)) updateData.engagement_status = s;
+      else if (PIPELINE.includes(s)) updateData.pipeline_stage = s;
+      else if (LIFECYCLE.includes(s)) updateData.lifecycle_state = s;
+      // 'do_not_contact' is a boolean — handled separately
+    }
     if (parsed.data.source !== undefined) updateData.source = parsed.data.source;
     if (parsed.data.notes !== undefined) updateData.notes = parsed.data.notes || null;
     if (parsed.data.readiness_flags !== undefined) updateData.readiness_flags = parsed.data.readiness_flags;
@@ -254,13 +265,34 @@ router.patch('/:id', async (c) => {
 
     await updateLead(userId, id, updateData);
 
-    // Log activity
+    // Log activity — generic update log
     const changedFields = Object.keys(updateData).filter((k) => k !== 'updated_at');
     await createActivity(userId, {
       lead_id: id,
       type: 'updated',
       description: `Lead updated: ${changedFields.join(', ')}`,
     });
+
+    // Phase 3: log field-aware status_changed for domain-specific column changes
+    // This covers both explicit domain column updates AND legacy status updates
+    // that were dual-written to domain columns.
+    const DOMAIN_FIELDS: Record<string, string> = {
+      engagement_status: 'Engagement status',
+      pipeline_stage: 'Pipeline stage',
+      lifecycle_state: 'Lifecycle state',
+      do_not_contact: 'Do not contact',
+    };
+    for (const [col, label] of Object.entries(DOMAIN_FIELDS)) {
+      // Check updateData (includes dual-written values), not just parsed.data
+      if (updateData[col] !== undefined && (parsed.data[col as keyof typeof parsed.data] !== undefined || parsed.data.status !== undefined)) {
+        await createActivity(userId, {
+          lead_id: id,
+          type: 'status_changed',
+          description: `${label} changed to: ${updateData[col]}`,
+          field: col,
+        });
+      }
+    }
 
     return c.json({ message: 'Lead updated' });
   } catch (error) {
@@ -934,12 +966,23 @@ router.post('/:id/classify-reply', async (c) => {
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (classification === 'UNSUBSCRIBE') {
       updates.unsubscribed = true; suggestedStage = 'archived'; autoMoved = true;
+      updates.do_not_contact = true;   // Phase 3: dual-write do_not_contact boolean
+      updates.lifecycle_state = 'archived';  // Phase 3: dual-write domain column
       await supabaseAdmin.from('sequence_enrollments').update({ status: 'paused' }).eq('lead_id', id).eq('status', 'active');
     } else if (classification === 'NOT_NOW') {
       reEngageAfter = new Date(Date.now() + 60*86400000).toISOString(); updates.re_engage_after = reEngageAfter;
     } else if (classification === 'INTERESTED') { suggestedStage = 'interested'; if (prevStatus !== 'interested') autoMoved = true; }
     else if (classification === 'WARM') { suggestedStage = 'replied'; if (!['replied','interested'].includes(prevStatus)) autoMoved = true; }
-    if (suggestedStage !== prevStatus && classification !== 'NOT_NOW') updates.status = suggestedStage;
+    if (suggestedStage !== prevStatus && classification !== 'NOT_NOW') {
+      updates.status = suggestedStage;
+      // Phase 3: dual-write — map to the correct domain column
+      const ENGAGEMENT = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
+      const PIPELINE = ['qualified', 'proposal_sent', 'converted', 'lost'];
+      const LIFECYCLE = ['active', 'closed', 'archived'];
+      if (ENGAGEMENT.includes(suggestedStage)) updates.engagement_status = suggestedStage;
+      else if (PIPELINE.includes(suggestedStage)) updates.pipeline_stage = suggestedStage;
+      else if (LIFECYCLE.includes(suggestedStage)) updates.lifecycle_state = suggestedStage;
+    }
     await supabaseAdmin.from('leads').update(updates).eq('id', id).eq('user_id', userId);
     await createActivity(userId, { lead_id: id, type: 'reply_classified', description: `Reply: ${classification}` });
     return c.json({ classification, suggested_stage: suggestedStage, reasoning, previous_status: prevStatus, auto_moved: autoMoved, re_engage_after: reEngageAfter });
@@ -956,7 +999,15 @@ router.post('/:id/undo-status', async (c) => {
     const { revert_to } = parsed.data;
     const lead = await getLeadById(userId, id);
     if (!lead) return c.json({ error: 'Lead not found' }, 404);
-    await supabaseAdmin.from('leads').update({ status: revert_to, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId);
+    // Phase 3: dual-write — map revert_to to the correct domain column
+    const ENGAGEMENT = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
+    const PIPELINE = ['qualified', 'proposal_sent', 'converted', 'lost'];
+    const LIFECYCLE = ['active', 'closed', 'archived'];
+    const undoData: Record<string, any> = { status: revert_to, updated_at: new Date().toISOString() };
+    if (ENGAGEMENT.includes(revert_to)) undoData.engagement_status = revert_to;
+    else if (PIPELINE.includes(revert_to)) undoData.pipeline_stage = revert_to;
+    else if (LIFECYCLE.includes(revert_to)) undoData.lifecycle_state = revert_to;
+    await supabaseAdmin.from('leads').update(undoData).eq('id', id).eq('user_id', userId);
     await createActivity(userId, { lead_id: id, type: 'status_undo', description: `Reverted to ${revert_to}` });
     return c.json({ message: 'Reverted', status: revert_to });
   } catch (e: any) { return c.json({ error: 'Undo failed', details: e.message }, 500); }
@@ -1064,6 +1115,10 @@ const VALID_REPLY_INTENTS = new Set([
   'interested', 'question', 'objection', 'not_now', 'not_interested',
 ]);
 
+const VALID_ACTIVITY_FIELDS = new Set([
+  'engagement_status', 'pipeline_stage', 'lifecycle_state', 'do_not_contact',
+]);
+
 const postActivitySchema = z.object({
   label: z.string().min(1, 'Label must not be empty'),
   timestamp: z.string().refine((val) => {
@@ -1076,6 +1131,10 @@ const postActivitySchema = z.object({
   replyIntent: z.string().optional().refine(
     (val) => val === undefined || VALID_REPLY_INTENTS.has(val),
     'Invalid reply intent'
+  ),
+  field: z.string().optional().refine(
+    (val) => val === undefined || VALID_ACTIVITY_FIELDS.has(val),
+    'Invalid activity field'
   ),
 });
 
@@ -1096,7 +1155,7 @@ router.post('/:id/activity', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    const { label, timestamp, type, replyIntent } = parsed.data;
+    const { label, timestamp, type, replyIntent, field } = parsed.data;
 
     await createActivity(userId, {
       lead_id: leadId,
@@ -1105,6 +1164,7 @@ router.post('/:id/activity', async (c) => {
       timestamp,
       reply_intent: replyIntent ?? null,
       triggered_by: 'manual',
+      field: field ?? null,
     });
 
     // Return the created entry as an ActivityEntry shape
@@ -1112,6 +1172,7 @@ router.post('/:id/activity', async (c) => {
       label,
       timestamp: new Date(timestamp),
       ...(replyIntent ? { replyIntent } : {}),
+      ...(field ? { field } : {}),
     };
 
     return c.json({ success: true, activity: activityEntry }, 201);

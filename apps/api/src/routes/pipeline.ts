@@ -31,12 +31,28 @@ router.post('/:id/status', async (c) => {
     const { status, notes } = parsed.data;
     const now = new Date().toISOString();
 
+    // Phase 3: Map legacy status to the correct domain column(s)
+    const ENGAGEMENT_STATUSES = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
+    const PIPELINE_STAGES = ['qualified', 'proposal_sent', 'converted', 'lost'];
+    const LIFECYCLE_STATES = ['active', 'closed', 'archived'];
+
     const updateData: Record<string, unknown> = {
-      status,
+      status,    // legacy column — still written during dual-write
       updated_at: now,
     };
 
-    if (['contacted', 'qualified', 'proposal_sent', 'converted'].includes(status)) {
+    // Dual-write: route the value to the correct domain column
+    if (ENGAGEMENT_STATUSES.includes(status)) {
+      updateData.engagement_status = status;
+    } else if (PIPELINE_STAGES.includes(status)) {
+      updateData.pipeline_stage = status;
+    } else if (LIFECYCLE_STATES.includes(status)) {
+      updateData.lifecycle_state = status;
+    }
+    // 'do_not_contact' is handled by the do_not_contact boolean — not set here
+
+    // last_contacted only triggers on engagement events, NOT pipeline stages
+    if (status === 'contacted') {
       updateData.last_contacted = now;
     }
 
@@ -46,11 +62,16 @@ router.post('/:id/status', async (c) => {
 
     await updateLead(userId, id, updateData);
 
-    // Log activity
+    // Determine which domain field changed for field-aware activity label
+    let activityField = 'engagement_status';
+    if (PIPELINE_STAGES.includes(status)) activityField = 'pipeline_stage';
+    else if (LIFECYCLE_STATES.includes(status)) activityField = 'lifecycle_state';
+
     await createActivity(userId, {
       lead_id: id,
       type: 'status_changed',
       description: `Status changed to: ${status}${notes ? ` - ${notes}` : ''}`,
+      field: activityField,
     });
 
     return c.json({ message: 'Status updated', lead_id: id, status });

@@ -128,6 +128,7 @@ export const leadActivities = pgTable('lead_activities', {
   timestamp: timestamp('timestamp', { withTimezone: true }).defaultNow(),
   replyIntent: text('reply_intent'),
   triggeredBy: text('triggered_by'),
+  field: text('field'),  // Phase 3: which domain changed (engagement_status, pipeline_stage, lifecycle_state, do_not_contact)
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 

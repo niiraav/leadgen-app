@@ -90,25 +90,33 @@ function DeadLeadCardSkeleton() {
 const STATUS_COLORS: Record<string, string> = {
   new: "text-blue",
   contacted: "text-amber",
-  qualified: "text-amber",
+  responded: "text-green",
+  interested: "text-emerald",
+  not_interested: "text-red",
+  qualified: "text-blue",
   proposal_sent: "text-purple",
-  replied: "text-green",
-  interested: "text-green",
+  converted: "text-green",
   won: "text-green",
+  closed: "text-text-faint",
   lost: "text-red",
   archived: "text-text-faint",
+  out_of_office: "text-text-faint",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   new: "New",
   contacted: "Contacted",
+  responded: "Responded",
+  interested: "Interested",
+  not_interested: "Not Interested",
   qualified: "Qualified",
   proposal_sent: "Proposal",
-  replied: "Replied",
-  interested: "Interested",
+  converted: "Won",
   won: "Won",
+  closed: "Closed",
   lost: "Lost",
   archived: "Archived",
+  out_of_office: "Out of Office",
 };
 
 function SimpleBarChart({ data }: { data: { status: string; count: number }[] }) {
@@ -264,7 +272,7 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <h4 className="text-sm font-medium text-text truncate">{lead.business_name}</h4>
-            <span className="text-xs text-text-faint capitalize">{lead.status}</span>
+            <span className="text-xs text-text-faint capitalize">{(lead as any).pipelineStage || lead.status}</span>
           </div>
           <p className="text-xs text-text-muted mt-0.5">
             Completed {lead.sequence_name}. No reply received.

@@ -86,6 +86,8 @@ export default function LeadsPage() {
         instagram_url: l.instagram_url ?? null,
         twitter_handle: l.twitter_handle ?? null,
         status: l.status,
+        engagementStatus: l.engagement_status ?? null,
+        pipelineStage: l.pipeline_stage ?? null,
         hot_score: l.hot_score ?? 0,
         list_id: l.list_id ?? null,
         source: l.source ?? "outscraper",

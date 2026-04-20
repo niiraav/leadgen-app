@@ -83,9 +83,17 @@ export async function getLeads(userId: string, params: {
   let query = supabaseAdmin.from('leads').select('*', { count: 'exact' })
     .eq('user_id', userId);
 
-  if (status) query = query.eq('status', status);
-
-  if (search) {
+  // Combined status + search: PostgREST only allows one .or() per query,
+  // so when both are present we nest: AND( status-OR , search-OR )
+  if (status && search) {
+    query = query.or(
+      `and(status.eq.${status},or(business_name.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%))),` +
+      `and(pipeline_stage.eq.${status},or(business_name.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%))),` +
+      `and(engagement_status.eq.${status},or(business_name.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%))`
+    );
+  } else if (status) {
+    query = query.or(`status.eq.${status},pipeline_stage.eq.${status},engagement_status.eq.${status}`);
+  } else if (search) {
     query = query.or(
       `business_name.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%`
     );
@@ -222,6 +230,7 @@ export async function createActivity(userId: string, values: {
   timestamp?: string | null;
   reply_intent?: string | null;
   triggered_by?: string | null;
+  field?: string | null;
 }) {
   const { error } = await supabaseAdmin
     .from('lead_activities')

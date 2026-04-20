@@ -18,11 +18,19 @@ const ACTIVITY_PRIORITY: LeadActivity['type'][] = [
 
 // These activity types should NEVER surface as lastActivity.
 // They are system noise, not meaningful engagement events.
-const EXCLUDED_ACTIVITY_TYPES: Set<LeadActivity['type']> = new Set([
+const EXCLUDED_ACTIVITY_TYPES = new Set<LeadActivity['type']>([
   'bio_generated',
   'imported',
   'updated',
 ]);
+
+// ── Field-aware labels for status_changed ──────────────────────────────────
+const FIELD_LABELS: Record<string, string> = {
+  engagement_status: 'Engagement status changed',
+  pipeline_stage:    'Pipeline stage changed',
+  lifecycle_state:   'Lifecycle state changed',
+  do_not_contact:    'Marked do not contact',
+};
 
 // ── Human-readable labels for activity types ──────────────────────────────
 const ACTIVITY_LABELS: Record<LeadActivity['type'], string> = {
@@ -42,7 +50,7 @@ const ACTIVITY_LABELS: Record<LeadActivity['type'], string> = {
 };
 
 // Activity types that carry reply_intent
-const INTENT_CARRYING_TYPES: Set<LeadActivity['type']> = new Set([
+const INTENT_CARRYING_TYPES = new Set<LeadActivity['type']>([
   'replied',
   'reply_classified',
 ]);
@@ -99,7 +107,13 @@ export function resolveLastActivity(
   });
 
   const best = meaningful[0];
-  const label = ACTIVITY_LABELS[best.type] || best.type;
+  // Field-aware label: if status_changed and field is present, use specific label
+  let label: string;
+  if (best.type === 'status_changed' && best.field && FIELD_LABELS[best.field]) {
+    label = FIELD_LABELS[best.field];
+  } else {
+    label = ACTIVITY_LABELS[best.type] || best.type;
+  }
 
   // Extract replyIntent if present on an intent-carrying type
   let replyIntent: ReplyIntent | undefined;
@@ -111,8 +125,9 @@ export function resolveLastActivity(
     label,
     timestamp: new Date(best.timestamp || best.created_at),
     ...(replyIntent ? { replyIntent } : {}),
+    ...(best.field ? { field: best.field } : {}),
   };
 }
 
 // Exported for testing
-export { ACTIVITY_PRIORITY, EXCLUDED_ACTIVITY_TYPES, ACTIVITY_LABELS };
+export { ACTIVITY_PRIORITY, EXCLUDED_ACTIVITY_TYPES, ACTIVITY_LABELS, FIELD_LABELS };

@@ -47,6 +47,14 @@ const INTENT_CARRYING_TYPES: Set<string> = new Set([
   'reply_classified',
 ]);
 
+// ── Field-aware labels for status_changed ──────────────────────────────────
+const FIELD_LABELS: Record<string, string> = {
+  engagement_status: 'Engagement status changed',
+  pipeline_stage:    'Pipeline stage changed',
+  lifecycle_state:   'Lifecycle state changed',
+  do_not_contact:    'Marked do not contact',
+};
+
 const VALID_REPLY_INTENTS: Set<string> = new Set([
   'interested',
   'question',
@@ -59,6 +67,7 @@ export interface ActivityEntry {
   label: string;
   timestamp: Date;
   replyIntent?: string;
+  field?: string | null;
 }
 
 /**
@@ -84,7 +93,13 @@ export function resolveLastActivity(activities: any[]): ActivityEntry | null {
   });
 
   const best = meaningful[0];
-  const label = ACTIVITY_LABELS[best.type] || best.type;
+  // Field-aware label: if status_changed and field is present, use specific label
+  let label: string;
+  if (best.type === 'status_changed' && best.field && FIELD_LABELS[best.field]) {
+    label = FIELD_LABELS[best.field];
+  } else {
+    label = ACTIVITY_LABELS[best.type] || best.type;
+  }
 
   let replyIntent: string | undefined;
   if (
@@ -99,5 +114,6 @@ export function resolveLastActivity(activities: any[]): ActivityEntry | null {
     label,
     timestamp: new Date(best.timestamp || best.created_at),
     ...(replyIntent ? { replyIntent } : {}),
+    ...(best.field ? { field: best.field } : {}),
   };
 }

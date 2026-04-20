@@ -191,16 +191,20 @@ export interface LeadActivity {
   timestamp: string;
   reply_intent?: string | null;
   triggered_by?: string | null;
+  field?: ActivityField | null;
   created_at: string;
 }
 
 // ── Activity Entry (for Last Activity column in Saved Leads Table) ────────
 export type ReplyIntent = 'interested' | 'question' | 'objection' | 'not_now' | 'not_interested';
 
+export type ActivityField = 'engagement_status' | 'pipeline_stage' | 'lifecycle_state' | 'do_not_contact';
+
 export interface ActivityEntry {
   label: string;
   timestamp: Date;
   replyIntent?: ReplyIntent;
+  field?: ActivityField | null;
 }
 
 export interface AIGeneratedEmail {

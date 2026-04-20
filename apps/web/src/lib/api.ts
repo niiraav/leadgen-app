@@ -163,6 +163,11 @@ export interface BackendLeadDetail {
   // Review insights
   review_summary?: Record<string, unknown> | null;
   reviews_fetched_at?: string | null;
+  // Phase 2: domain-specific status columns (nullable, backfill pending)
+  engagement_status?: string | null;
+  pipeline_stage?: string | null;
+  lifecycle_state?: string | null;
+  do_not_contact?: boolean | null;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
