@@ -11,6 +11,7 @@ const searchSchema = z.object({
   query: z.string().min(1),
   location: z.string().min(1),
   maxResults: z.coerce.number().min(1).max(100).default(20),
+  websiteFilter: z.enum(['any', 'has', 'no']).optional(),
   no_website: z.boolean().optional(),
   noWebsite: z.boolean().optional(),
 });
@@ -42,8 +43,8 @@ router.post('/google-maps', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    const { query, location, maxResults, no_website, noWebsite } = parsed.data;
-    const filterNoWebsite = no_website ?? noWebsite ?? false;
+    const { query, location, maxResults, websiteFilter, no_website, noWebsite } = parsed.data;
+    const legacyNoWebsite = no_website ?? noWebsite ?? false;
 
     // ── Outscraper search ──
     console.log(`[Search] Outscraper: "${query}" in "${location}" (${maxResults} results)`);
@@ -132,11 +133,30 @@ router.post('/google-maps', async (c) => {
       };
     });
 
-    // Apply filters
-    if (filterNoWebsite) leads = leads.filter((l) => !l.website_url);
+    // Apply website filter
+    const effectiveFilter = websiteFilter ?? (legacyNoWebsite ? 'no' : 'any');
+    if (effectiveFilter === 'has') leads = leads.filter((l) => !!l.website_url);
+    else if (effectiveFilter === 'no') leads = leads.filter((l) => !l.website_url);
 
-    // Sort by hot_score descending
-    leads.sort((a, b) => b.hot_score - a.hot_score);
+    // Cross-reference with existing leads by place_id for duplicate detection
+    const placeIds = leads.map((l) => l.place_id).filter(Boolean) as string[];
+    if (placeIds.length > 0) {
+      const { data: existingLeads } = await supabaseAdmin
+        .from('leads')
+        .select('id, place_id')
+        .eq('user_id', userId)
+        .in('place_id', placeIds);
+
+      const existingMap = new Map(
+        existingLeads?.map((l: any) => [l.place_id, l.id]) ?? []
+      );
+
+      leads = leads.map((l) => ({
+        ...l,
+        duplicate: existingMap.has(l.place_id),
+        existingLeadId: existingMap.get(l.place_id) ?? undefined,
+      }));
+    }
 
     // Track search usage
     try {

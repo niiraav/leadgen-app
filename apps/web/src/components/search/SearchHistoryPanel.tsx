@@ -41,7 +41,9 @@ function relativeTime(dateStr: string): string {
 
 function filterCount(filters: Record<string, any>): number {
   let count = 0;
-  if (filters.hasWebsite !== undefined) count++;
+  if (filters.websiteFilter && filters.websiteFilter !== 'any') count++;
+  // Backward compat: legacy entries used hasWebsite/noWebsite
+  if (filters.hasWebsite !== undefined || filters.noWebsite !== undefined || filters.no_website !== undefined) count++;
   if (filters.leadCount && filters.leadCount !== 25) count++;
   return count;
 }
@@ -53,10 +55,16 @@ function filterSummary(entry: HistoryEntry): string[] {
   if (filters.maxResults && filters.maxResults !== 25) {
     parts.push(`${filters.maxResults} results`);
   }
-  if (filters.noWebsite === true || filters.no_website === true) {
+  // New format
+  if (filters.websiteFilter === 'has') {
+    parts.push("Has website");
+  } else if (filters.websiteFilter === 'no') {
     parts.push("No website");
   }
-  if (filters.noWebsite === false || filters.no_website === false) {
+  // Legacy format
+  else if (filters.noWebsite === true || filters.no_website === true) {
+    parts.push("No website");
+  } else if (filters.noWebsite === false || filters.no_website === false) {
     parts.push("Has website");
   }
   return parts;
@@ -76,8 +84,8 @@ export function SearchHistoryPanel({
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-border bg-surface overflow-hidden p-3">
-        <div className="text-xs text-text-faint mb-2 font-medium">Recently Searched</div>
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden p-3">
+        <div className="text-xs text-gray-400 mb-2 font-medium">Recently Searched</div>
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-14 w-full rounded-lg" />
@@ -92,10 +100,10 @@ export function SearchHistoryPanel({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Header */}
       <div className="flex items-center px-4 pt-3 pb-2">
-        <span className="text-xs font-medium text-text">Recently Searched</span>
+        <span className="text-xs font-medium text-gray-900">Recently Searched</span>
       </div>
 
       {/* Content */}
@@ -108,7 +116,7 @@ export function SearchHistoryPanel({
           return (
             <div
               key={entry.id}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-2 transition-colors group/row"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group/row"
             >
               <button
                 onClick={() => {
@@ -119,42 +127,45 @@ export function SearchHistoryPanel({
                     businessType: params.query ?? entry.query,
                     location: params.location ?? entry.location,
                     leadCount: params.maxResults ?? entry.limit_count ?? 25,
+                    websiteFilter: 'any',
                   };
-                  if (
+                  if (params.websiteFilter === 'has' || params.websiteFilter === 'no') {
+                    sf.websiteFilter = params.websiteFilter;
+                  } else if (
                     params.noWebsite === true ||
                     params.no_website === true
                   ) {
-                    sf.hasWebsite = false;
+                    sf.websiteFilter = 'no';
                   } else if (
                     params.noWebsite === false ||
                     params.no_website === false
                   ) {
-                    sf.hasWebsite = true;
+                    sf.websiteFilter = 'has';
                   }
                   onRerun(sf);
                 }}
                 className="flex-1 flex items-center gap-3 min-w-0 text-left"
               >
-                <Search className="w-3.5 h-3.5 text-text-faint shrink-0" />
+                <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-text font-medium truncate">
+                    <span className="text-sm text-gray-900 font-medium truncate">
                       {entry.query}
                     </span>
                     {fCount > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-2 text-text-faint shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400 shrink-0">
                         {fCount} Filter{fCount > 1 ? "s" : ""}
                       </span>
                     )}
-                    <span className="text-[10px] text-text-faint shrink-0">
+                    <span className="text-[10px] text-gray-400 shrink-0">
                       {relativeTime(entry.created_at)}
                     </span>
                   </div>
-                  <p className="text-xs text-text-faint truncate mt-0.5">
+                  <p className="text-xs text-gray-400 truncate mt-0.5">
                     {filterSummary(entry).join(" · ")}
                   </p>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-text-faint opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
               </button>
 
               <button
@@ -163,7 +174,7 @@ export function SearchHistoryPanel({
                   setDeletingId(entry.id);
                   onDeleteRecent(entry.id);
                 }}
-                className="opacity-0 group-hover/row:opacity-100 text-text-faint hover:text-red transition-opacity p-1 shrink-0"
+                className="opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-red-600 transition-opacity p-1 shrink-0"
                 title="Delete recent search"
               >
                 {isDeleting ? (

@@ -38,7 +38,11 @@ function compactSummary(filters: Record<string, unknown>): string {
   if (filters.maxResults && filters.maxResults !== 25) {
     parts.push(`${filters.maxResults} results`);
   }
-  if (filters.noWebsite === true || filters.no_website === true) {
+  if (filters.websiteFilter === 'has') {
+    parts.push("Has website");
+  } else if (filters.websiteFilter === 'no') {
+    parts.push("No website");
+  } else if (filters.noWebsite === true || filters.no_website === true) {
     parts.push("No website");
   } else if (filters.noWebsite === false || filters.no_website === false) {
     parts.push("Has website");
@@ -89,19 +93,22 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
       businessType: String(f.query ?? f.businessType ?? ""),
       location: String(f.location ?? ""),
       leadCount: Number(f.maxResults ?? f.leadCount ?? 25),
+      websiteFilter: 'any',
     };
-    if (f.noWebsite === true || f.no_website === true) {
-      filters.hasWebsite = false;
+    if (f.websiteFilter === 'has' || f.websiteFilter === 'no') {
+      filters.websiteFilter = f.websiteFilter as 'has' | 'no';
+    } else if (f.noWebsite === true || f.no_website === true) {
+      filters.websiteFilter = 'no';
     } else if (f.noWebsite === false || f.no_website === false) {
-      filters.hasWebsite = true;
+      filters.websiteFilter = 'has';
     }
     onApply(filters);
   };
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-border bg-surface overflow-hidden p-3">
-        <div className="text-xs text-text-faint mb-2 font-medium flex items-center gap-1.5">
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden p-3">
+        <div className="text-xs text-gray-400 mb-2 font-medium flex items-center gap-1.5">
           <Star className="w-3 h-3" />
           Saved Searches
         </div>
@@ -119,10 +126,10 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
   }
 
   return (
-    <div className="rounded-xl border border-border bg-surface overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Header */}
       <div className="flex items-center px-4 pt-3 pb-2">
-        <span className="text-xs font-medium text-text flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-900 flex items-center gap-1.5">
           <Star className="w-3 h-3" />
           Saved Searches
         </span>
@@ -135,7 +142,7 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
           return (
             <div
               key={entry.id}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-2 transition-colors group/row"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group/row"
             >
               <button
                 onClick={() => {
@@ -144,21 +151,21 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
                 }}
                 className="flex-1 flex items-center gap-3 min-w-0 text-left"
               >
-                <Star className="w-3.5 h-3.5 text-amber shrink-0" />
+                <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-text font-medium truncate">
+                    <span className="text-sm text-gray-900 font-medium truncate">
                       {entry.name}
                     </span>
-                    <span className="text-[10px] text-text-faint shrink-0">
+                    <span className="text-[10px] text-gray-400 shrink-0">
                       {relativeTime(entry.created_at)}
                     </span>
                   </div>
-                  <p className="text-xs text-text-faint truncate mt-0.5">
+                  <p className="text-xs text-gray-400 truncate mt-0.5">
                     {compactSummary(entry.filters)}
                   </p>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-text-faint opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
               </button>
 
               <button
@@ -166,7 +173,7 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
                   if (isDeleting) return;
                   handleDelete(entry.id);
                 }}
-                className="opacity-0 group-hover/row:opacity-100 text-text-faint hover:text-red transition-opacity p-1 shrink-0"
+                className="opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-red-600 transition-opacity p-1 shrink-0"
                 title="Delete saved search"
               >
                 {isDeleting ? (

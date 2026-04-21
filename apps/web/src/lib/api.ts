@@ -405,7 +405,7 @@ export const api = {
       query: string;
       location: string;
       maxResults?: number;
-      noWebsite?: boolean;
+      websiteFilter?: 'any' | 'has' | 'no';
     }) =>
       request<BackendSearchResult>("/search/google-maps", {
         method: "POST",
@@ -413,7 +413,7 @@ export const api = {
           query: params.query,
           location: params.location,
           maxResults: Math.min(params.maxResults ?? 50, 50),
-          noWebsite: params.noWebsite ?? false,
+          websiteFilter: params.websiteFilter ?? 'any',
         }),
       }),
   },

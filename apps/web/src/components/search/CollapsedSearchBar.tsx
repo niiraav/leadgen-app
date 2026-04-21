@@ -9,38 +9,38 @@ export function CollapsedSearchBar({
   const { filters, resultCount } = summary;
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-border bg-surface-2/50 transition-all">
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 transition-all">
       {/* Search icon + core info */}
-      <Search className="w-4 h-4 text-blue shrink-0" />
+      <Search className="w-4 h-4 text-blue-600 shrink-0" />
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text min-w-0">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-900 min-w-0">
         {/* Business type */}
         <span className="font-medium truncate max-w-[180px]">
           {filters.businessType}
         </span>
 
         {/* Location */}
-        <span className="flex items-center gap-1 text-text-muted">
+        <span className="flex items-center gap-1 text-gray-500">
           <MapPin className="w-3 h-3" />
           {filters.location}
         </span>
 
         {/* Count */}
-        <span className="flex items-center gap-1 text-text-muted">
+        <span className="flex items-center gap-1 text-gray-500">
           <Hash className="w-3 h-3" />
           {filters.leadCount}
         </span>
 
         {/* Website filter if active */}
-        {filters.hasWebsite !== undefined && (
-          <span className="flex items-center gap-1 text-text-muted">
+        {filters.websiteFilter !== 'any' && (
+          <span className="flex items-center gap-1 text-gray-500">
             <Globe className="w-3 h-3" />
-            {filters.hasWebsite ? "Has website" : "No website"}
+            {filters.websiteFilter === 'has' ? "Has website" : "No website"}
           </span>
         )}
 
         {/* Result count */}
-        <span className="text-blue font-medium">
+        <span className="text-blue-600 font-medium">
           {resultCount} result{resultCount !== 1 ? "s" : ""}
         </span>
       </div>
@@ -51,7 +51,7 @@ export function CollapsedSearchBar({
       {/* Refine button */}
       <button
         onClick={onRefine}
-        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg hover:bg-surface-2 text-text-muted hover:text-text transition-colors shrink-0"
+        className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors shrink-0"
         title="Edit search filters"
       >
         <Edit3 className="w-3.5 h-3.5" />
@@ -61,7 +61,7 @@ export function CollapsedSearchBar({
       {/* Clear button */}
       <button
         onClick={onClear}
-        className="p-1.5 rounded-lg hover:bg-surface-2 text-text-faint hover:text-text transition-colors shrink-0"
+        className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors shrink-0"
         title="Clear search"
       >
         <X className="w-3.5 h-3.5" />

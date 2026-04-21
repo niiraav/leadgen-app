@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/auth";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/contexts/profile-context";
 import { api, UpgradeRequiredError } from "@/lib/api";
 import { SearchForm } from "@/components/search/SearchForm";
@@ -14,34 +15,36 @@ import UpgradePrompt from "@/components/ui/upgrade-prompt";
 import type { SearchResult, SearchFilters, SearchSummary } from "@/components/search/types";
 import type { Lead } from "@leadgen/shared";
 
+// ── React Query key ────────────────────────────────────────────────────────────
+const SEARCH_QUERY_KEY = "googleMapsSearch";
+
 export default function SearchGoogleMaps() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { showNudge, profile, refreshProfile } = useProfile();
 
-  // Search state
+  // ── Search state ─────────────────────────────────────────────────────────────
   const [filters, setFilters] = useState<SearchFilters>({
     businessType: "",
     location: profile?.target_geography || "",
     leadCount: 25,
   });
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [savingId, setSavingId] = useState<string | null>(null);
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upgradeError, setUpgradeError] = useState<Error | string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  // Collapse state
+  // ── Collapse state ───────────────────────────────────────────────────────────
   const [hasSearched, setHasSearched] = useState(false);
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [searchSummary, setSearchSummary] = useState<SearchSummary | null>(null);
 
-  // User limits
+  // ── User limits ──────────────────────────────────────────────────────────────
   const [userLeadsCount, setUserLeadsCount] = useState(0);
   const [userLeadLimit, setUserLeadLimit] = useState(50);
 
-  // Saved searches refresh token
+  // ── Saved searches + history ─────────────────────────────────────────────────
   const [savedSearchesRefresh, setSavedSearchesRefresh] = useState(0);
   const [historyRecent, setHistoryRecent] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -51,7 +54,7 @@ export default function SearchGoogleMaps() {
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [saveSearchLoading, setSaveSearchLoading] = useState(false);
 
-  // Fetch limits + history on mount
+  // ── Fetch limits + history on mount ──────────────────────────────────────────
   useEffect(() => {
     (async () => {
       try {
@@ -64,7 +67,7 @@ export default function SearchGoogleMaps() {
     fetchHistory();
   }, []);
 
-  // Sync default location when profile loads
+  // ── Sync default location when profile loads ─────────────────────────────────
   useEffect(() => {
     if (profile?.target_geography && !hasSearched) {
       setFilters((prev) => ({
@@ -73,6 +76,54 @@ export default function SearchGoogleMaps() {
       }));
     }
   }, [profile?.target_geography, hasSearched]);
+
+  // ── React Query: search ──────────────────────────────────────────────────────
+  const searchQuery = useQuery({
+    queryKey: [SEARCH_QUERY_KEY, filters],
+    queryFn: async () => {
+      const searchResult = await api.search.googleMaps({
+        query: filters.businessType,
+        location: filters.location,
+        maxResults: filters.leadCount,
+        websiteFilter: filters.websiteFilter,
+      });
+
+      const mapped: SearchResult[] =
+        (searchResult as any).results?.map((r: any) => ({
+          place_id:
+            r.place_id ?? `temp-${Math.random().toString(36).slice(2)}`,
+          data_id: r.data_id ?? undefined,
+          name: r.business_name,
+          city: r.city ?? "",
+          category: r.category ?? "",
+          subtypes: r.subtypes ?? [],
+          rating: r.rating ?? 0,
+          reviews: r.review_count ?? 0,
+          has_website: !!r.website_url,
+          business_status: r.business_status ?? "OPERATIONAL",
+          hot_score: r.hot_score ?? 0,
+          phone: r.phone ?? undefined,
+          site: r.website_url ?? undefined,
+          full_address: r.address ?? undefined,
+          postal_code: r.postal_code ?? undefined,
+          latitude: r.latitude ?? undefined,
+          longitude: r.longitude ?? undefined,
+          source: r.source ?? undefined,
+          gmb_reviews_url: r.gmb_reviews_url ?? undefined,
+          description: r.description ?? "",
+          duplicate: r.duplicate ?? false,
+          existingLeadId: r.existingLeadId ?? undefined,
+        })) ?? [];
+
+      return mapped;
+    },
+    enabled: false, // don't run automatically — only via refetch
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 30, // 30 minutes
+  });
+
+  const results = searchQuery.data ?? [];
+  const loading = searchQuery.isFetching;
 
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -91,8 +142,7 @@ export default function SearchGoogleMaps() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // ── Save search handler ────────────────────────────────────────────────
-
+  // ── Save search handler ────────────────────────────────────────────────────
   const handleSaveSearch = useCallback(
     async (name: string) => {
       try {
@@ -111,56 +161,58 @@ export default function SearchGoogleMaps() {
     [filters, showToast]
   );
 
-  // ── Search handler ───────────────────────────────────────────────────
-
+  // ── Search handler ───────────────────────────────────────────────────────────
   const handleSearch = useCallback(
     async (newFilters: SearchFilters) => {
-      setLoading(true);
       setError(null);
+      setUpgradeError(null);
       setFilters(newFilters);
 
       try {
-        const searchResult = await api.search.googleMaps({
-          query: newFilters.businessType,
-          location: newFilters.location,
-          maxResults: newFilters.leadCount,
-          noWebsite: newFilters.hasWebsite,
+        const mapped = await queryClient.fetchQuery({
+          queryKey: [SEARCH_QUERY_KEY, newFilters],
+          queryFn: async () => {
+            const searchResult = await api.search.googleMaps({
+              query: newFilters.businessType,
+              location: newFilters.location,
+              maxResults: newFilters.leadCount,
+              websiteFilter: newFilters.websiteFilter,
+            });
+
+            const mapped: SearchResult[] =
+              (searchResult as any).results?.map((r: any) => ({
+                place_id:
+                  r.place_id ?? `temp-${Math.random().toString(36).slice(2)}`,
+                data_id: r.data_id ?? undefined,
+                name: r.business_name,
+                city: r.city ?? "",
+                category: r.category ?? "",
+                subtypes: r.subtypes ?? [],
+                rating: r.rating ?? 0,
+                reviews: r.review_count ?? 0,
+                has_website: !!r.website_url,
+                business_status: r.business_status ?? "OPERATIONAL",
+                hot_score: r.hot_score ?? 0,
+                phone: r.phone ?? undefined,
+                site: r.website_url ?? undefined,
+                full_address: r.address ?? undefined,
+                postal_code: r.postal_code ?? undefined,
+                latitude: r.latitude ?? undefined,
+                longitude: r.longitude ?? undefined,
+                source: r.source ?? undefined,
+                gmb_reviews_url: r.gmb_reviews_url ?? undefined,
+                description: r.description ?? "",
+                duplicate: r.duplicate ?? false,
+                existingLeadId: r.existingLeadId ?? undefined,
+              })) ?? [];
+
+            return mapped;
+          },
+          staleTime: Infinity,
+          gcTime: 1000 * 60 * 30,
         });
 
-        const mapped: SearchResult[] =
-          (searchResult as any).results?.map((r: any) => ({
-            place_id:
-              r.place_id ?? `temp-${Math.random().toString(36).slice(2)}`,
-            data_id: r.data_id ?? undefined,
-            name: r.business_name,
-            city: r.city ?? "",
-            category: r.category ?? "",
-            subtypes: r.subtypes ?? [],
-            rating: r.rating ?? 0,
-            reviews: r.review_count ?? 0,
-            has_website: !!r.website_url,
-            business_status: r.business_status ?? "OPERATIONAL",
-            hot_score: r.hot_score ?? 0,
-            phone: r.phone ?? undefined,
-            site: r.website_url ?? undefined,
-            full_address: r.address ?? undefined,
-            postal_code: r.postal_code ?? undefined,
-            latitude: r.latitude ?? undefined,
-            longitude: r.longitude ?? undefined,
-            source: r.source ?? undefined,
-            gmb_reviews_url: r.gmb_reviews_url ?? undefined,
-            description: r.description ?? "",
-            duplicate: false,
-            emailState: "unknown" as const,
-            phoneAvailability: r.phone
-              ? ("available" as const)
-              : ("unavailable" as const),
-          })) ?? [];
-
-        setResults(mapped);
         setHasSearched(true);
-
-        // Collapse filters after successful search
         setSearchSummary({
           filters: newFilters,
           resultCount: mapped.length,
@@ -174,14 +226,12 @@ export default function SearchGoogleMaps() {
         } else {
           setError(err.message || "Search failed");
         }
-      } finally {
-        setLoading(false);
       }
     },
-    []
+    [queryClient]
   );
 
-  // ── Re-run a recent search ───────────────────────────────────────────
+  // ── Re-run a recent search ─────────────────────────────────────────────────
   const handleRerunSearch = useCallback(
     (rerunFilters: SearchFilters) => {
       setFilters(rerunFilters);
@@ -190,7 +240,7 @@ export default function SearchGoogleMaps() {
     [handleSearch]
   );
 
-  // ── Delete recent search ────────────────────────────────────────────
+  // ── Delete recent search ───────────────────────────────────────────────────
   const handleDeleteRecent = useCallback(
     async (id: string) => {
       try {
@@ -206,7 +256,7 @@ export default function SearchGoogleMaps() {
   /** Save one lead via single create (returns ID for routing) */
   const handleSaveOne = useCallback(
     async (result: SearchResult) => {
-      setSaving(true);
+      setSavingId(result.place_id);
       try {
         const lead: Lead = await api.leads.create({
           business_name: result.name,
@@ -231,14 +281,20 @@ export default function SearchGoogleMaps() {
           longitude: result.longitude ?? null,
         });
 
-        // Mark as duplicate in table
-        setResults((prev) =>
-          prev.map((r) =>
-            r.place_id === result.place_id
-              ? { ...r, duplicate: true, existingLeadId: lead.id }
-              : r
-          )
+        // Invalidate search cache so duplicate state refreshes on back-nav
+        queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
+
+        // Also mark locally in current results
+        queryClient.setQueryData(
+          [SEARCH_QUERY_KEY, filters],
+          (old: SearchResult[] | undefined) =>
+            old?.map((r) =>
+              r.place_id === result.place_id
+                ? { ...r, duplicate: true, existingLeadId: lead.id }
+                : r
+            )
         );
+
         showToast(`Saved ${result.name}`);
         setUserLeadsCount((c) => c + 1);
 
@@ -251,10 +307,10 @@ export default function SearchGoogleMaps() {
           showToast(err.message || "Failed to save");
         }
       } finally {
-        setSaving(false);
+        setSavingId(null);
       }
     },
-    [showToast, router]
+    [showToast, router, queryClient, filters]
   );
 
   /** Save + Enrich in one action, then route to lead page */
@@ -289,14 +345,20 @@ export default function SearchGoogleMaps() {
         // Step 2: Enrich the saved lead
         await api.enrich.enrichLead(lead.id);
 
-        // Mark as duplicate in table
-        setResults((prev) =>
-          prev.map((r) =>
-            r.place_id === result.place_id
-              ? { ...r, duplicate: true, existingLeadId: lead.id }
-              : r
-          )
+        // Invalidate search cache
+        queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
+
+        // Also mark locally
+        queryClient.setQueryData(
+          [SEARCH_QUERY_KEY, filters],
+          (old: SearchResult[] | undefined) =>
+            old?.map((r) =>
+              r.place_id === result.place_id
+                ? { ...r, duplicate: true, existingLeadId: lead.id }
+                : r
+            )
         );
+
         showToast(`Saved & enriched ${result.name}`);
         setUserLeadsCount((c) => c + 1);
 
@@ -312,12 +374,12 @@ export default function SearchGoogleMaps() {
         setEnrichingId(null);
       }
     },
-    [showToast, router]
+    [showToast, router, queryClient, filters]
   );
 
   const handleSaveBatch = useCallback(
     async (items: SearchResult[]) => {
-      setSaving(true);
+      setSavingId("batch");
       try {
         const leads = items.map((r) => ({
           business_name: r.name,
@@ -345,11 +407,15 @@ export default function SearchGoogleMaps() {
         const result = await api.leads.batchCreate(leads);
         const imported = (result as any).imported ?? items.length;
 
-        setResults((prev) =>
-          prev.map((r) => {
-            const match = items.find((i) => i.place_id === r.place_id);
-            return match ? { ...r, duplicate: true } : r;
-          })
+        // Invalidate + mark locally
+        queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
+        queryClient.setQueryData(
+          [SEARCH_QUERY_KEY, filters],
+          (old: SearchResult[] | undefined) =>
+            old?.map((r) => {
+              const match = items.find((i) => i.place_id === r.place_id);
+              return match ? { ...r, duplicate: true } : r;
+            })
         );
 
         showToast(`Saved ${imported} lead${imported > 1 ? "s" : ""}`);
@@ -361,10 +427,10 @@ export default function SearchGoogleMaps() {
           showToast(err.message || "Batch save failed");
         }
       } finally {
-        setSaving(false);
+        setSavingId(null);
       }
     },
-    [showToast]
+    [showToast, queryClient, filters]
   );
 
   const handleRefineSearch = useCallback(() => {
@@ -373,13 +439,13 @@ export default function SearchGoogleMaps() {
 
   // Clear everything (results + filters + collapse state) — used by CollapsedSearchBar X
   const handleClearSearch = useCallback(() => {
-    setResults([]);
+    queryClient.removeQueries({ queryKey: [SEARCH_QUERY_KEY] });
     setFiltersCollapsed(false);
     setHasSearched(false);
     setSearchSummary(null);
     setShowSaveInput(false);
     setSaveSearchName("");
-  }, []);
+  }, [queryClient]);
 
   // Reset only text field (business type) — PRD: Clear filters resets only the current text field
   const handleResetFilters = useCallback(() => {
@@ -394,8 +460,8 @@ export default function SearchGoogleMaps() {
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm">
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-xl">
-            <span className="text-sm text-text flex-1">{toast}</span>
+          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-xl">
+            <span className="text-sm text-gray-900 flex-1">{toast}</span>
           </div>
         </div>
       )}
@@ -412,10 +478,10 @@ export default function SearchGoogleMaps() {
         <div className="max-w-xl mx-auto pt-8 pb-4">
           {/* Centered page title */}
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-text">
-              Find <span className="text-blue">B2B Leads</span>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Find <span className="text-blue-600">B2B Leads</span>
             </h1>
-            <p className="text-sm text-text-muted mt-2">
+            <p className="text-sm text-gray-500 mt-2">
               Search Google Maps for businesses in your target area
             </p>
           </div>
@@ -532,7 +598,7 @@ export default function SearchGoogleMaps() {
           {/* Results area */}
           <div>
             {error && (
-              <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 mb-4">
                 {error}
                 <button
                   onClick={() =>
@@ -540,7 +606,7 @@ export default function SearchGoogleMaps() {
                       businessType: filters.businessType,
                       location: filters.location,
                       leadCount: filters.leadCount,
-                      hasWebsite: filters.hasWebsite,
+                      websiteFilter: filters.websiteFilter,
                     })
                   }
                   className="ml-3 underline hover:no-underline"
@@ -559,7 +625,7 @@ export default function SearchGoogleMaps() {
             {results.length > 0 && (
               <SearchResultsTable
                 results={results}
-                saving={saving}
+                savingId={savingId}
                 enrichingId={enrichingId}
                 onSaveOne={handleSaveOne}
                 onEnrichOne={handleEnrichOne}
@@ -572,18 +638,43 @@ export default function SearchGoogleMaps() {
             {/* No results state — only after a zero-result search */}
             {!loading && results.length === 0 && hasSearched && !error && (
               <div className="card text-center py-16">
-                <p className="text-sm text-text-muted">No leads found</p>
-                <p className="text-xs text-text-faint mt-1">
+                <p className="text-sm text-gray-500">No leads found</p>
+                <p className="text-xs text-gray-400 mt-1">
                   Try different search terms or location
                 </p>
               </div>
             )}
 
             {loading && (
-              <div className="space-y-2">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full rounded-xl" />
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-left">
+                      <th className="w-10 px-2 py-3" />
+                      <th className="px-3 py-3 font-medium text-gray-500">Business</th>
+                      <th className="px-3 py-3 font-medium text-gray-500">Category</th>
+                      <th className="px-3 py-3 font-medium text-gray-500">Location</th>
+                      <th className="px-3 py-3 font-medium text-gray-500">Rating</th>
+                      <th className="px-3 py-3 font-medium text-gray-500">Links</th>
+                      <th className="px-3 py-3 font-medium text-gray-500">Phone</th>
+                      <th className="px-3 py-3 font-medium text-gray-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <tr key={i} className="border-b border-gray-100 animate-pulse">
+                        <td className="px-2 py-3"><div className="h-4 w-4 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-32 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-20 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-20 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-12 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-5 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-24 rounded bg-gray-200" /></td>
+                        <td className="px-3 py-3"><div className="h-4 w-16 rounded bg-gray-200" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

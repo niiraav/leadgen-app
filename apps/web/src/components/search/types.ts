@@ -3,8 +3,6 @@
 // Cross-app enums live in packages/shared/src/types.ts
 // ════════════════════════════════════════════
 
-import type { EmailLockState, ContactAvailability, ScoreTier } from '@leadgen/shared';
-
 /** A single search result from Google Maps (Outscraper) */
 export interface SearchResult {
   place_id: string;
@@ -32,10 +30,6 @@ export interface SearchResult {
   duplicate?: boolean;
   /** If duplicate, the existing lead's ID for navigation */
   existingLeadId?: string;
-  /** Email lock state — unknown until enrichment */
-  emailState: EmailLockState;
-  /** Phone availability — known from search data */
-  phoneAvailability: ContactAvailability;
 }
 
 /** Search-time filter state (fields the API can filter on) */
@@ -43,7 +37,7 @@ export interface SearchFilters {
   businessType: string;
   location: string;
   leadCount: number;
-  hasWebsite?: boolean;
+  websiteFilter?: 'any' | 'has' | 'no';
 }
 
 /** Collapsed search summary for the compact bar */
