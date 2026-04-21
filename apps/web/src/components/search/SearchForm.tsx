@@ -94,12 +94,9 @@ export function SearchForm({
 
   const handleClear = useCallback(() => {
     setBusinessType(defaults.businessType);
-    setLocation(defaults.location);
-    setLeadCount(defaults.leadCount);
-    setHasWebsite(defaults.hasWebsite);
     setShowQuick(false);
     onClearForm?.();
-  }, [defaults, onClearForm]);
+  }, [defaults.businessType, onClearForm]);
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">

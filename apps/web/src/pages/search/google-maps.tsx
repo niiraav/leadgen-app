@@ -381,14 +381,13 @@ export default function SearchGoogleMaps() {
     setSaveSearchName("");
   }, []);
 
-  // Reset only input filters — used by SearchForm Clear button
+  // Reset only text field (business type) — PRD: Clear filters resets only the current text field
   const handleResetFilters = useCallback(() => {
-    setFilters({
+    setFilters((prev) => ({
+      ...prev,
       businessType: "",
-      location: profile?.target_geography || "",
-      leadCount: 25,
-    });
-  }, [profile?.target_geography]);
+    }));
+  }, []);
 
   return (
     <div className="-mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8">

@@ -13,9 +13,6 @@ const searchSchema = z.object({
   maxResults: z.coerce.number().min(1).max(100).default(20),
   no_website: z.boolean().optional(),
   noWebsite: z.boolean().optional(),
-  min_rating: z.coerce.number().optional(),
-  max_reviews: z.coerce.number().optional(),
-  no_social: z.boolean().optional(),
 });
 
 // ─── POST /search/google-maps ────────────────────────────────────────────────
@@ -45,7 +42,7 @@ router.post('/google-maps', async (c) => {
       return c.json({ error: 'Validation failed', details: parsed.error.flatten() }, 400);
     }
 
-    const { query, location, maxResults, no_website, noWebsite, min_rating, max_reviews, no_social } = parsed.data;
+    const { query, location, maxResults, no_website, noWebsite } = parsed.data;
     const filterNoWebsite = no_website ?? noWebsite ?? false;
 
     // ── Outscraper search ──
@@ -137,9 +134,6 @@ router.post('/google-maps', async (c) => {
 
     // Apply filters
     if (filterNoWebsite) leads = leads.filter((l) => !l.website_url);
-    if (min_rating) leads = leads.filter((l) => (l.rating || 0) >= min_rating);
-    if (max_reviews) leads = leads.filter((l) => (l.review_count || 0) <= max_reviews);
-    if (no_social) leads = leads.filter((l) => !l.website_url);
 
     // Sort by hot_score descending
     leads.sort((a, b) => b.hot_score - a.hot_score);
