@@ -651,6 +651,8 @@ export const api = {
   // ── Recent Searches ────────────────────────────────────────────
   searchHistory: {
     list: () => request<any[]>("/search/history"),
+    delete: (id: string) =>
+      request<any>(`/search/history/${id}`, { method: "DELETE" }),
   },
 
   // ── Contact Preview / Unlock ────────────────────────────────────

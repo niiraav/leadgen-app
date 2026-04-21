@@ -149,10 +149,11 @@ router.post('/google-maps', async (c) => {
       await incrementSearches(userId);
     } catch { /* best effort */ }
 
-    // Record search history
+    // Record search history (store structured fields for correct re-run)
     try {
       const historyPayload: Record<string, unknown> = {
-        query: `${query} in ${location}`,
+        query: query,
+        location: location,
         user_id: userId,
         limit_count: maxResults,
         result_count: leads.length,
@@ -197,6 +198,29 @@ router.get('/history', async (c) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Search] GET /history Error:', message);
     return c.json({ error: 'Failed to fetch search history', details: message }, 500);
+  }
+});
+
+// ─── DELETE /search/history/:id ────────────────────────────────────────────────
+
+router.delete('/history/:id', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+
+    const { error } = await supabaseAdmin
+      .from('search_history')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return c.json({ message: 'Search history entry deleted' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Search] DELETE /history/:id Error:', message);
+    return c.json({ error: 'Failed to delete search history entry', details: message }, 500);
   }
 });
 

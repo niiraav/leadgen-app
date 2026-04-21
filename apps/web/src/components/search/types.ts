@@ -44,8 +44,6 @@ export interface SearchFilters {
   location: string;
   leadCount: number;
   hasWebsite?: boolean;
-  minRating?: number;
-  maxReviews?: number;
 }
 
 /** Collapsed search summary for the compact bar */
@@ -68,4 +66,5 @@ export interface SearchFilterBarProps {
   loading: boolean;
   initialFilters?: Partial<SearchFilters>;
   onClearForm: () => void;
+  defaultLocation?: string;
 }

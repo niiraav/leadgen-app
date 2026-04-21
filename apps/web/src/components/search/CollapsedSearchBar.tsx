@@ -1,4 +1,4 @@
-import { Search, Edit3, X, MapPin, Hash, Globe, Star, MessageSquare } from "lucide-react";
+import { Search, Edit3, X, MapPin, Hash, Globe } from "lucide-react";
 import type { CollapsedSearchBarProps } from "./types";
 
 export function CollapsedSearchBar({
@@ -36,22 +36,6 @@ export function CollapsedSearchBar({
           <span className="flex items-center gap-1 text-text-muted">
             <Globe className="w-3 h-3" />
             {filters.hasWebsite ? "Has website" : "No website"}
-          </span>
-        )}
-
-        {/* Min rating if active */}
-        {filters.minRating !== undefined && (
-          <span className="flex items-center gap-1 text-text-muted">
-            <Star className="w-3 h-3" />
-            {filters.minRating}+
-          </span>
-        )}
-
-        {/* Max reviews if active */}
-        {filters.maxReviews !== undefined && (
-          <span className="flex items-center gap-1 text-text-muted">
-            <MessageSquare className="w-3 h-3" />
-            ≤{filters.maxReviews}
           </span>
         )}
 

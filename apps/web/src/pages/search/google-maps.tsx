@@ -7,6 +7,8 @@ import { SearchForm } from "@/components/search/SearchForm";
 import { SearchResultsTable } from "@/components/search/SearchResultsTable";
 import { CollapsedSearchBar } from "@/components/search/CollapsedSearchBar";
 import { SearchHistoryPanel } from "@/components/search/SearchHistoryPanel";
+import { SavedSearchesPanel } from "@/components/search/SavedSearchesPanel";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TargetAreaNudge } from "@/components/nudges/profile-nudges";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 import type { SearchResult, SearchFilters, SearchSummary } from "@/components/search/types";
@@ -19,7 +21,7 @@ export default function SearchGoogleMaps() {
   // Search state
   const [filters, setFilters] = useState<SearchFilters>({
     businessType: "",
-    location: "",
+    location: profile?.target_geography || "",
     leadCount: 25,
   });
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -39,10 +41,15 @@ export default function SearchGoogleMaps() {
   const [userLeadsCount, setUserLeadsCount] = useState(0);
   const [userLeadLimit, setUserLeadLimit] = useState(50);
 
-  // Search history & saved searches
+  // Saved searches refresh token
+  const [savedSearchesRefresh, setSavedSearchesRefresh] = useState(0);
   const [historyRecent, setHistoryRecent] = useState<any[]>([]);
-  const [historySaved, setHistorySaved] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+
+  // Save search UI state
+  const [saveSearchName, setSaveSearchName] = useState("");
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const [saveSearchLoading, setSaveSearchLoading] = useState(false);
 
   // Fetch limits + history on mount
   useEffect(() => {
@@ -57,15 +64,21 @@ export default function SearchGoogleMaps() {
     fetchHistory();
   }, []);
 
+  // Sync default location when profile loads
+  useEffect(() => {
+    if (profile?.target_geography && !hasSearched) {
+      setFilters((prev) => ({
+        ...prev,
+        location: profile.target_geography || "",
+      }));
+    }
+  }, [profile?.target_geography, hasSearched]);
+
   const fetchHistory = useCallback(async () => {
     setHistoryLoading(true);
     try {
-      const [recent, saved] = await Promise.all([
-        api.searchHistory.list(),
-        api.filters.list(),
-      ]);
+      const recent = await api.searchHistory.list();
       setHistoryRecent(recent ?? []);
-      setHistorySaved(saved ?? []);
     } catch {
       // silently fail
     } finally {
@@ -78,24 +91,19 @@ export default function SearchGoogleMaps() {
     setTimeout(() => setToast(null), 3000);
   }, []);
 
-  // ── Saved search handlers ──────────────────────────────────────────────
+  // ── Save search handler ────────────────────────────────────────────────
 
   const handleSaveSearch = useCallback(
     async (name: string) => {
       try {
-        const saved = await api.filters.save({
+        await api.filters.save({
           name,
           filters: filters as Record<string, any>,
         });
-        setHistorySaved((prev) => [saved, ...prev]);
-        // Remove matching entries from recent (by query+location match)
-        setHistoryRecent((prev) =>
-          prev.filter(
-            (r) =>
-              !(r.query === filters.businessType && r.location === filters.location)
-          )
-        );
         showToast(`Saved: ${name}`);
+        setShowSaveInput(false);
+        setSaveSearchName("");
+        setSavedSearchesRefresh((t) => t + 1);
       } catch (err: any) {
         showToast(err.message || "Failed to save search");
       }
@@ -103,17 +111,7 @@ export default function SearchGoogleMaps() {
     [filters, showToast]
   );
 
-  const handleDeleteSaved = useCallback(
-    async (id: string) => {
-      try {
-        await api.filters.delete(id);
-        setHistorySaved((prev) => prev.filter((s) => s.id !== id));
-      } catch {
-        // silently fail
-      }
-    },
-    []
-  );
+  // ── Search handler ───────────────────────────────────────────────────
 
   const handleSearch = useCallback(
     async (newFilters: SearchFilters) => {
@@ -153,9 +151,7 @@ export default function SearchGoogleMaps() {
             gmb_reviews_url: r.gmb_reviews_url ?? undefined,
             description: r.description ?? "",
             duplicate: false,
-            // Email is unknown at search time — not enriched yet
             emailState: "unknown" as const,
-            // Phone availability from Outscraper data
             phoneAvailability: r.phone
               ? ("available" as const)
               : ("unavailable" as const),
@@ -185,13 +181,26 @@ export default function SearchGoogleMaps() {
     []
   );
 
-  // ── Re-run a saved/recent search ─────────────────────────────────────
+  // ── Re-run a recent search ───────────────────────────────────────────
   const handleRerunSearch = useCallback(
     (rerunFilters: SearchFilters) => {
       setFilters(rerunFilters);
       handleSearch(rerunFilters);
     },
     [handleSearch]
+  );
+
+  // ── Delete recent search ────────────────────────────────────────────
+  const handleDeleteRecent = useCallback(
+    async (id: string) => {
+      try {
+        await api.searchHistory.delete(id);
+        setHistoryRecent((prev) => prev.filter((r) => r.id !== id));
+      } catch {
+        // silently fail — UI already optimistically removed
+      }
+    },
+    []
   );
 
   /** Save one lead via single create (returns ID for routing) */
@@ -362,12 +371,24 @@ export default function SearchGoogleMaps() {
     setFiltersCollapsed(false);
   }, []);
 
+  // Clear everything (results + filters + collapse state) — used by CollapsedSearchBar X
   const handleClearSearch = useCallback(() => {
     setResults([]);
     setFiltersCollapsed(false);
     setHasSearched(false);
     setSearchSummary(null);
+    setShowSaveInput(false);
+    setSaveSearchName("");
   }, []);
+
+  // Reset only input filters — used by SearchForm Clear button
+  const handleResetFilters = useCallback(() => {
+    setFilters({
+      businessType: "",
+      location: profile?.target_geography || "",
+      leadCount: 25,
+    });
+  }, [profile?.target_geography]);
 
   return (
     <div className="-mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8">
@@ -387,126 +408,188 @@ export default function SearchGoogleMaps() {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <span className="text-blue">Search</span> Leads
-          </h1>
-          <p className="text-sm text-text-muted mt-1">
-            Find and save B2B leads
-          </p>
-        </div>
+      {/* ── PRE-SEARCH / EXPANDED: centered narrow container ── */}
+      {!filtersCollapsed && (
+        <div className="max-w-xl mx-auto pt-8 pb-4">
+          {/* Centered page title */}
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-text">
+              Find <span className="text-blue">B2B Leads</span>
+            </h1>
+            <p className="text-sm text-text-muted mt-2">
+              Search Google Maps for businesses in your target area
+            </p>
+          </div>
 
-        {/* Filters — top section, collapsible */}
-        {!filtersCollapsed && (
-          <div className="mb-6">
+          {/* Search form card */}
+          <div className="card">
             <SearchForm
               onSearch={handleSearch}
               loading={loading}
               initialFilters={filters}
-              onClearForm={handleClearSearch}
+              onClearForm={handleResetFilters}
+              defaultLocation={profile?.target_geography || undefined}
             />
+          </div>
 
-            {/* Search history panel — visible when form is expanded, hidden when collapsed */}
+          {/* Save search + Recent searches — below the card */}
+          <div className="mt-4">
+            {/* Save search trigger */}
+            {hasSearched && (
+              <div className="flex items-center justify-end gap-2 mb-3">
+                {showSaveInput ? (
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={saveSearchName}
+                      onChange={(e) => setSaveSearchName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && saveSearchName.trim()) {
+                          handleSaveSearch(saveSearchName.trim());
+                        }
+                        if (e.key === "Escape") {
+                          setShowSaveInput(false);
+                          setSaveSearchName("");
+                        }
+                      }}
+                      placeholder="Search name..."
+                      className="h-7 w-40 text-xs bg-surface border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => {
+                        if (saveSearchName.trim()) {
+                          handleSaveSearch(saveSearchName.trim());
+                        }
+                      }}
+                      disabled={saveSearchLoading || !saveSearchName.trim()}
+                      className="text-xs px-2 py-1 rounded-lg bg-blue text-white disabled:opacity-50"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSaveInput(false);
+                        setSaveSearchName("");
+                      }}
+                      className="text-xs px-2 py-1 rounded-lg border border-border text-text-muted hover:text-text"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      const base = `${filters.businessType} in ${filters.location}`;
+                      setSaveSearchName(base.length > 40 ? base.slice(0, 40) : base);
+                      setShowSaveInput(true);
+                    }}
+                    className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-text-muted hover:text-text hover:border-border-strong transition-colors"
+                  >
+                    Save search
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Saved searches */}
+            {!loading && (
+              <div className="mt-3">
+                <SavedSearchesPanel
+                  onApply={handleRerunSearch}
+                  refreshToken={savedSearchesRefresh}
+                />
+              </div>
+            )}
+
+            {/* Recent searches */}
             {!loading && (
               <div className="mt-3">
                 <SearchHistoryPanel
                   recent={historyRecent}
-                  saved={historySaved}
                   loading={historyLoading}
                   onRerun={handleRerunSearch}
-                  onDeleteSaved={handleDeleteSaved}
-                  onSaveCurrent={hasSearched ? handleSaveSearch : undefined}
-                  hasCurrentSearch={hasSearched}
-                  currentFilters={hasSearched ? filters : null}
-                  hideRecent={hasSearched}
+                  onDeleteRecent={handleDeleteRecent}
                 />
               </div>
             )}
           </div>
-        )}
-
-        {/* Collapsed search summary bar */}
-        {filtersCollapsed && searchSummary && (
-          <div className="mb-4">
-            <CollapsedSearchBar
-              summary={searchSummary}
-              onRefine={handleRefineSearch}
-              onClear={handleClearSearch}
-            />
-          </div>
-        )}
-
-        {/* Results area */}
-        <div>
-          {error && (
-            <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
-              {error}
-              <button
-                onClick={() =>
-                  handleSearch({
-                    businessType: filters.businessType,
-                    location: filters.location,
-                    leadCount: filters.leadCount,
-                  })
-                }
-                className="ml-3 underline hover:no-underline"
-              >
-                Retry
-              </button>
-            </div>
-          )}
-
-          <UpgradePrompt
-            error={upgradeError}
-            onDismiss={() => setUpgradeError(null)}
-            compact
-          />
-
-          {results.length > 0 && (
-            <SearchResultsTable
-              results={results}
-              saving={saving}
-              enrichingId={enrichingId}
-              onSaveOne={handleSaveOne}
-              onEnrichOne={handleEnrichOne}
-              onSaveBatch={handleSaveBatch}
-              userLeadLimit={userLeadLimit}
-              currentLeadCount={userLeadsCount}
-            />
-          )}
-
-          {!loading && results.length === 0 && !error && !hasSearched && (
-            <div className="card text-center py-16">
-              <p className="text-sm text-text-muted">No results yet</p>
-              <p className="text-xs text-text-faint mt-1">
-                Enter a search to find leads on Google Maps
-              </p>
-            </div>
-          )}
-
-          {!loading && results.length === 0 && hasSearched && !error && (
-            <div className="card text-center py-16">
-              <p className="text-sm text-text-muted">No leads found</p>
-              <p className="text-xs text-text-faint mt-1">
-                Try different search terms or location
-              </p>
-            </div>
-          )}
-
-          {loading && (
-            <div className="space-y-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-12 rounded-xl border border-border/60 bg-surface animate-pulse"
-                />
-              ))}
-            </div>
-          )}
         </div>
-      </div>
+      )}
+
+      {/* ── COLLAPSED / RESULTS: full width ── */}
+      {filtersCollapsed && (
+        <div className="max-w-7xl mx-auto">
+          {/* Collapsed search summary bar */}
+          {searchSummary && (
+            <div className="mb-4">
+              <CollapsedSearchBar
+                summary={searchSummary}
+                onRefine={handleRefineSearch}
+                onClear={handleClearSearch}
+              />
+            </div>
+          )}
+
+          {/* Results area */}
+          <div>
+            {error && (
+              <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
+                {error}
+                <button
+                  onClick={() =>
+                    handleSearch({
+                      businessType: filters.businessType,
+                      location: filters.location,
+                      leadCount: filters.leadCount,
+                      hasWebsite: filters.hasWebsite,
+                    })
+                  }
+                  className="ml-3 underline hover:no-underline"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            <UpgradePrompt
+              error={upgradeError}
+              onDismiss={() => setUpgradeError(null)}
+              compact
+            />
+
+            {results.length > 0 && (
+              <SearchResultsTable
+                results={results}
+                saving={saving}
+                enrichingId={enrichingId}
+                onSaveOne={handleSaveOne}
+                onEnrichOne={handleEnrichOne}
+                onSaveBatch={handleSaveBatch}
+                userLeadLimit={userLeadLimit}
+                currentLeadCount={userLeadsCount}
+              />
+            )}
+
+            {/* No results state — only after a zero-result search */}
+            {!loading && results.length === 0 && hasSearched && !error && (
+              <div className="card text-center py-16">
+                <p className="text-sm text-text-muted">No leads found</p>
+                <p className="text-xs text-text-faint mt-1">
+                  Try different search terms or location
+                </p>
+              </div>
+            )}
+
+            {loading && (
+              <div className="space-y-2">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-xl" />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

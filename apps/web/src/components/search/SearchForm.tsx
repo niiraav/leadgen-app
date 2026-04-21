@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Search, MapPin, Hash, Globe, Star, MessageSquare, Loader2, X } from "lucide-react";
+import { Search, MapPin, Globe, Loader2, X } from "lucide-react";
 import type { SearchFilterBarProps, SearchFilters } from "./types";
 
 const QUICK_TYPES = [
@@ -13,27 +13,36 @@ const QUICK_TYPES = [
   { label: "Hairdresser", emoji: "💇" },
 ];
 
+const COUNT_STEPS = [10, 25, 50, 100];
+
+function getDefaultFilters(defaultLocation?: string): SearchFilters {
+  return {
+    businessType: "",
+    location: defaultLocation || "",
+    leadCount: 25,
+    hasWebsite: undefined,
+  };
+}
+
 export function SearchForm({
   onSearch,
   loading,
   initialFilters,
   onClearForm,
+  defaultLocation,
 }: SearchFilterBarProps) {
+  const defaults = getDefaultFilters(defaultLocation);
   const [businessType, setBusinessType] = useState(
-    initialFilters?.businessType ?? ""
+    initialFilters?.businessType ?? defaults.businessType
   );
-  const [location, setLocation] = useState(initialFilters?.location ?? "");
+  const [location, setLocation] = useState(
+    initialFilters?.location ?? defaults.location
+  );
   const [leadCount, setLeadCount] = useState(
-    initialFilters?.leadCount ?? 25
+    initialFilters?.leadCount ?? defaults.leadCount
   );
   const [hasWebsite, setHasWebsite] = useState<boolean | undefined>(
-    initialFilters?.hasWebsite
-  );
-  const [minRating, setMinRating] = useState<number | undefined>(
-    initialFilters?.minRating
-  );
-  const [maxReviews, setMaxReviews] = useState<number | undefined>(
-    initialFilters?.maxReviews
+    initialFilters?.hasWebsite ?? defaults.hasWebsite
   );
   const [showQuick, setShowQuick] = useState(false);
   const quickRef = useRef<HTMLDivElement>(null);
@@ -41,14 +50,12 @@ export function SearchForm({
   // Sync with initial filters on re-expand
   useEffect(() => {
     if (initialFilters) {
-      setBusinessType(initialFilters.businessType ?? "");
-      setLocation(initialFilters.location ?? "");
-      setLeadCount(initialFilters.leadCount ?? 25);
+      setBusinessType(initialFilters.businessType ?? defaults.businessType);
+      setLocation(initialFilters.location ?? defaults.location);
+      setLeadCount(initialFilters.leadCount ?? defaults.leadCount);
       setHasWebsite(initialFilters.hasWebsite);
-      setMinRating(initialFilters.minRating);
-      setMaxReviews(initialFilters.maxReviews);
     }
-  }, [initialFilters]);
+  }, [initialFilters, defaultLocation]);
 
   const handleSearch = useCallback(() => {
     if (!businessType.trim() || !location.trim()) return;
@@ -58,10 +65,8 @@ export function SearchForm({
       leadCount,
     };
     if (hasWebsite !== undefined) filters.hasWebsite = hasWebsite;
-    if (minRating !== undefined) filters.minRating = minRating;
-    if (maxReviews !== undefined) filters.maxReviews = maxReviews;
     onSearch(filters);
-  }, [businessType, location, leadCount, hasWebsite, minRating, maxReviews, onSearch]);
+  }, [businessType, location, leadCount, hasWebsite, onSearch]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -80,6 +85,21 @@ export function SearchForm({
     if (showQuick) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [showQuick]);
+
+  const isDirty =
+    businessType !== defaults.businessType ||
+    location !== defaults.location ||
+    leadCount !== defaults.leadCount ||
+    hasWebsite !== defaults.hasWebsite;
+
+  const handleClear = useCallback(() => {
+    setBusinessType(defaults.businessType);
+    setLocation(defaults.location);
+    setLeadCount(defaults.leadCount);
+    setHasWebsite(defaults.hasWebsite);
+    setShowQuick(false);
+    onClearForm?.();
+  }, [defaults, onClearForm]);
 
   return (
     <div className="rounded-xl border border-border bg-surface p-4">
@@ -133,22 +153,6 @@ export function SearchForm({
           />
         </div>
 
-        {/* Lead count */}
-        <div className="relative sm:w-24">
-          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
-          <input
-            type="number"
-            min={10}
-            max={100}
-            step={5}
-            value={leadCount}
-            onChange={(e) => setLeadCount(Number(e.target.value))}
-            onKeyDown={handleKeyDown}
-            placeholder="Count"
-            className="input w-full pl-9"
-          />
-        </div>
-
         {/* Search button */}
         <button
           onClick={handleSearch}
@@ -164,8 +168,25 @@ export function SearchForm({
         </button>
       </div>
 
-      {/* Row 2: Optional filters — compact toggles */}
+      {/* Row 2: Result count segmented control + Website filter + Clear */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Result count segmented control */}
+        <div className="flex items-center gap-0 rounded-lg border border-border overflow-hidden">
+          {COUNT_STEPS.map((step) => (
+            <button
+              key={step}
+              onClick={() => setLeadCount(step)}
+              className={`text-xs px-3 py-1.5 transition-colors ${
+                leadCount === step
+                  ? "bg-blue text-white font-medium"
+                  : "bg-surface text-text-muted hover:text-text hover:bg-surface-2"
+              } ${step !== COUNT_STEPS[0] ? "border-l border-border" : ""}`}
+            >
+              {step}
+            </button>
+          ))}
+        </div>
+
         {/* Has website toggle */}
         <button
           onClick={() =>
@@ -190,51 +211,10 @@ export function SearchForm({
             : "Website"}
         </button>
 
-        {/* Min rating */}
-        <div className="flex items-center gap-1">
-          <Star className="w-3 h-3 text-text-faint" />
-          <select
-            value={minRating ?? ""}
-            onChange={(e) =>
-              setMinRating(e.target.value ? Number(e.target.value) : undefined)
-            }
-            className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-text-muted"
-          >
-            <option value="">Any rating</option>
-            <option value="3">3+</option>
-            <option value="3.5">3.5+</option>
-            <option value="4">4+</option>
-            <option value="4.5">4.5+</option>
-          </select>
-        </div>
-
-        {/* Max reviews */}
-        <div className="flex items-center gap-1">
-          <MessageSquare className="w-3 h-3 text-text-faint" />
-          <select
-            value={maxReviews ?? ""}
-            onChange={(e) =>
-              setMaxReviews(
-                e.target.value ? Number(e.target.value) : undefined
-              )
-            }
-            className="text-xs bg-surface-2 border border-border rounded-lg px-2 py-1.5 text-text-muted"
-          >
-            <option value="">Any reviews</option>
-            <option value="10">≤10</option>
-            <option value="30">≤30</option>
-            <option value="100">≤100</option>
-          </select>
-        </div>
-
-        {/* Clear all filters */}
-        {(hasWebsite !== undefined ||
-          minRating !== undefined ||
-          maxReviews !== undefined ||
-          businessType ||
-          location) && (
+        {/* Clear filters */}
+        {isDirty && (
           <button
-            onClick={onClearForm}
+            onClick={handleClear}
             className="text-xs px-2 py-1.5 text-text-faint hover:text-text transition-colors flex items-center gap-1"
           >
             <X className="w-3 h-3" />
