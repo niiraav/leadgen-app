@@ -48,7 +48,7 @@ export const BulkStatusDropdown = memo(function BulkStatusDropdown({
         onClick={() => setOpen(!open)}
         disabled={disabled}
         className={cn(
-          "btn text-xs flex items-center gap-1",
+          "btn text-xs flex items-center gap-1 h-9 py-1.5",
           disabled ? "btn-ghost opacity-50" : "btn-secondary"
         )}
       >

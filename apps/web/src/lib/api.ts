@@ -459,6 +459,19 @@ export const api = {
         body: JSON.stringify(data),
       }).then(mapBackendLead),
 
+    exportCSV: async () => {
+      const token = await getAccessToken();
+      const url = `${API_BASE}/leads/export/csv`;
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.message || `Export failed (${res.status})`);
+      }
+      return res.text();
+    },
+
     delete: (id: string) =>
       request<{ message: string }>(`/leads/${id}`, { method: "DELETE" }),
   },

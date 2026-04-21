@@ -78,7 +78,7 @@ export async function getLeads(userId: string, params: {
   status?: string;
   search?: string;
 }) {
-  const { limit = 20, cursor, sortField = 'created_at', sortOrder = 'desc', status, search } = params;
+  const { limit = 50, cursor, sortField = 'created_at', sortOrder = 'desc', status, search } = params;
 
   let query = supabaseAdmin.from('leads').select('*', { count: 'exact' })
     .eq('user_id', userId);

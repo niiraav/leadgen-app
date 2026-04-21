@@ -20,19 +20,22 @@ interface StatusDropdownProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  new: "bg-blue/10 text-blue",
-  contacted: "bg-amber/10 text-amber",
-  replied: "bg-green/10 text-green",
-  interested: "bg-emerald/10 text-emerald",
-  not_interested: "bg-red/10 text-red",
-  out_of_office: "bg-surface-2 text-text-faint",
-  qualified: "bg-blue/10 text-blue",
-  proposal_sent: "bg-purple/10 text-purple",
-  converted: "bg-green/10 text-green",
-  lost: "bg-red/10 text-red",
-  closed: "bg-surface-2 text-text-faint",
-  archived: "bg-surface-2 text-text-faint",
-  active: "bg-green/10 text-green",
+  // Engagement (PRD §5.5)
+  new: "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700",
+  contacted: "bg-blue/10 text-blue border-blue/20",
+  replied: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700",
+  interested: "bg-amber/10 text-amber border-amber/20",
+  not_interested: "bg-red/10 text-red border-red/20",
+  out_of_office: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-700",
+  // Pipeline (PRD §5.5)
+  qualified: "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-700",
+  proposal_sent: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-700",
+  converted: "bg-green/10 text-green border-green/20",
+  lost: "bg-red/10 text-red border-red/20",
+  // Lifecycle
+  active: "bg-green/10 text-green border-green/20",
+  closed: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
+  archived: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
 };
 
 function getPrimaryStatus(lead: LeadDomainFields): string {
@@ -90,20 +93,6 @@ export const StatusDropdown = memo(function StatusDropdown({
 
   return (
     <div ref={ref} className="relative inline-flex items-center gap-1">
-      {/* Do-not-contact indicator */}
-      {isDNC && (
-        <span
-          className={cn(
-            "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-red/10 text-red",
-            compact && "text-[8px] px-1"
-          )}
-          title="Do not contact"
-        >
-          <AlertTriangle className="w-2.5 h-2.5" />
-          DNC
-        </span>
-      )}
-
       {/* Current status badge — click to open dropdown */}
       <button
         onClick={(e) => {
@@ -121,13 +110,6 @@ export const StatusDropdown = memo(function StatusDropdown({
         {primary.replace(/_/g, " ")}
         <ChevronDown className="w-2.5 h-2.5 opacity-60" />
       </button>
-
-      {/* Domain label */}
-      {compact && (
-        <span className="text-[8px] text-text-faint uppercase">
-          {DOMAIN_LABELS[domain]}
-        </span>
-      )}
 
       {/* Dropdown */}
       {open && (
@@ -195,6 +177,19 @@ export const StatusDropdown = memo(function StatusDropdown({
               </button>
             ))}
         </div>
+      )}
+      {/* Do-not-contact indicator */}
+      {isDNC && (
+        <span
+          className={cn(
+            "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-red/10 text-red",
+            compact && "text-[8px] px-1"
+          )}
+          title="Do not contact"
+        >
+          <AlertTriangle className="w-4 h-4" />
+          DNC
+        </span>
       )}
     </div>
   );

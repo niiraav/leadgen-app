@@ -62,7 +62,7 @@ router.get('/', async (c) => {
   try {
     const userId = getUserId(c);
     const query = c.req.query();
-    const limit = Math.min(parseInt(query.limit ?? '20', 10), 100);
+    const limit = Math.min(parseInt(query.limit ?? '50', 10), 100);
     const cursor = query.cursor;
     const sortField = query.sortField ?? 'created_at';
     const sortOrder = query.sortOrder === 'asc' ? 'asc' : 'desc';
