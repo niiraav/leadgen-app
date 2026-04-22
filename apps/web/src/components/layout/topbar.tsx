@@ -1,11 +1,12 @@
 "use client";
 
-import { User, Search, LogOut, Bell, Moon, Sun, ChevronDown, Check, CheckCheck } from "lucide-react";
+import { User, Search, LogOut, Bell, Moon, Sun, ChevronDown, CheckCheck } from "lucide-react";
 import Link from "next/link";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import { useRouter } from "next/router";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface TopBarProps {
   userEmail?: string | null;
@@ -30,6 +31,17 @@ const PAGE_TITLES: Record<string, string> = {
   "/settings": "Settings",
 };
 
+const dropdownVariants = {
+  hidden: { opacity: 0, y: -4, scale: 0.98 },
+  visible: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -4, scale: 0.98 },
+};
+
+const bellShake = {
+  x: [0, -3, 3, -2, 2, -1, 1, 0],
+  transition: { duration: 0.5 },
+};
+
 export function TopBar({ userEmail }: TopBarProps) {
   const router = useRouter();
   const userInitial = userEmail ? userEmail[0].toUpperCase() : "U";
@@ -39,6 +51,7 @@ export function TopBar({ userEmail }: TopBarProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifLoading, setNotifLoading] = useState(false);
+  const [bellKey, setBellKey] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +77,15 @@ export function TopBar({ userEmail }: TopBarProps) {
     const interval = setInterval(fetchNotifications, 30_000);
     return () => clearInterval(interval);
   }, [userEmail, fetchNotifications]);
+
+  // Trigger bell shake only when unread count increases FROM 0
+  const prevUnreadRef = useRef(0);
+  useEffect(() => {
+    if (unreadCount > 0 && prevUnreadRef.current === 0) {
+      setBellKey((k) => k + 1);
+    }
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -146,7 +168,7 @@ export function TopBar({ userEmail }: TopBarProps) {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="hidden md:flex rounded-full p-2 text-text-muted hover:text-text hover:bg-surface-2 transition-colors active:scale-95"
+          className="hidden md:flex rounded-full p-2 text-text-muted hover:text-text hover:bg-surface-2 transition-colors"
           title="Toggle theme"
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -159,10 +181,12 @@ export function TopBar({ userEmail }: TopBarProps) {
               setNotifOpen(!notifOpen);
               if (!notifOpen) fetchNotifications();
             }}
-            className="hidden md:flex rounded-full p-2 text-text-muted hover:text-text hover:bg-surface-2 transition-colors relative active:scale-95"
+            className="hidden md:flex rounded-full p-2 text-text-muted hover:text-text hover:bg-surface-2 transition-colors relative"
             title="Notifications"
           >
-            <Bell className="w-4 h-4" />
+            <motion.div key={bellKey} animate={unreadCount > 0 ? bellShake : {}}>
+              <Bell className="w-4 h-4" />
+            </motion.div>
             {unreadCount > 0 && (
               <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-blue rounded-full text-[10px] font-bold text-white flex items-center justify-center px-1">
                 {unreadCount > 9 ? "9+" : unreadCount}
@@ -170,56 +194,65 @@ export function TopBar({ userEmail }: TopBarProps) {
             )}
           </button>
 
-          {notifOpen && (
-            <div className="absolute right-0 top-full mt-2 w-80 max-h-96 rounded-lg border border-border/60 bg-surface shadow-xl z-50 flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
-                <span className="text-sm font-semibold text-text">Notifications</span>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllRead}
-                    className="text-[11px] text-blue hover:underline flex items-center gap-1"
-                  >
-                    <CheckCheck className="w-3 h-3" />
-                    Mark all read
-                  </button>
-                )}
-              </div>
-
-              {/* List */}
-              <div className="overflow-y-auto flex-1">
-                {notifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-sm text-text-muted">
-                    No notifications yet
-                  </div>
-                ) : (
-                  notifications.map((n) => (
+          <AnimatePresence>
+            {notifOpen && (
+              <motion.div
+                variants={dropdownVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute right-0 top-full mt-2 w-80 max-h-96 rounded-lg border border-border/60 bg-surface shadow-xl z-50 flex flex-col"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
+                  <span className="text-sm font-semibold text-text">Notifications</span>
+                  {unreadCount > 0 && (
                     <button
-                      key={n.id}
-                      onClick={() => handleNotifClick(n)}
-                      className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-surface-2/60 transition-colors ${!n.read ? "bg-blue/5" : ""}`}
+                      onClick={handleMarkAllRead}
+                      className="text-[11px] text-blue hover:underline flex items-center gap-1"
                     >
-                      <div className="flex items-start gap-2">
-                        {!n.read && <span className="mt-1.5 w-2 h-2 bg-blue rounded-full shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${!n.read ? "font-medium text-text" : "text-text-muted"}`}>{n.title}</p>
-                          {n.body && <p className="text-xs text-text-muted mt-0.5 truncate">{n.body}</p>}
-                          <p className="text-[10px] text-text-faint mt-1">{timeAgo(n.created_at)}</p>
-                        </div>
-                      </div>
+                      <CheckCheck className="w-3 h-3" />
+                      Mark all read
                     </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+                  )}
+                </div>
+
+                {/* List */}
+                <div className="overflow-y-auto flex-1">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-text-muted">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => handleNotifClick(n)}
+                        className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-surface-2/60 transition-colors ${!n.read ? "bg-blue/5" : ""}`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {!n.read && <span className="mt-1.5 w-2 h-2 bg-blue rounded-full shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${!n.read ? "font-medium text-text" : "text-text-muted"}`}>{n.title}</p>
+                            {n.body && <p className="text-xs text-text-muted mt-0.5 truncate">{n.body}</p>}
+                            <p className="text-[10px] text-text-faint mt-1">{timeAgo(n.created_at)}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Avatar dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 hover:bg-surface-2 rounded-full px-2 py-1 transition-colors active:scale-95"
+            className="flex items-center gap-2 hover:bg-surface-2 rounded-full px-2 py-1 transition-colors"
           >
             <div className="w-8 h-8 rounded-full bg-blue/10 flex items-center justify-center">
               <span className="text-xs font-semibold text-blue">{userInitial}</span>
@@ -227,21 +260,30 @@ export function TopBar({ userEmail }: TopBarProps) {
             <ChevronDown className={`hidden md:block w-3.5 h-3.5 text-text-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
           </button>
 
-          {dropdownOpen && (
-            <div className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border/60 bg-surface shadow-xl py-1 z-50">
-              <div className="px-4 py-2 border-b border-border/40">
-                <p className="text-sm font-medium text-text truncate">{userEmail}</p>
-              </div>
-              <Link href="/settings" onClick={() => setDropdownOpen(false)} className="w-full px-4 py-2.5 text-sm text-text hover:bg-surface-2 transition-colors flex items-center gap-2">
-                <User className="w-4 h-4" />
-                Account
-              </Link>
-              <button onClick={handleSignOut} className="w-full px-4 py-2.5 text-sm text-red hover:bg-red/5 transition-colors flex items-center gap-2">
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </button>
-            </div>
-          )}
+          <AnimatePresence>
+            {dropdownOpen && (
+              <motion.div
+                variants={dropdownVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border/60 bg-surface shadow-xl py-1 z-50"
+              >
+                <div className="px-4 py-2 border-b border-border/40">
+                  <p className="text-sm font-medium text-text truncate">{userEmail}</p>
+                </div>
+                <Link href="/settings" onClick={() => setDropdownOpen(false)} className="w-full px-4 py-2.5 text-sm text-text hover:bg-surface-2 transition-colors flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Account
+                </Link>
+                <button onClick={handleSignOut} className="w-full px-4 py-2.5 text-sm text-red hover:bg-red/5 transition-colors flex items-center gap-2">
+                  <LogOut className="w-4 h-4" />
+                  Sign out
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </header>

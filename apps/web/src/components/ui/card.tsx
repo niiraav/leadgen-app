@@ -8,7 +8,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/60 bg-surface p-5 shadow-sm transition-all duration-200",
+        "rounded-lg border border-border/60 bg-surface p-5 transition-all duration-200",
         className
       )}
       {...props}
@@ -95,7 +95,7 @@ export function KPICard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/60 bg-surface p-5 shadow-sm hover:shadow-md transition-all duration-200",
+        "rounded-lg border border-border/60 bg-surface p-5 hover:shadow-sm transition-all duration-200",
         className
       )}
       {...props}
@@ -198,7 +198,7 @@ export function LeadCard({
     <Link
       href={`/leads/${lead.id}`}
       className={cn(
-        "block rounded-xl border border-border/60 bg-surface p-4 hover:shadow-md hover:border-border-strong transition-all duration-200 cursor-pointer group",
+        "block rounded-lg border border-border/60 bg-surface p-4 hover:border-border-strong transition-all duration-200 cursor-pointer group",
         lead.doNotContact && "border-red/30",
         className
       )}

@@ -73,7 +73,7 @@ export function BottomNav() {
             <div className="p-4 max-h-[60vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-text">More</h3>
-                <button onClick={() => setMoreOpen(false)} className="p-2 text-text-faint hover:text-text active:scale-95 transition-transform">
+                <button onClick={() => setMoreOpen(false)} className="p-2 text-text-faint hover:text-text transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>

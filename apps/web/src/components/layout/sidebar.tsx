@@ -17,6 +17,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -83,7 +84,17 @@ export function Sidebar() {
               )}
             >
               <Icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-blue")} />
-              {!collapsed && <span>{item.label}</span>}
+              <motion.span
+                animate={{
+                  opacity: collapsed ? 0 : 1,
+                  width: collapsed ? 0 : "auto",
+                  marginLeft: collapsed ? 0 : 0,
+                }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                {item.label}
+              </motion.span>
             </Link>
           );
         })}

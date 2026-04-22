@@ -8,14 +8,20 @@ export interface BadgeProps
     VariantProps<typeof badgeVariants> {}
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors",
+  "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
   {
     variants: {
       variant: {
-        default: "bg-accent text-accent-text",
-        secondary: "bg-surface-2 text-text-muted border border-border",
-        destructive: "bg-red/10 text-red",
-        outline: "border border-border text-text",
+        default: "border-transparent bg-primary text-primary-foreground",
+        secondary:
+          "border-transparent bg-secondary text-secondary-foreground",
+        destructive:
+          "border-transparent bg-destructive text-destructive-foreground",
+        outline: "text-foreground",
+        success:
+          "border-transparent bg-success text-success-foreground",
+        warning:
+          "border-transparent bg-warning text-warning-foreground",
       },
     },
     defaultVariants: {
@@ -42,14 +48,14 @@ export function HotScoreBadge({ score }: { score: number }) {
   let bgClass = "";
 
   if (score >= SCORE_THRESHOLDS.GREEN) {
-    colorClass = "text-green";
-    bgClass = "bg-green/10";
+    colorClass = "text-success";
+    bgClass = "bg-success/10";
   } else if (score >= SCORE_THRESHOLDS.AMBER) {
-    colorClass = "text-amber";
-    bgClass = "bg-amber/10";
+    colorClass = "text-warning";
+    bgClass = "bg-warning/10";
   } else {
-    colorClass = "text-red";
-    bgClass = "bg-red/10";
+    colorClass = "text-destructive";
+    bgClass = "bg-destructive/10";
   }
 
   return (
