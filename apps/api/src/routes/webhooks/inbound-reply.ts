@@ -117,28 +117,37 @@ router.post('/', async (c) => {
 
     if (insertError) {
       console.error('[Inbound Reply Webhook] Failed to insert reply event', insertError);
+      if (insertError.code === '23505' && insertError.message?.includes('mailgun_message_id')) {
+        return c.json({ error: 'Duplicate mailgun_message_id — reply already recorded' }, 409);
+      }
       return c.json({ error: 'Failed to save reply' }, 500);
     }
 
-    // Send Inngest event for async processing
-    const inngestResult = await inngest.send({
-      name: 'reply/received',
-      data: {
-        replyEventId: replyEvent.id,
-        leadId,
-        enrolmentId: enrolmentId || null,
-        stepExecutionId: stepExec?.id || null,
-        senderEmail: from,
-        subject,
-        bodyPlain: strippedText || bodyPlain,
-        receivedAt: replyInsertData.received_at,
-      },
-    });
+    // Send Inngest event for async processing (best-effort)
+    let inngestId: string | undefined;
+    try {
+      const inngestResult = await inngest.send({
+        name: 'reply/received',
+        data: {
+          replyEventId: replyEvent.id,
+          leadId,
+          enrolmentId: enrolmentId || null,
+          stepExecutionId: stepExec?.id || null,
+          senderEmail: from,
+          subject,
+          bodyPlain: strippedText || bodyPlain,
+          receivedAt: replyInsertData.received_at,
+        },
+      });
+      inngestId = inngestResult.ids[0];
+    } catch (inngestErr) {
+      console.warn('[Inbound Reply Webhook] Inngest send failed (async processing will be delayed):', (inngestErr as Error).message);
+    }
 
     return c.json({
       status: 'ok',
       replyId: replyEvent.id,
-      inngestId: inngestResult.ids[0],
+      inngestId: inngestId || null,
     });
   } catch (err) {
     console.error('[Inbound Reply Webhook] Unexpected error:', err);
