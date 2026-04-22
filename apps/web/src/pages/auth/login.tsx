@@ -27,7 +27,7 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
         setError(data.error || "Login failed");
         return;
       }
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {

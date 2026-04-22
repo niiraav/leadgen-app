@@ -175,7 +175,22 @@ Return JSON: {"pitches":["string","string","string"]}`;
     let content = data.choices?.[0]?.message?.content || '{}';
     // Strip markdown code fences
     content = content.replace(/```(?:json)?\s*([\s\S]*?)```/g, '$1').trim();
-    const result = JSON.parse(content) as { pitches: string[] };
+    let result: { pitches: string[] };
+    try {
+      result = JSON.parse(content) as { pitches: string[] };
+    } catch {
+      // Fallback: try to extract JSON object from text
+      const jsonMatch = content.match(/\{[\s\S]*"pitches"[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          result = JSON.parse(jsonMatch[0]) as { pitches: string[] };
+        } catch {
+          return c.json({ error: 'LLM returned invalid JSON', raw: content.slice(0, 500) }, 502);
+        }
+      } else {
+        return c.json({ error: 'LLM returned invalid JSON', raw: content.slice(0, 500) }, 502);
+      }
+    }
     return c.json({ pitches: result.pitches || [] });
   } catch (err: any) {
     return c.json({ error: 'Failed to generate pitches', details: err.message }, 500);
