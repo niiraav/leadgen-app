@@ -114,9 +114,11 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
 
   // System prompt — NO template literals, all string concatenation
   let basePrompt = 'You are a professional cold email writer for a B2B lead generation agency.\n';
-  basePrompt += 'Write personalized, concise outreach emails.\n';
-  basePrompt += 'Always return valid JSON with "subject" and "body" fields.\n';
-  basePrompt += 'No markdown, no code fences — just raw JSON.\n\n';
+  basePrompt += 'Write ONE personalized, concise outreach email.\n';
+  basePrompt += 'Your entire response must be a single valid JSON object. Nothing else.\n';
+  basePrompt += 'NO explanations, NO reasoning, NO thinking out loud, NO markdown, NO code fences.\n';
+  basePrompt += 'ONLY raw JSON with exactly these two keys: "subject" and "body".\n';
+  basePrompt += 'If you write anything other than the JSON object, you have failed.\n\n';
   basePrompt += 'STRICT RULES:\n';
   basePrompt += '1. GREETING: Use "Hi ' + cleanBusinessName(lead.business_name) + ' team," or "Hello at ' + cleanBusinessName(lead.business_name) + ',."\n';
   basePrompt += '   NEVER use placeholders like [Name], [First Name], [Company], [Your Name].\n';
@@ -164,8 +166,10 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
     }
   }
 
-  userPrompt += '\nReturn ONLY a JSON object with "subject" and "body" keys. '
-    + 'Make the email personalized to this business.';
+  userPrompt += '\nReturn ONLY a raw JSON object with exactly two keys: "subject" and "body".\n';
+  userPrompt += 'Do NOT include any thinking, reasoning, or explanation.\n';
+  userPrompt += 'Example: {"subject":"Hello","body":"Hi team,\\n\\n..."}\n';
+  userPrompt += 'Make the email personalized to this business.';
 
   const response = await openai.chat.completions.create({
     model: LLM_MODEL,
@@ -186,10 +190,20 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
   try {
     // Extract JSON — model may wrap in markdown code blocks or add extra text
     let jsonStr = rawContent;
+
+    // 1. Strip markdown code fences
     const codeBlockMatch = rawContent.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (codeBlockMatch) {
       jsonStr = codeBlockMatch[1].trim();
+    }
+
+    // 2. Find the outermost JSON object (reasoning often precedes JSON)
+    // Try matching a JSON object that contains both "subject" and "body"
+    const jsonObjMatch = jsonStr.match(/\{[\s\S]*?"subject"[\s\S]*?"body"[\s\S]*?\}/);
+    if (jsonObjMatch) {
+      jsonStr = jsonObjMatch[0];
     } else {
+      // Fallback: first { to last }
       const first = jsonStr.indexOf('{');
       const last = jsonStr.lastIndexOf('}');
       if (first !== -1 && last > first) {
@@ -197,16 +211,24 @@ export async function generateEmailWithAI(request: AIEmailGenerationRequest): Pr
       }
     }
 
+    // 3. Clean common LLM artifacts (trailing commas, extra quotes)
+    jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1');
+
     const parsed = JSON.parse(jsonStr) as AIEmailResponse;
     if (!parsed.subject || !parsed.body) {
       throw new Error('Missing subject or body in AI response');
     }
     return { subject: applyUkCorrections(parsed.subject), body: applyUkCorrections(parsed.body) };
   } catch (parseError) {
-    console.warn('[AI Email] Failed to parse JSON, falling back to raw content');
+    console.warn('[AI Email] Failed to parse JSON. Raw first 500 chars:', rawContent.slice(0, 500));
+    // NEVER return raw LLM text as the body — always use a clean template fallback
     return {
-      subject: 'Outreach to ' + cleanBusinessName(lead.business_name),
-      body: rawContent,
+      subject: 'Quick question about ' + cleanBusinessName(lead.business_name),
+      body: 'Hi ' + cleanBusinessName(lead.business_name) + ' team,\n\n'
+        + 'I came across your business and was impressed by what you\'re doing in the ' + (lead.category || 'market') + '.\n\n'
+        + 'I help businesses like yours with lead generation and outreach automation. Would you be open to a quick chat about how we might work together?\n\n'
+        + (profile?.signoff || 'Best regards') + ',\n'
+        + (profile?.full_name || ''),
     };
   }
 }
@@ -241,12 +263,26 @@ export async function classifyReply(replyText: string) {
   let jsonStr = raw;
   const codeBlockMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) jsonStr = codeBlockMatch[1].trim();
-  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-  if (jsonMatch) jsonStr = jsonMatch[0];
 
-  const parsed = JSON.parse(jsonStr) as { classification: string; reasoning: string };
-  return {
-    classification: (parsed.classification || 'NEUTRAL').toUpperCase(),
-    reasoning: parsed.reasoning || '',
-  };
+  // Find JSON object with classification key
+  const jsonObjMatch = jsonStr.match(/\{[\s\S]*?"classification"[\s\S]*?\}/);
+  if (jsonObjMatch) jsonStr = jsonObjMatch[0];
+  else {
+    const first = jsonStr.indexOf('{');
+    const last = jsonStr.lastIndexOf('}');
+    if (first !== -1 && last > first) jsonStr = jsonStr.substring(first, last + 1);
+  }
+
+  jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1');
+
+  try {
+    const parsed = JSON.parse(jsonStr) as { classification: string; reasoning: string };
+    return {
+      classification: (parsed.classification || 'NEUTRAL').toUpperCase(),
+      reasoning: parsed.reasoning || '',
+    };
+  } catch {
+    console.warn('[AI Reply Classify] Failed to parse JSON. Raw first 300 chars:', raw.slice(0, 300));
+    return { classification: 'NEUTRAL', reasoning: 'Parse error — fallback to neutral' };
+  }
 }

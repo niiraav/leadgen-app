@@ -14,9 +14,12 @@ import { initQueues, startSequenceWorker } from './services/sequence-scheduler';
 const app = new Hono();
 
 // CORS first
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 app.use('*', cors({
-  origin: '*',
-  allowHeaders: ['Content-Type', 'Authorization'],
+  origin: CORS_ORIGIN,
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  maxAge: 86400,
 }));
 
 // Public routes
