@@ -7,6 +7,7 @@ import OnboardingModal from "@/components/onboarding/onboarding-modal";
 import { useProfile } from "@/contexts/profile-context";
 import { useCountUp } from "@/lib/useCountUp";
 import { motion } from "framer-motion";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Users,
   Mail,
@@ -20,6 +21,7 @@ import {
   ArrowRight,
   Check,
   X,
+  Tag,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────────
@@ -576,7 +578,13 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
                 </div>
               ))}
               {!data?.top_categories?.length && (
-                <p className="text-center text-xs text-text-faint py-4">No categories yet</p>
+                <EmptyState
+                  icon={Tag}
+                  title="No categories yet"
+                  description="Save leads from search to see your top business categories."
+                  action={{ label: "Run a Search", href: "/search/google-maps" }}
+                  className="py-6"
+                />
               )}
             </div>
           )}

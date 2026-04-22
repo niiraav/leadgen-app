@@ -2,7 +2,7 @@ import { withAuth } from "@/lib/auth";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, SearchX } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/profile-context";
 import { api, UpgradeRequiredError } from "@/lib/api";
@@ -13,6 +13,7 @@ import { CollapsedSearchBar } from "@/components/search/CollapsedSearchBar";
 import { SearchHistoryPanel } from "@/components/search/SearchHistoryPanel";
 import { SavedSearchesPanel } from "@/components/search/SavedSearchesPanel";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TargetAreaNudge } from "@/components/nudges/profile-nudges";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 import type { SearchResult, SearchFilters, SearchSummary } from "@/components/search/types";
@@ -665,12 +666,12 @@ export default function SearchGoogleMaps() {
 
             {/* No results state — only after a zero-result search */}
             {!loading && results.length === 0 && hasSearched && !error && (
-              <div className="card text-center py-16">
-                <p className="text-sm text-text-muted">No leads found</p>
-                <p className="text-xs text-text-muted mt-1">
-                  Try different search terms or location
-                </p>
-              </div>
+              <EmptyState
+                icon={SearchX}
+                title="No businesses found"
+                description="Try broadening your search terms or changing the location."
+                className="py-16"
+              />
             )}
 
             {loading && results.length === 0 && (

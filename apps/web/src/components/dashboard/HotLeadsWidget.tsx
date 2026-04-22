@@ -3,6 +3,7 @@ import Link from "next/link";
 import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { MessageSquare, ArrowRight, Loader2, Flame } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -159,12 +160,12 @@ export default function HotLeadsWidget() {
           <h3 className="text-sm font-semibold text-text">Hot Leads</h3>
           <Flame className="w-4 h-4 text-amber" />
         </div>
-        <div className="flex flex-col items-center justify-center py-6 text-center">
-          <MessageSquare className="w-8 h-8 text-text-faint mb-2" />
-          <p className="text-sm text-text-muted">
-            No replies yet — your sequences are running
-          </p>
-        </div>
+        <EmptyState
+          icon={MessageSquare}
+          title="No replies yet"
+          description="Your sequences are running. Hot leads will appear here when replies come in."
+          className="py-4"
+        />
       </Card>
     );
   }

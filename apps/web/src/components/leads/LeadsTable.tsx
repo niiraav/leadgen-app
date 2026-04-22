@@ -16,8 +16,10 @@ import {
   X,
   ArrowUp,
   ArrowDown,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TableEmptyState } from "@/components/ui/empty-state";
 
 import { springSoft } from "@/lib/animation";
 
@@ -682,11 +684,13 @@ export const LeadsTable = memo(function LeadsTable({
                   );
                 })}
             {!loading && leads.length === 0 && (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-text-muted">
-                  No leads found
-                </td>
-              </tr>
+              <TableEmptyState
+                colSpan={7}
+                icon={Search}
+                title="No leads yet"
+                description="Start by searching for leads in your area, then save them to your list."
+                action={{ label: "Run a Search", href: "/search/google-maps" }}
+              />
             )}
           </motion.tbody>
         </table>

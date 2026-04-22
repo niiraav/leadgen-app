@@ -2,8 +2,9 @@ import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { HotScoreBadge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { api } from "@/lib/api";
-import { Plus } from "lucide-react";
+import { Plus, Inbox } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { spring, staggerContainer, staggerItem } from "@/lib/animation";
@@ -276,9 +277,13 @@ export default function PipelinePage() {
                       transition={prefersReducedMotion ? undefined : spring}
                       className="rounded-xl border-2 border-dashed border-border/40 p-6 text-center"
                     >
-                      <p className="text-sm text-text-faint">
-                        No leads in this stage
-                      </p>
+                      <EmptyState
+                        icon={Inbox}
+                        title={`No ${col.title} leads`}
+                        description="Save leads from search to populate your pipeline."
+                        action={{ label: "Run a Search", href: "/search/google-maps" }}
+                        className="py-0"
+                      />
                     </motion.div>
                   )}
                 </motion.div>

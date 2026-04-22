@@ -3,6 +3,7 @@ import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import ReplyDrawer from "@/components/replies/ReplyDrawer";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Flame,
   Clock,
@@ -239,13 +240,14 @@ export default function RepliesPage() {
         </div>
       )}
 
-      {/* Table */}
+      {/* Empty state */}
       {!loading && !error && replies.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <MessageSquare className="w-12 h-12 text-text-faint mb-3" />
-          <p className="text-sm font-medium text-text">{emptyMessage}</p>
-          <p className="text-xs text-text-faint mt-1">Replies from your email sequences will appear here</p>
-        </div>
+        <EmptyState
+          icon={MessageSquare}
+          title={emptyMessage}
+          description="Replies from your email sequences will appear here."
+          className="py-16"
+        />
       )}
 
       {/* Results table */}

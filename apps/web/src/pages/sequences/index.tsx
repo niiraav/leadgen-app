@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Play, Pause, Eye, ArrowRight, Loader2, Trash2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
 
 interface Sequence {
@@ -94,17 +95,13 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
       </div>
 
       {sequences.length === 0 && (
-        <div className="card text-center py-16">
-          <div className="mx-auto w-12 h-12 rounded-full bg-surface-2 flex items-center justify-center mb-4">
-            <Eye className="w-6 h-6 text-text-faint" />
-          </div>
-          <p className="text-sm text-text-muted">No sequences yet</p>
-          <p className="text-xs text-text-faint mt-1 mb-4">Create your first sequence to start automated outreach</p>
-          <Link href="/sequences/new" className="btn btn-primary text-sm">
-            <Plus className="w-4 h-4" />
-            Create Sequence
-          </Link>
-        </div>
+        <EmptyState
+          icon={Eye}
+          title="No sequences yet"
+          description="Create your first email sequence to start automated outreach."
+          action={{ label: "Create Sequence", href: "/sequences/new" }}
+          className="card py-16"
+        />
       )}
 
       <div className="space-y-3">
