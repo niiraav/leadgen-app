@@ -395,6 +395,8 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     } catch (err: any) {
       if (err instanceof UpgradeRequiredError) {
         setUpgradeError(err);
+        setEmailLoading(false);
+        return;
       }
       console.warn("[LeadProfile] AI compose failed, using local template:", err.message);
       const subjects = FALLBACK_SUBJECTS(lead);

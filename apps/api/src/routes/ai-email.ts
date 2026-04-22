@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { getLeadById, getUserId, supabaseAdmin, createActivity, type JsonValue } from '../db';
 import { generateEmailWithAI } from '../services/ai-email';
-import { enforceCredits, enforceFeatureGate, EnforcementError } from '../lib/billing/enforce';
+import { enforceCredits, EnforcementError } from '../lib/billing/enforce';
 import { incrementAIEmails } from '../lib/usage';
 
 const router = new Hono();
@@ -29,13 +29,7 @@ router.post('/:id/ai-email', async (c) => {
     const userId = getUserId(c);
     const id = c.req.param('id');
 
-    // ── Feature gate: AI emails require outreach+ plan ──
-    const gate = await enforceFeatureGate(userId, 'ai_emails');
-    if (!gate.allowed) {
-      return c.json({ error: gate.upgradeRequired, upgrade_required: true }, 402);
-    }
-
-    // ── Credit enforcement: check AI email limit ──
+    // ── Credit enforcement: check AI email limit (free users get 10) ──
     try {
       await enforceCredits(userId, 'ai_email');
     } catch (err) {

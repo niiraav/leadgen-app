@@ -55,7 +55,6 @@ const ACTION_FIELD_MAP: Record<CreditAction, { usageField: string; limitField: s
 const FEATURE_GATES: Record<string, CanonicalPlanId> = {
   sequences: 'growth',
   custom_stages: 'growth',
-  ai_emails: 'outreach',
   email_verifications: 'outreach',
   bulk_export: 'outreach',
   api_access: 'growth',

@@ -299,8 +299,7 @@ export default function SearchGoogleMaps() {
         showToast(`Saved ${result.name}`);
         setUserLeadsCount((c) => c + 1);
 
-        // Route to lead detail page
-        router.push(`/leads/${lead.id}`);
+        // Stay on search page — button will flip to "Saved" via duplicate state
       } catch (err: any) {
         if (err instanceof UpgradeRequiredError) {
           setUpgradeError(err);

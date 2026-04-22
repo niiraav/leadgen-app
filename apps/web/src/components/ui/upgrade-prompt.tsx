@@ -36,7 +36,7 @@ export default function UpgradePrompt({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber/30 bg-amber/5 text-amber text-sm">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-amber/30 bg-amber/15 text-amber text-sm shadow-sm">
         <Lock className="w-4 h-4 shrink-0" />
         <span className="truncate">{message}</span>
         <button

@@ -37,9 +37,11 @@ function getSortIcon(
 function OverflowMenu({
   onEnrich,
   disabled,
+  isEnriching,
 }: {
   onEnrich: () => void;
   disabled: boolean;
+  isEnriching: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -62,7 +64,11 @@ function OverflowMenu({
         className="p-1 rounded hover:bg-surface-2 text-text-muted hover:text-text transition-colors disabled:opacity-50"
         aria-label="More actions"
       >
-        <MoreHorizontal className="w-4 h-4" />
+        {isEnriching ? (
+          <Loader2 className="w-4 h-4 animate-spin text-amber" />
+        ) : (
+          <MoreHorizontal className="w-4 h-4" />
+        )}
       </button>
       {open && (
         <div className="absolute right-0 top-full mt-1 rounded-lg border border-border bg-surface p-1 shadow-xl z-50 min-w-[180px]">
@@ -71,10 +77,15 @@ function OverflowMenu({
               onEnrich();
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-text hover:bg-surface-2 cursor-pointer"
+            disabled={isEnriching}
+            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-text hover:bg-surface-2 cursor-pointer disabled:opacity-50"
           >
-            <Zap className="w-4 h-4 text-amber" />
-            Save & Enrich — 2 credits
+            {isEnriching ? (
+              <Loader2 className="w-4 h-4 animate-spin text-amber" />
+            ) : (
+              <Zap className="w-4 h-4 text-amber" />
+            )}
+            {isEnriching ? "Enriching…" : "Save & Enrich — 2 credits"}
           </button>
         </div>
       )}
@@ -160,7 +171,7 @@ export function SearchResultsTable({
     className?: string;
   }) => (
     <th
-      className={`px-3 py-3 font-medium text-text-muted text-left cursor-pointer select-none hover:text-text transition-colors ${className}`}
+      className={`px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider text-left cursor-pointer select-none hover:text-text transition-colors ${className}`}
       onClick={() => handleSort(column)}
     >
       <div className="flex items-center gap-1">
@@ -180,10 +191,10 @@ export function SearchResultsTable({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-border/60 bg-surface">
         {/* Bulk action bar */}
         {selected.size > 0 && (
-          <div className="flex items-center justify-between mb-3 px-3 py-2 bg-surface-2 border-b border-border rounded-t-lg">
+          <div className="flex items-center justify-between px-3 py-2 bg-surface-2 border-b border-border/40">
             <span className="text-sm text-text">
               <strong>{selected.size}</strong> selected
             </span>
@@ -215,8 +226,8 @@ export function SearchResultsTable({
         )}
 
         <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border text-left">
+          <thead className="sticky top-0 z-10 bg-surface">
+            <tr className="border-b border-border/40 bg-surface text-left">
               <th className="w-10 px-2 py-3">
                 <input
                   type="checkbox"
@@ -229,18 +240,18 @@ export function SearchResultsTable({
                 />
               </th>
               <SortableHeader label="Business" column="business" />
-              <th className="px-3 py-3 font-medium text-text-muted">
+              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
                 Category
               </th>
               <SortableHeader label="Location" column="location" />
               <SortableHeader label="Rating" column="rating" />
-              <th className="px-3 py-3 font-medium text-text-muted">
+              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
                 Links
               </th>
-              <th className="px-3 py-3 font-medium text-text-muted">
+              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
                 Phone
               </th>
-              <th className="px-3 py-3 font-medium text-text-muted">
+              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -249,7 +260,7 @@ export function SearchResultsTable({
             {sortedResults.map((r) => (
               <tr
                 key={r.place_id}
-                className={`group border-b border-border hover:bg-surface-2/50 transition-colors ${
+                className={`group border-b border-border/20 transition-colors ${
                   selected.has(r.place_id) ? "bg-blue/5" : ""
                 } ${r.duplicate ? "opacity-50" : ""}`}
               >
@@ -359,6 +370,7 @@ export function SearchResultsTable({
                       <OverflowMenu
                         onEnrich={() => onEnrichOne(r)}
                         disabled={savingId !== null || enrichingId !== null}
+                        isEnriching={enrichingId === r.place_id}
                       />
                     </div>
                   ) : null}
