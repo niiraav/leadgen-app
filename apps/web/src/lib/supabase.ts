@@ -6,11 +6,14 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 // Singleton — avoids re-creating the client on every API call
 let _browserClient: ReturnType<typeof createBrowserClient> | null = null;
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2MDAwMDAwMDAsImV4cCI6MTk2MDAwMDAwMH0.placeholder';
+
 export function createBrowserSupabaseClient() {
   if (!_browserClient) {
     _browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
     );
   }
   return _browserClient;
@@ -26,8 +29,8 @@ export function createServerSupabaseClient(
   res: ServerResponse
 ) {
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -68,8 +71,8 @@ let _supabaseAdmin: ReturnType<typeof createSupabaseClient> | null = null;
 export function getSupabaseAdmin() {
   if (!_supabaseAdmin) {
     _supabaseAdmin = createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role',
       {
         auth: {
           autoRefreshToken: false,

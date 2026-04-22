@@ -6,6 +6,10 @@ module.exports = {
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
+  safelist: [
+    "text-accent-text",
+    "bg-accent",
+  ],
   theme: {
     extend: {
       colors: {

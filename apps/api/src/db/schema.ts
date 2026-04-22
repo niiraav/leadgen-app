@@ -103,7 +103,7 @@ export const leads = pgTable('leads', {
   companySocials: jsonb('company_socials').$type<Record<string, unknown>>(),
 
   // Review insights (AI-extracted from Google Maps reviews)
-  reviewSummary: jsonb('review_summary').$type<Record<string, unknown>>().default(null),
+  reviewSummary: jsonb('review_summary').$type<Record<string, unknown>>(),
   reviewsFetchedAt: timestamp('reviews_fetched_at', { withTimezone: true }),
 });
 

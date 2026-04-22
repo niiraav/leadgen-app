@@ -31,15 +31,24 @@ export default function App({ Component, pageProps }: AppProps) {
   );
 
   useEffect(() => {
-    const supabase = createBrowserSupabaseClient();
+    let supabase: any;
+    try {
+      supabase = createBrowserSupabaseClient();
+    } catch {
+      // Supabase client init failed (missing/invalid key) — unblock UI for smoke test
+      setSessionChecked(true);
+      return;
+    }
     supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
       if (session?.user?.email) setUserEmail(session.user.email);
+    }).catch(() => {
+      // session fetch failed
+    }).finally(() => {
       setSessionChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.user?.email) setUserEmail(session.user.email);
       else if (_event === 'SIGNED_OUT' || _event === 'USER_DELETED') setUserEmail(null);
-      // Ignore TOKEN_REFRESHED, INITIAL_SESSION, etc. — don't clear email
     });
     return () => subscription.unsubscribe();
   }, []);

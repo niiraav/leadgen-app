@@ -84,8 +84,8 @@ export function SearchHistoryPanel({
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden p-3">
-        <div className="text-xs text-gray-400 mb-2 font-medium">Recently Searched</div>
+      <div className="rounded-xl border border-border bg-surface overflow-hidden p-3">
+        <div className="text-xs text-text-muted mb-2 font-medium">Recently Searched</div>
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-14 w-full rounded-lg" />
@@ -100,10 +100,10 @@ export function SearchHistoryPanel({
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-border bg-surface overflow-hidden">
       {/* Header */}
       <div className="flex items-center px-4 pt-3 pb-2">
-        <span className="text-xs font-medium text-gray-900">Recently Searched</span>
+        <span className="text-xs font-medium text-text">Recently Searched</span>
       </div>
 
       {/* Content */}
@@ -116,7 +116,7 @@ export function SearchHistoryPanel({
           return (
             <div
               key={entry.id}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors group/row"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-surface-2 transition-colors group/row"
             >
               <button
                 onClick={() => {
@@ -146,26 +146,26 @@ export function SearchHistoryPanel({
                 }}
                 className="flex-1 flex items-center gap-3 min-w-0 text-left"
               >
-                <Search className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <Search className="w-3.5 h-3.5 text-text-muted shrink-0" />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-900 font-medium truncate">
+                    <span className="text-sm text-text font-medium truncate">
                       {entry.query}
                     </span>
                     {fCount > 0 && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-50 text-gray-400 shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-2 text-text-muted shrink-0">
                         {fCount} Filter{fCount > 1 ? "s" : ""}
                       </span>
                     )}
-                    <span className="text-[10px] text-gray-400 shrink-0">
+                  <span className="text-[10px] font-medium text-text-muted">
                       {relativeTime(entry.created_at)}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-400 truncate mt-0.5">
+                  <p className="text-xs text-text-muted truncate mt-0.5">
                     {filterSummary(entry).join(" · ")}
                   </p>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-gray-400 opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-text-faint opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
               </button>
 
               <button
@@ -174,7 +174,7 @@ export function SearchHistoryPanel({
                   setDeletingId(entry.id);
                   onDeleteRecent(entry.id);
                 }}
-                className="opacity-0 group-hover/row:opacity-100 text-gray-400 hover:text-red-600 transition-opacity p-1 shrink-0"
+                className="opacity-0 group-hover/row:opacity-100 text-text-faint hover:text-red transition-opacity p-1 shrink-0"
                 title="Delete recent search"
               >
                 {isDeleting ? (

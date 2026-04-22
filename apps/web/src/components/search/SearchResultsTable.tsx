@@ -59,21 +59,21 @@ function OverflowMenu({
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
-        className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+        className="p-1 rounded hover:bg-surface-2 text-text-muted hover:text-text transition-colors disabled:opacity-50"
         aria-label="More actions"
       >
         <MoreHorizontal className="w-4 h-4" />
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 rounded-lg border border-gray-200 bg-white p-1 shadow-xl z-50 min-w-[180px]">
+        <div className="absolute right-0 top-full mt-1 rounded-lg border border-border bg-surface p-1 shadow-xl z-50 min-w-[180px]">
           <button
             onClick={() => {
               onEnrich();
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-text hover:bg-surface-2 cursor-pointer"
           >
-            <Zap className="w-4 h-4 text-amber-500" />
+            <Zap className="w-4 h-4 text-amber" />
             Save & Enrich — 2 credits
           </button>
         </div>
@@ -160,7 +160,7 @@ export function SearchResultsTable({
     className?: string;
   }) => (
     <th
-      className={`px-3 py-3 font-medium text-gray-500 text-left cursor-pointer select-none hover:text-gray-700 transition-colors ${className}`}
+      className={`px-3 py-3 font-medium text-text-muted text-left cursor-pointer select-none hover:text-text transition-colors ${className}`}
       onClick={() => handleSort(column)}
     >
       <div className="flex items-center gap-1">
@@ -174,7 +174,7 @@ export function SearchResultsTable({
     <div>
       {/* Results count */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-900">
+        <h3 className="text-sm font-medium text-text">
           {results.length} result{results.length !== 1 ? "s" : ""} found
         </h3>
       </div>
@@ -183,13 +183,13 @@ export function SearchResultsTable({
       <div className="overflow-x-auto">
         {/* Bulk action bar */}
         {selected.size > 0 && (
-          <div className="flex items-center justify-between mb-3 px-3 py-2 bg-gray-50 border-b border-gray-200 rounded-t-lg">
-            <span className="text-sm text-gray-700">
+          <div className="flex items-center justify-between mb-3 px-3 py-2 bg-surface-2 border-b border-border rounded-t-lg">
+            <span className="text-sm text-text">
               <strong>{selected.size}</strong> selected
             </span>
             <div className="flex items-center gap-2">
               {!canAfford && (
-                <span className="text-xs text-red-600">Lead limit exceeded</span>
+                <span className="text-xs text-red">Lead limit exceeded</span>
               )}
               <button
                 onClick={() => {
@@ -200,13 +200,13 @@ export function SearchResultsTable({
                   setSelected(new Set());
                 }}
                 disabled={savingId !== null || !canAfford}
-                className="inline-flex items-center rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                className="inline-flex items-center rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 disabled:opacity-50 transition-colors"
               >
                 Save {selected.size} lead{selected.size > 1 ? "s" : ""}
               </button>
               <button
                 onClick={() => setSelected(new Set())}
-                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                className="text-xs text-text-muted hover:text-text px-2 py-1"
               >
                 Clear
               </button>
@@ -216,7 +216,7 @@ export function SearchResultsTable({
 
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left">
+            <tr className="border-b border-border text-left">
               <th className="w-10 px-2 py-3">
                 <input
                   type="checkbox"
@@ -225,22 +225,22 @@ export function SearchResultsTable({
                     nonDuplicateResults.length > 0
                   }
                   onChange={toggleAll}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-border-strong text-blue focus:ring-blue"
                 />
               </th>
               <SortableHeader label="Business" column="business" />
-              <th className="px-3 py-3 font-medium text-gray-500">
+              <th className="px-3 py-3 font-medium text-text-muted">
                 Category
               </th>
               <SortableHeader label="Location" column="location" />
               <SortableHeader label="Rating" column="rating" />
-              <th className="px-3 py-3 font-medium text-gray-500">
+              <th className="px-3 py-3 font-medium text-text-muted">
                 Links
               </th>
-              <th className="px-3 py-3 font-medium text-gray-500">
+              <th className="px-3 py-3 font-medium text-text-muted">
                 Phone
               </th>
-              <th className="px-3 py-3 font-medium text-gray-500">
+              <th className="px-3 py-3 font-medium text-text-muted">
                 Actions
               </th>
             </tr>
@@ -249,8 +249,8 @@ export function SearchResultsTable({
             {sortedResults.map((r) => (
               <tr
                 key={r.place_id}
-                className={`group border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${
-                  selected.has(r.place_id) ? "bg-blue-50/40" : ""
+                className={`group border-b border-border hover:bg-surface-2/50 transition-colors ${
+                  selected.has(r.place_id) ? "bg-blue/5" : ""
                 } ${r.duplicate ? "opacity-50" : ""}`}
               >
                 {/* Checkbox */}
@@ -261,7 +261,7 @@ export function SearchResultsTable({
                       checked={selected.has(r.place_id)}
                       onChange={() => toggleSelect(r.place_id)}
                       aria-label="Select lead"
-                      className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-opacity ${
+                      className={`rounded border-border-strong text-blue focus:ring-blue transition-opacity ${
                         selected.has(r.place_id)
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"
@@ -278,17 +278,17 @@ export function SearchResultsTable({
                         onClick={() => {
                           window.location.href = `/leads/${r.existingLeadId}`;
                         }}
-                        className="font-medium text-gray-900 truncate max-w-[200px] hover:underline text-left"
+                        className="font-medium text-text truncate max-w-[200px] hover:underline text-left"
                       >
                         {r.name}
                       </button>
                     ) : (
-                      <span className="font-medium text-gray-900 truncate max-w-[200px]">
+                      <span className="font-medium text-text truncate max-w-[200px]">
                         {r.name}
                       </span>
                     )}
                     {r.duplicate && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-2 text-text-muted shrink-0">
                         Saved
                       </span>
                     )}
@@ -296,16 +296,16 @@ export function SearchResultsTable({
                 </td>
 
                 {/* Category */}
-                <td className="px-3 py-3 text-gray-500 text-sm">{r.category}</td>
+                <td className="px-3 py-3 text-text-muted text-sm">{r.category}</td>
 
                 {/* Location */}
-                <td className="px-3 py-3 text-gray-500 text-sm">{r.city}</td>
+                <td className="px-3 py-3 text-text-muted text-sm">{r.city}</td>
 
                 {/* Rating */}
                 <td className="px-3 py-3">
-                  <span className="text-sm text-gray-900">
+                  <span className="text-sm text-text">
                     {r.rating.toFixed(1)}{" "}
-                    <span className="text-gray-400">({r.reviews})</span>
+                    <span className="text-text-muted">({r.reviews})</span>
                   </span>
                 </td>
 
@@ -316,22 +316,22 @@ export function SearchResultsTable({
                       href={r.site}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center text-blue-600 hover:text-blue-700"
+                      className="inline-flex items-center justify-center text-blue hover:text-blue"
                       title={r.site}
                     >
                       <Link className="w-5 h-5" />
                     </a>
                   ) : (
-                    <span className="text-gray-400">—</span>
+                    <span className="text-text-muted">—</span>
                   )}
                 </td>
 
                 {/* Phone */}
                 <td className="px-3 py-3 text-sm">
                   {r.phone ? (
-                    <span className="text-gray-900">{r.phone}</span>
+                    <span className="text-text">{r.phone}</span>
                   ) : (
-                    <span className="text-gray-400">—</span>
+                    <span className="text-text-muted">—</span>
                   )}
                 </td>
 
@@ -343,7 +343,7 @@ export function SearchResultsTable({
                       <button
                         onClick={() => onSaveOne(r)}
                         disabled={savingId !== null}
-                        className="rounded border border-gray-200 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                        className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                       >
                         {savingId === r.place_id ? (
                           <>

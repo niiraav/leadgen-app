@@ -7,7 +7,7 @@ const mailgun = new Mailgun(FormData)
 export const mg = mailgun.client({
   username: 'api',
   key: process.env.MAILGUN_API_KEY!,
-})
+}) as any
 
 export const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN!
 export const INBOUND_REPLY_DOMAIN = process.env.INBOUND_REPLY_DOMAIN!

@@ -188,11 +188,13 @@ export const handleInboundReply = inngest.createFunction(
 
       // Also cancel/pause the sequence enrollment
       await step.run('sequence-action-non-reply', async () => {
-        await handleSequenceAction({
-          intent: nonReplyResult.type,
-          enrolmentId: d.enrolmentId,
-          leadId: d.leadId,
-        })
+        if (d.enrolmentId) {
+          await handleSequenceAction({
+            intent: nonReplyResult.type,
+            enrolmentId: d.enrolmentId,
+            leadId: d.leadId,
+          })
+        }
       })
 
       // Mark as processed (no LLM needed)
@@ -303,11 +305,13 @@ export const handleInboundReply = inngest.createFunction(
 
     // ── 11. Handle sequence action (pause/cancel) ─────────────────
     await step.run('sequence-action', async () => {
-      await handleSequenceAction({
-        intent: classification.intent,
-        enrolmentId: d.enrolmentId,
-        leadId: d.leadId,
-      })
+      if (d.enrolmentId) {
+        await handleSequenceAction({
+          intent: classification.intent,
+          enrolmentId: d.enrolmentId,
+          leadId: d.leadId,
+        })
+      }
     })
 
     // ── 12. Emit Socket.io notification + persist to DB ──────────

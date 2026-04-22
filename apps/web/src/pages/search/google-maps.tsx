@@ -2,6 +2,7 @@ import { withAuth } from "@/lib/auth";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useProfile } from "@/contexts/profile-context";
 import { api, UpgradeRequiredError } from "@/lib/api";
 import { SearchForm } from "@/components/search/SearchForm";
@@ -460,8 +461,8 @@ export default function SearchGoogleMaps() {
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm">
-          <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-xl">
-            <span className="text-sm text-gray-900 flex-1">{toast}</span>
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-xl">
+            <span className="text-sm text-text flex-1">{toast}</span>
           </div>
         </div>
       )}
@@ -475,13 +476,13 @@ export default function SearchGoogleMaps() {
 
       {/* ── PRE-SEARCH / EXPANDED: centered narrow container ── */}
       {!filtersCollapsed && (
-        <div className="max-w-xl mx-auto pt-8 pb-4">
+        <div className="max-w-6xl mx-auto pt-8 pb-4">
           {/* Centered page title */}
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Find <span className="text-blue-600">B2B Leads</span>
+            <h1 className="text-2xl font-bold text-text">
+              Find <span className="text-blue">B2B Leads</span>
             </h1>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-text-muted mt-2">
               Search Google Maps for businesses in your target area
             </p>
           </div>
@@ -497,77 +498,88 @@ export default function SearchGoogleMaps() {
             />
           </div>
 
+          {/* Loading skeleton — shown while search is in progress */}
+          {loading && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
+                <span className="text-sm text-text-muted">Searching...</span>
+              </div>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              ))}
+            </div>
+          )}
+
           {/* Save search + Recent searches — below the card */}
-          <div className="mt-4">
-            {/* Save search trigger */}
-            {hasSearched && (
-              <div className="flex items-center justify-end gap-2 mb-3">
-                {showSaveInput ? (
-                  <div className="flex items-center gap-1">
-                    <input
-                      value={saveSearchName}
-                      onChange={(e) => setSaveSearchName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && saveSearchName.trim()) {
-                          handleSaveSearch(saveSearchName.trim());
-                        }
-                        if (e.key === "Escape") {
+          {!loading && (
+            <div className="mt-4">
+              {/* Save search trigger */}
+              {hasSearched && (
+                <div className="flex items-center justify-end gap-2 mb-3">
+                  {showSaveInput ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        value={saveSearchName}
+                        onChange={(e) => setSaveSearchName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && saveSearchName.trim()) {
+                            handleSaveSearch(saveSearchName.trim());
+                          }
+                          if (e.key === "Escape") {
+                            setShowSaveInput(false);
+                            setSaveSearchName("");
+                          }
+                        }}
+                        placeholder="Search name..."
+                        className="h-7 w-40 text-xs bg-surface border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => {
+                          if (saveSearchName.trim()) {
+                            handleSaveSearch(saveSearchName.trim());
+                          }
+                        }}
+                        disabled={saveSearchLoading || !saveSearchName.trim()}
+                        className="text-xs px-2 py-1 rounded-lg bg-blue text-accent-text disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => {
                           setShowSaveInput(false);
                           setSaveSearchName("");
-                        }
-                      }}
-                      placeholder="Search name..."
-                      className="h-7 w-40 text-xs bg-surface border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
-                      autoFocus
-                    />
+                        }}
+                        className="text-xs px-2 py-1 rounded-lg border border-border text-text-muted hover:text-text"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
                     <button
                       onClick={() => {
-                        if (saveSearchName.trim()) {
-                          handleSaveSearch(saveSearchName.trim());
-                        }
+                        const base = `${filters.businessType} in ${filters.location}`;
+                        setSaveSearchName(base.length > 40 ? base.slice(0, 40) : base);
+                        setShowSaveInput(true);
                       }}
-                      disabled={saveSearchLoading || !saveSearchName.trim()}
-                      className="text-xs px-2 py-1 rounded-lg bg-blue text-white disabled:opacity-50"
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-text-muted hover:text-text hover:border-border-strong transition-colors"
                     >
-                      Save
+                      Save search
                     </button>
-                    <button
-                      onClick={() => {
-                        setShowSaveInput(false);
-                        setSaveSearchName("");
-                      }}
-                      className="text-xs px-2 py-1 rounded-lg border border-border text-text-muted hover:text-text"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => {
-                      const base = `${filters.businessType} in ${filters.location}`;
-                      setSaveSearchName(base.length > 40 ? base.slice(0, 40) : base);
-                      setShowSaveInput(true);
-                    }}
-                    className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-text-muted hover:text-text hover:border-border-strong transition-colors"
-                  >
-                    Save search
-                  </button>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
 
-            {/* Saved searches */}
-            {!loading && (
+              {/* Saved searches */}
               <div className="mt-3">
                 <SavedSearchesPanel
                   onApply={handleRerunSearch}
                   refreshToken={savedSearchesRefresh}
                 />
               </div>
-            )}
 
-            {/* Recent searches */}
-            {!loading && (
+              {/* Recent searches */}
               <div className="mt-3">
                 <SearchHistoryPanel
                   recent={historyRecent}
@@ -576,10 +588,10 @@ export default function SearchGoogleMaps() {
                   onDeleteRecent={handleDeleteRecent}
                 />
               </div>
-            )}
+            </div>
+          )}
           </div>
-        </div>
-      )}
+          )}
 
       {/* ── COLLAPSED / RESULTS: full width ── */}
       {filtersCollapsed && (
@@ -598,7 +610,7 @@ export default function SearchGoogleMaps() {
           {/* Results area */}
           <div>
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 mb-4">
+              <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
                 {error}
                 <button
                   onClick={() =>
@@ -638,8 +650,8 @@ export default function SearchGoogleMaps() {
             {/* No results state — only after a zero-result search */}
             {!loading && results.length === 0 && hasSearched && !error && (
               <div className="card text-center py-16">
-                <p className="text-sm text-gray-500">No leads found</p>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-sm text-text-muted">No leads found</p>
+                <p className="text-xs text-text-muted mt-1">
                   Try different search terms or location
                 </p>
               </div>
@@ -649,28 +661,28 @@ export default function SearchGoogleMaps() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200 text-left">
+                    <tr className="border-b border-border text-left">
                       <th className="w-10 px-2 py-3" />
-                      <th className="px-3 py-3 font-medium text-gray-500">Business</th>
-                      <th className="px-3 py-3 font-medium text-gray-500">Category</th>
-                      <th className="px-3 py-3 font-medium text-gray-500">Location</th>
-                      <th className="px-3 py-3 font-medium text-gray-500">Rating</th>
-                      <th className="px-3 py-3 font-medium text-gray-500">Links</th>
-                      <th className="px-3 py-3 font-medium text-gray-500">Phone</th>
-                      <th className="px-3 py-3 font-medium text-gray-500">Actions</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Business</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Category</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Location</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Rating</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Links</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Phone</th>
+                      <th className="px-3 py-3 font-medium text-text-muted">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i} className="border-b border-gray-100 animate-pulse">
-                        <td className="px-2 py-3"><div className="h-4 w-4 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-32 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-20 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-20 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-12 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-5 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-24 rounded bg-gray-200" /></td>
-                        <td className="px-3 py-3"><div className="h-4 w-16 rounded bg-gray-200" /></td>
+                      <tr key={i} className="border-b border-border">
+                        <td className="px-2 py-3"><Skeleton className="h-4 w-4" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-32" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-20" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-12" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-5" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-24" /></td>
+                        <td className="px-3 py-3"><Skeleton className="h-4 w-16" /></td>
                       </tr>
                     ))}
                   </tbody>
