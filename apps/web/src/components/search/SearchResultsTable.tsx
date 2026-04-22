@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Link,
   Loader2,
@@ -6,8 +7,10 @@ import {
   ChevronUp,
   ChevronDown,
   MoreHorizontal,
+  Check,
 } from "lucide-react";
 import type { SearchResult } from "./types";
+import { searchStaggerContainer, searchRowItem, saveSuccessPop } from "@/lib/animation";
 
 interface SearchResultsTableProps {
   results: SearchResult[];
@@ -18,6 +21,13 @@ interface SearchResultsTableProps {
   onSaveBatch: (results: SearchResult[]) => void;
   userLeadLimit: number;
   currentLeadCount: number;
+}
+
+// Track previous results to detect newly-saved rows for success-pop
+function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<T | undefined>(undefined);
+  useEffect(() => { ref.current = value; }, [value]);
+  return ref.current;
 }
 
 type SortableColumn = "business" | "location" | "rating" | null;
@@ -106,6 +116,34 @@ export function SearchResultsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<SortableColumn>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [successPopIds, setSuccessPopIds] = useState<Set<string>>(new Set());
+
+  const prevResults = usePrevious(results);
+
+  // Detect rows that just became saved (duplicate:true) and trigger success pop
+  useEffect(() => {
+    if (!prevResults || prevResults.length === 0) return;
+    const newlySaved = results.filter(
+      (r) => r.duplicate && !prevResults.find((p) => p.place_id === r.place_id)?.duplicate
+    );
+    if (newlySaved.length > 0) {
+      const ids = newlySaved.map((r) => r.place_id);
+      setSuccessPopIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.add(id));
+        return next;
+      });
+      // Clear after 1.2s
+      const t = setTimeout(() => {
+        setSuccessPopIds((prev) => {
+          const next = new Set(prev);
+          ids.forEach((id) => next.delete(id));
+          return next;
+        });
+      }, 1200);
+      return () => clearTimeout(t);
+    }
+  }, [results]);
 
   const nonDuplicateResults = results.filter((r) => !r.duplicate);
   const creditsNeeded = selected.size;
@@ -256,10 +294,19 @@ export function SearchResultsTable({
               </th>
             </tr>
           </thead>
-          <tbody>
-            {sortedResults.map((r) => (
-              <tr
+          <motion.tbody
+            variants={searchStaggerContainer}
+            initial="initial"
+            animate="animate"
+          >
+            {sortedResults.map((r) => {
+              const isSuccessPop = successPopIds.has(r.place_id);
+              return (
+              <motion.tr
                 key={r.place_id}
+                variants={searchRowItem}
+                whileHover={{ x: 3 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className={`group border-b border-border/20 transition-colors ${
                   selected.has(r.place_id) ? "bg-blue/5" : ""
                 } ${r.duplicate ? "opacity-50" : ""}`}
@@ -374,17 +421,31 @@ export function SearchResultsTable({
                       />
                     </div>
                   ) : r.existingLeadId ? (
-                    <a
-                      href={`/leads/${r.existingLeadId}`}
-                      className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 transition-colors inline-flex items-center gap-1"
-                    >
-                      Open
-                    </a>
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={`/leads/${r.existingLeadId}`}
+                        className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 transition-colors inline-flex items-center gap-1"
+                      >
+                        Open
+                      </a>
+                      <AnimatePresence>
+                        {isSuccessPop && (
+                          <motion.div
+                            initial={saveSuccessPop.initial}
+                            animate={saveSuccessPop.animate}
+                            exit={saveSuccessPop.exit}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-green"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ) : null}
                 </td>
-              </tr>
-            ))}
-          </tbody>
+              </motion.tr>
+            );})}
+          </motion.tbody>
         </table>
       </div>
     </div>

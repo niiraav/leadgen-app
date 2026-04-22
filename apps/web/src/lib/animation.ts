@@ -97,3 +97,53 @@ export const countUpSpring = {
   stiffness: 100,
   damping: 20,
 };
+
+// ════════════════════════════════════════════
+// Search page motion variants
+// ════════════════════════════════════════════
+
+/** Stagger container for search result rows */
+export const searchStaggerContainer: Variants = {
+  initial: {},
+  animate: {
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
+  },
+};
+
+/** Individual search row entrance */
+export const searchRowItem: Variants = {
+  initial: { opacity: 0, y: 8 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 400, damping: 30 },
+  },
+};
+
+/** Form view exit / results view enter transition */
+export const formResultsVariants: Variants = {
+  initial: { opacity: 0, y: 12, scale: 0.985 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    scale: 0.985,
+    transition: { duration: 0.2, ease: "easeIn" },
+  },
+};
+
+/** Save button success pop (scale + color flash) */
+export const saveSuccessPop = {
+  initial: { scale: 0.7, opacity: 0 },
+  animate: {
+    scale: [1, 1.15, 1],
+    opacity: 1,
+    transition: { duration: 0.35, ease: "easeOut" as const },
+  },
+  exit: { scale: 0.8, opacity: 0, transition: { duration: 0.2 } },
+};

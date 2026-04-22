@@ -3,8 +3,10 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useProfile } from "@/contexts/profile-context";
 import { api, UpgradeRequiredError } from "@/lib/api";
+import { formResultsVariants } from "@/lib/animation";
 import { SearchForm } from "@/components/search/SearchForm";
 import { SearchResultsTable } from "@/components/search/SearchResultsTable";
 import { CollapsedSearchBar } from "@/components/search/CollapsedSearchBar";
@@ -474,8 +476,16 @@ export default function SearchGoogleMaps() {
       )}
 
       {/* ── PRE-SEARCH / EXPANDED: centered narrow container ── */}
+      <AnimatePresence mode="wait">
       {!filtersCollapsed && (
-        <div className="max-w-6xl mx-auto pt-8 pb-4">
+        <motion.div
+          key="search-form-view"
+          variants={formResultsVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="max-w-6xl mx-auto pt-8 pb-4"
+        >
           {/* Centered page title */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-text">
@@ -589,12 +599,19 @@ export default function SearchGoogleMaps() {
               </div>
             </div>
           )}
-          </div>
+          </motion.div>
           )}
 
       {/* ── COLLAPSED / RESULTS: full width ── */}
       {filtersCollapsed && (
-        <div className="max-w-7xl mx-auto">
+        <motion.div
+          key="search-results-view"
+          variants={formResultsVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          className="max-w-7xl mx-auto"
+        >
           {/* Collapsed search summary bar */}
           {searchSummary && (
             <div className="mb-4">
@@ -689,8 +706,9 @@ export default function SearchGoogleMaps() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+    </AnimatePresence>
     </div>
   );
 }
