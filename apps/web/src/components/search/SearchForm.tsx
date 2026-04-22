@@ -117,7 +117,7 @@ export function SearchForm({
             />
           </div>
           {showQuick && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-3 shadow-xl z-20">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-3 shadow-md z-20">
               <div className="text-xs text-text-muted mb-2">Quick select</div>
               <div className="flex flex-wrap gap-1.5">
                 {QUICK_TYPES.map((t) => (

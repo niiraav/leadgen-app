@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, memo, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   Mail,
@@ -17,6 +18,26 @@ import {
   ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+import { springSoft } from "@/lib/animation";
+
+// ── Table row motion variants ─────────────────────────────────────────────────
+
+const rowStaggerContainer = {
+  initial: {},
+  animate: {
+    transition: { staggerChildren: 0.04, delayChildren: 0.05 },
+  },
+};
+
+const rowStaggerItem = {
+  initial: { opacity: 0, y: 6 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 400, damping: 30 },
+  },
+} as const;
 
 // WhatsApp icon (Frame.svg) – inline for component reuse
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -290,7 +311,7 @@ export const LeadsTable = memo(function LeadsTable({
                   <button
                     onClick={handleToggleAll}
                     className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-blue/40",
+                      "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                       allSelected
                         ? "bg-accent border-accent text-accent-text"
                         : someSelected
@@ -343,7 +364,11 @@ export const LeadsTable = memo(function LeadsTable({
               </th>
             </tr>
           </thead>
-          <tbody>
+          <motion.tbody
+            initial="initial"
+            animate="animate"
+            variants={rowStaggerContainer}
+          >
             {loading
               ? Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
               : leads.map((lead) => {
@@ -354,8 +379,11 @@ export const LeadsTable = memo(function LeadsTable({
                   const pillColor = STATUS_PILL_COLORS[primaryStatus] ?? "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700";
 
                   return (
-                    <tr
+                    <motion.tr
                       key={lead.id}
+                      variants={rowStaggerItem}
+                      whileHover={{ x: 2 }}
+                      transition={springSoft}
                       className={cn(
                         "border-b border-border/20 transition-colors group relative h-14",
                         !isSelected && !isDNC && "hover:bg-surface-2",
@@ -374,7 +402,7 @@ export const LeadsTable = memo(function LeadsTable({
                               onSelectionChange?.(next);
                             }}
                             className={cn(
-                              "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-blue/40",
+                              "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                               isSelected
                                 ? "bg-accent border-accent text-accent-text"
                                 : "border-border hover:border-border-strong"
@@ -485,12 +513,12 @@ export const LeadsTable = memo(function LeadsTable({
                       <td className="px-3 py-3">
                         {lead.lastActivity ? (
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-xs text-text-muted">
+                            <span className="text-sm text-text-muted">
                               {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-xs text-text-faint">—</span>
+                          <span className="text-sm text-text-faint">—</span>
                         )}
                       </td>
 
@@ -505,7 +533,7 @@ export const LeadsTable = memo(function LeadsTable({
                             aria-disabled={isDNC || !lead.email}
                             tabIndex={isDNC || !lead.email ? -1 : 0}
                             className={cn(
-                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-blue/40",
+                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                               isDNC || !lead.email
                                 ? "opacity-40 cursor-not-allowed text-text-faint"
                                 : "text-text-muted hover:text-blue hover:bg-blue/10"
@@ -537,7 +565,7 @@ export const LeadsTable = memo(function LeadsTable({
                             aria-disabled={isDNC || !lead.phone}
                             tabIndex={isDNC || !lead.phone ? -1 : 0}
                             className={cn(
-                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-blue/40",
+                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                               isDNC || !lead.phone
                                 ? "opacity-40 cursor-not-allowed text-text-faint"
                                 : "text-text-muted hover:text-green hover:bg-green/10"
@@ -565,7 +593,7 @@ export const LeadsTable = memo(function LeadsTable({
                             aria-disabled={isDNC || !lead.phone}
                             tabIndex={isDNC || !lead.phone ? -1 : 0}
                             className={cn(
-                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-blue/40",
+                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                               isDNC || !lead.phone
                                 ? "opacity-40 cursor-not-allowed text-text-faint"
                                 : "text-text-muted hover:text-blue hover:bg-blue/10"
@@ -589,7 +617,7 @@ export const LeadsTable = memo(function LeadsTable({
                           <div className="relative" ref={overflowOpenId === lead.id ? overflowRef : undefined}>
                             <button
                               onClick={() => setOverflowOpenId((prev) => (prev === lead.id ? null : lead.id))}
-                              className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 transition-colors focus:outline-none focus:ring-1 focus:ring-blue/40"
+                              className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
                               onMouseEnter={(e) => tooltip.show("More actions", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
                             >
@@ -650,7 +678,7 @@ export const LeadsTable = memo(function LeadsTable({
                           </div>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })}
             {!loading && leads.length === 0 && (
@@ -660,7 +688,7 @@ export const LeadsTable = memo(function LeadsTable({
                 </td>
               </tr>
             )}
-          </tbody>
+          </motion.tbody>
         </table>
       </div>
     </>
@@ -687,7 +715,7 @@ function OverflowItem({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-full px-3 py-2 text-xs text-left flex items-center gap-2 transition-colors",
+        "w-full px-3 py-2 text-sm text-left flex items-center gap-2 transition-colors",
         disabled
           ? "opacity-40 cursor-not-allowed text-text-faint"
           : danger

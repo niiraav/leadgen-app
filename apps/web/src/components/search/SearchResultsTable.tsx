@@ -81,7 +81,7 @@ function OverflowMenu({
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 rounded-lg border border-border bg-surface p-1 shadow-xl z-50 min-w-[180px]">
+        <div className="absolute right-0 top-full mt-1 rounded-lg border border-border bg-surface p-1 shadow-md z-50 min-w-[180px]">
           <button
             onClick={() => {
               onEnrich();
@@ -274,7 +274,7 @@ export function SearchResultsTable({
                     nonDuplicateResults.length > 0
                   }
                   onChange={toggleAll}
-                  className="rounded border-border-strong text-blue focus:ring-blue"
+                  className="rounded border-border-strong text-blue focus:ring-primary"
                 />
               </th>
               <SortableHeader label="Business" column="business" />
@@ -319,7 +319,7 @@ export function SearchResultsTable({
                       checked={selected.has(r.place_id)}
                       onChange={() => toggleSelect(r.place_id)}
                       aria-label="Select lead"
-                      className={`rounded border-border-strong text-blue focus:ring-blue transition-opacity ${
+                      className={`rounded border-border-strong text-blue focus:ring-primary transition-opacity ${
                         selected.has(r.place_id)
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"

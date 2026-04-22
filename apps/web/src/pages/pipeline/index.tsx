@@ -5,6 +5,12 @@ import { HotScoreBadge } from "@/components/ui/badge";
 import { api } from "@/lib/api";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { spring, staggerContainer, staggerItem } from "@/lib/animation";
+
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const statusOptions = [
   { id: "new", title: "New Leads", color: "#1d6fa8" },
@@ -185,12 +191,26 @@ export default function PipelinePage() {
                 </div>
 
                 {/* Column Cards */}
-                <div className="space-y-2">
-                  {leadsInCol.map((lead) => (
-                    <Card
-                      key={lead.id}
-                      className="p-4 group cursor-default"
-                    >
+                <motion.div
+                  className="space-y-2"
+                  variants={prefersReducedMotion ? undefined : staggerContainer}
+                  initial="initial"
+                  animate="animate"
+                >
+                  <AnimatePresence mode="popLayout">
+                    {leadsInCol.map((lead) => (
+                      <motion.div
+                        key={lead.id}
+                        layout={!prefersReducedMotion}
+                        variants={prefersReducedMotion ? undefined : staggerItem}
+                        initial={prefersReducedMotion ? false : "initial"}
+                        animate={prefersReducedMotion ? undefined : "animate"}
+                        exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.2 } }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      >
+                        <Card
+                          className="p-4 group cursor-default"
+                        >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1 min-w-0">
                           <h4 className="text-sm font-semibold text-text truncate">
@@ -198,7 +218,7 @@ export default function PipelinePage() {
                           </h4>
                           {lead.engagementStatus && (
                             <span
-                              className="inline-block mt-1 text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                              className="inline-block mt-1 text-xs font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
                               style={{
                                 color: engagementColors[lead.engagementStatus] || "#6b7280",
                                 backgroundColor: `${engagementColors[lead.engagementStatus] || "#6b7280"}18`,
@@ -223,7 +243,7 @@ export default function PipelinePage() {
                           value={lead.pipelineStage || lead.engagementStatus || lead.status}
                           disabled={movingId === lead.id}
                           onChange={(e) => handleMoveLead(lead.id, e.target.value)}
-                          className="w-full h-7 px-2 text-[10px] font-medium rounded-md bg-surface-2 border border-border text-text-muted focus:outline-none focus:ring-1 focus:ring-blue/20 cursor-pointer uppercase tracking-wider disabled:opacity-50"
+                          className="w-full h-7 px-2 text-sm font-medium rounded-md bg-surface-2 border border-border text-text-muted focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer uppercase tracking-wider disabled:opacity-50"
                         >
                           {statusOptions.map((opt) => (
                             <option key={opt.id} value={opt.id}>
@@ -234,27 +254,34 @@ export default function PipelinePage() {
                       </div>
 
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-[10px] text-text-faint">
+                        <span className="text-xs text-text-faint">
                           {lead.city || lead.country}
                         </span>
                         <Link
                           href={`/leads/${lead.id}`}
-                          className="text-[10px] text-blue hover:underline"
+                          className="text-xs text-blue hover:underline"
                         >
                           View profile →
                         </Link>
                       </div>
-                    </Card>
-                  ))}
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
 
                   {leadsInCol.length === 0 && (
-                    <div className="rounded-xl border-2 border-dashed border-border/40 p-6 text-center">
-                      <p className="text-xs text-text-faint">
+                    <motion.div
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={prefersReducedMotion ? undefined : spring}
+                      className="rounded-xl border-2 border-dashed border-border/40 p-6 text-center"
+                    >
+                      <p className="text-sm text-text-faint">
                         No leads in this stage
                       </p>
-                    </div>
+                    </motion.div>
                   )}
-                </div>
+                </motion.div>
               </div>
             );
           })}

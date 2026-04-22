@@ -163,12 +163,12 @@ function SettingsProfilePage() {
           <div>
             <label className="block text-sm font-medium text-text mb-1.5">Full name</label>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]" />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-1.5">Company name</label>
             <input value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]" />
           </div>
           <div>
             <label className="block text-sm font-medium text-text mb-2">Your role</label>
@@ -237,7 +237,7 @@ function SettingsProfilePage() {
             onChange={(e) => setUsp(e.target.value)}
             onBlur={() => autoSave("usp", usp)}
             placeholder="Your one-liner pitch..."
-            className="w-full h-24 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
+            className="w-full h-24 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
           />
           <div className="flex items-center justify-between">
             <span className={`text-xs ${usp.length > 150 ? "text-red" : "text-text-faint"}`}>

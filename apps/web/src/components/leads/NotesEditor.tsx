@@ -51,7 +51,7 @@ export const NotesEditor = React.memo(function NotesEditor({ leadId, initialNote
         onChange={handleChange}
         placeholder="Add notes about this lead..."
         rows={3}
-        className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-y"
+        className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
       />
     </div>
   );

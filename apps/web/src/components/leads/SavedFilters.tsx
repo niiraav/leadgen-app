@@ -186,7 +186,7 @@ export function SavedFilters({
                     }
                   }}
                   placeholder="Filter name..."
-                  className="flex-1 h-7 text-xs bg-surface-2 border border-border rounded px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+                  className="flex-1 h-7 text-sm bg-surface-2 border border-border rounded px-2 text-text focus:outline-none focus:ring-1 focus:ring-primary/20"
                 />
                 <button
                   onClick={handleSave}

@@ -89,7 +89,7 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
               <textarea
                 value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 placeholder="e.g. Thanks for reaching out. Can you send me pricing details?"
-                className="w-full h-40 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none mb-4"
+                className="w-full h-40 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none mb-4"
               />
               <div className="flex items-center justify-between">
                 <button onClick={handleSkip} className="text-xs text-text-muted hover:text-text underline">

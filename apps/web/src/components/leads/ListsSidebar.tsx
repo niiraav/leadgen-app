@@ -138,7 +138,7 @@ export function ListsSidebar({
                     if (e.key === "Enter") finishRename();
                     if (e.key === "Escape") setRenamingId(null);
                   }}
-                  className="flex-1 h-6 text-xs bg-surface border border-border rounded px-1.5 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+                  className="flex-1 h-6 text-sm bg-surface border border-border rounded px-1.5 text-text focus:outline-none focus:ring-1 focus:ring-primary/20"
                 />
                 <button
                   onClick={finishRename}
@@ -204,7 +204,7 @@ export function ListsSidebar({
                 }
               }}
               placeholder="List name..."
-              className="flex-1 h-7 text-xs bg-surface-2 border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+              className="flex-1 h-7 text-sm bg-surface-2 border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-primary/20"
             />
             <button
               onClick={handleCreate}

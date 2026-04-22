@@ -287,7 +287,7 @@ export default function BillingPage() {
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-          <div className="rounded-xl border border-border bg-surface px-4 py-3 shadow-xl text-sm text-text">
+          <div className="rounded-xl border border-border bg-surface px-4 py-3 shadow-md text-sm text-text">
             {toast}
           </div>
         </div>

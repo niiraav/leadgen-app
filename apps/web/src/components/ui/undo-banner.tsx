@@ -55,7 +55,7 @@ function UndoBannerItem({ action, onDismiss }: { action: UndoAction; onDismiss: 
   }, [timeLeft, onDismiss]);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-blue/20 bg-surface px-4 py-3 shadow-xl">
+    <div className="flex items-center gap-3 rounded-xl border border-blue/20 bg-surface px-4 py-3 shadow-md">
       <span className="text-sm text-text flex-1 truncate">{action.message}</span>
       {timeLeft > 0 && (
         <button

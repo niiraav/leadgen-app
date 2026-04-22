@@ -161,7 +161,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Sarah Johnson"
-                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[44px]"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"
                 />
               </div>
               <div>
@@ -170,7 +170,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="e.g. Bright Digital Agency"
-                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[44px]"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"
                 />
               </div>
               <div>
@@ -239,7 +239,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                     onChange={(e) => setCustomInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addCustomService()}
                     placeholder="e.g. Drone Photography"
-                    className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[44px]"
+                    className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"
                   />
                   <button onClick={addCustomService} disabled={!customInput.trim()} className="btn btn-primary text-sm disabled:opacity-50 min-h-[44px]">
                     Add
@@ -307,7 +307,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                   value={usp}
                   onChange={(e) => setUsp(e.target.value)}
                   placeholder="e.g. I build websites for tradespeople who lose jobs to better-looking competitors."
-                  className="w-full h-24 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
+                  className="w-full h-24 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
                 <div className="flex items-center justify-between mt-1.5">
                   <span className={`text-xs ${usp.length > 150 ? "text-red" : "text-text-faint"}`}>

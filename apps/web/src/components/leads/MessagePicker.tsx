@@ -347,7 +347,7 @@ export default function MessagePicker({
                   value={customLabel}
                   onChange={(e) => setCustomLabel(e.target.value)}
                   placeholder="e.g. First outreach"
-                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[44px]"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"
                 />
               </div>
               <div>
@@ -358,7 +358,7 @@ export default function MessagePicker({
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder="Hi {name}, I noticed your {rating}-rated business in {category}..."
-                  className="w-full h-32 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
+                  className="w-full h-32 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
                 <div className="flex items-center justify-between mt-1">
                   <span

@@ -182,7 +182,7 @@ export default function SequenceDetailPage() {
                   <textarea
                     value={editForm.body_template}
                     onChange={(e) => setEditForm({ ...editForm, body_template: e.target.value })}
-                    className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
+                    className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                     rows={5}
                   />
                 </div>

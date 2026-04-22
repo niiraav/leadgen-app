@@ -378,7 +378,7 @@ export default function LeadsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 px-3 text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20 cursor-pointer min-h-[36px]"
+            className="h-9 px-3 text-sm rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-h-[36px]"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -667,7 +667,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
           <div>
             <label className="block text-xs font-medium text-text-muted mb-1">Subject</label>
             <input
-              className="w-full rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20"
+              className="w-full rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
@@ -675,7 +675,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
           <div>
             <label className="block text-xs font-medium text-text-muted mb-1">Body</label>
             <textarea
-              className="w-full h-40 rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-y"
+              className="w-full h-40 rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />
@@ -793,7 +793,7 @@ function MessagePickerModal({
             <div>
               <label className="block text-xs font-medium text-text-muted mb-1">Template</label>
               <select
-                className="w-full rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                className="w-full rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
                 value={selectedTpl ?? ""}
                 onChange={(e) => handleTemplateChange(e.target.value)}
               >
@@ -809,7 +809,7 @@ function MessagePickerModal({
           <div>
             <label className="block text-xs font-medium text-text-muted mb-1">Message</label>
             <textarea
-              className="w-full h-32 rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-y"
+              className="w-full h-32 rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your message…"
@@ -987,7 +987,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -997,7 +997,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div>
@@ -1006,7 +1006,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-focus:outline-none focus:ring-2 focus:ring-blue/20"
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -1017,7 +1017,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div>
@@ -1026,7 +1026,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
@@ -1037,7 +1037,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <div className="flex gap-3 pt-2">

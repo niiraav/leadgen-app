@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { HotScoreBadge } from "@/components/ui/badge";
 import {
   Mail, Phone, MapPin, Globe, ExternalLink, Sparkles, Send, Loader2, Copy,
-  Check, MessageSquare, Clock, AlertCircle, Pencil, ChevronDown, X,
+  Check, MessageSquare, Clock, AlertCircle, Pencil, ChevronDown, ChevronUp, X,
   Linkedin, Search, Info, RefreshCw, Star, AlertTriangle,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -127,6 +128,23 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState<string | null>(null);
   const [ownerNoticeDismissed, setOwnerNoticeDismissed] = useState(false);
+
+  // ── Accordion section state ──
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    activity: true,
+    replies: true,
+    notes: true,
+  });
+  const toggleSection = (key: string) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Accordion animation variant
+  const expandCollapse = {
+    initial: { opacity: 0, height: 0 },
+    animate: { opacity: 1, height: "auto", transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
+    exit: { opacity: 0, height: 0, transition: { type: "spring" as const, stiffness: 300, damping: 30 } },
+  } as const;
 
   // Check localStorage for dismissed owner notice per lead
   useEffect(() => {
@@ -681,7 +699,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-xl">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-md">
             <span className="text-sm">{toast}</span>
             <button onClick={() => setToast(null)} className="text-text-faint hover:text-text">✕</button>
           </div>
@@ -759,7 +777,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               {lead.lastActivity.replyIntent && (() => {
                 const chip = REPLY_INTENT_CHIP[lead.lastActivity.replyIntent!];
                 return chip ? (
-                  <span className={`inline-block rounded-full px-1.5 py-0.5 text-[9px] font-medium leading-tight ${chip.className}`}>
+                  <span className={`inline-block rounded-md px-1.5 py-0.5 text-[9px] font-medium leading-tight ${chip.className}`}>
                     {chip.label}
                   </span>
                 ) : null;
@@ -813,7 +831,12 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+      >
         {/* ══════════════════════════════════════════════════════════════════
             LEFT COLUMN (1/3)
             ══════════════════════════════════════════════════════════════════ */}
@@ -830,7 +853,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {!editing && (
                   <button
                     onClick={startEditing}
-                    className="rounded-full p-1.5 text-text-faint hover:text-blue hover:bg-blue/5 transition-colors"
+                    className="rounded-md p-1.5 text-text-faint hover:text-blue hover:bg-blue/5 transition-colors"
                     title="Edit contact info"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -841,14 +864,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     <button
                       onClick={saveEdit}
                       disabled={saving}
-                      className="rounded-full p-1.5 text-green hover:bg-green/5 transition-colors"
+                      className="rounded-md p-1.5 text-green hover:bg-green/5 transition-colors"
                       title="Save"
                     >
                       {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       onClick={cancelEditing}
-                      className="rounded-full p-1.5 text-text-faint hover:text-red hover:bg-red/5 transition-colors"
+                      className="rounded-md p-1.5 text-text-faint hover:text-red hover:bg-red/5 transition-colors"
                       title="Cancel"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -902,7 +925,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       <textarea value={editForm.notes}
                         onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                         placeholder="Add notes..."
-                        className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                        className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
                         rows={3} />
                     </div>
                   </>
@@ -925,14 +948,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                             {lead.email_status === "catch-all" && <span className="text-amber text-xs">⚠</span>}
                             {lead.email_status === "invalid" && <span className="text-red text-xs">✗</span>}
                             {lead.contact_email_type && (
-                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
                                 lead.contact_email_type === "direct" ? "bg-green/10 text-green" : "bg-surface-2 text-text-muted"
                               }`}>
                                 {lead.contact_email_type === "direct" ? "Direct" : "Generic"}
                               </span>
                             )}
                             {repliesQuery.data?.replies?.length ? (
-                              <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                              <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-md flex items-center gap-1">
                                 <MessageSquare className="w-2.5 h-2.5" />
                                 {repliesQuery.data.replies!.length} repl{repliesQuery.data.replies!.length === 1 ? "y" : "ies"}
                               </span>
@@ -1101,10 +1124,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                               <span>·</span>
                               <span>{contactPreview.first_email.charAt(0)}***@{contactPreview.first_email.split('@')[1]}</span>
                               {contactPreview.direct_emails > 0 && (
-                                <span className="text-[10px] font-medium bg-green/10 text-green px-1.5 py-0.5 rounded-full">Direct</span>
+                                <span className="text-[10px] font-medium bg-green/10 text-green px-1.5 py-0.5 rounded-md">Direct</span>
                               )}
                               {contactPreview.generic_emails > 0 && contactPreview.direct_emails === 0 && (
-                                <span className="text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-full">Generic</span>
+                                <span className="text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-md">Generic</span>
                               )}
                             </>
                           )}
@@ -1163,7 +1186,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     </span>
                   )}
                   {lead.contact_enrichment_status === 'partial' && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber/10 text-amber px-1.5 py-0.5 rounded-full">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium bg-amber/10 text-amber px-1.5 py-0.5 rounded-md">
                       <Sparkles className="w-2.5 h-2.5" />Partial
                     </span>
                   )}
@@ -1196,7 +1219,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       {lead.owner_first_name || lead.owner_name}
                     </span>
                     {lead.owner_name_source && (
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-surface-2 text-text-muted">
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-surface-2 text-text-muted">
                         {lead.owner_name_source === "gmb_reviews" ? "from reviews"
                           : lead.owner_name_source === "reviews" ? "from reviews"
                           : "manual"}
@@ -1427,7 +1450,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">What Customers Value</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.themes.map((t, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-green/10 text-green font-medium">{t}</span>
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-green/10 text-green font-medium">{t}</span>
                       ))}
                     </div>
                   </div>
@@ -1438,7 +1461,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.usp_candidates.map((u, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-blue/10 text-blue font-medium">{u}</span>
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-blue/10 text-blue font-medium">{u}</span>
                       ))}
                     </div>
                   </div>
@@ -1449,7 +1472,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.staff_names.map((s, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-surface-2 text-text font-medium">
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-surface-2 text-text font-medium">
                           <span className="w-4 h-4 rounded-full bg-purple/20 text-purple text-[9px] flex items-center justify-center font-bold">{s.charAt(0)}</span>
                           {s}
                         </span>
@@ -1463,7 +1486,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Pain Points</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.pain_points.map((p, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber/10 text-amber font-medium">{p}</span>
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-amber/10 text-amber font-medium">{p}</span>
                       ))}
                     </div>
                   </div>
@@ -1600,7 +1623,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                         setSelectedSubjectIdx(idx);
                         setEmailSubject(subj);
                       }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                         idx === selectedSubjectIdx
                           ? "bg-blue text-white"
                           : "bg-surface-2 text-text-muted hover:text-text hover:bg-border/10"
@@ -1642,7 +1665,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCopy}
-                  className="rounded-full p-2 text-text-muted hover:text-text hover:bg-border/10 transition-colors"
+                  className="rounded-md p-2 text-text-muted hover:text-text hover:bg-border/10 transition-colors"
                   aria-label="Copy email"
                   title="Copy subject + body"
                 >
@@ -1722,107 +1745,175 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               ────────────────────────────────────────────────────────────── */}
 
           {/* Activity History */}
-          <Card className="p-0">
-            <div className="px-4 pt-4 pb-2">
+          <Card className="p-0 overflow-hidden">
+            <button
+              onClick={() => toggleSection("activity")}
+              className="w-full px-4 pt-4 pb-2 flex items-center justify-between text-left"
+            >
               <h3 className="text-sm font-semibold text-text flex items-center gap-2">
                 <Clock className="w-4 h-4 text-text-faint" />
                 Activity
                 {allActivities.length > 0 && (
-                  <span className="text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium bg-surface-2 text-text-muted px-1.5 py-0.5 rounded-md">
                     {allActivities.length}
                   </span>
                 )}
               </h3>
-            </div>
-            {allActivities.length > 0 ? (
-              <div className="divide-y divide-border/40">
-                {allActivities.map((activity) => (
-                  <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
-                    <div>
-                      <p className="text-sm font-medium text-text">
-                        {activity.type === 'status_changed' && activity.field && FIELD_LABELS[activity.field]
-                          ? FIELD_LABELS[activity.field]
-                          : activity.type === 'status_changed'
-                            ? 'Status changed'
-                            : activity.description}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
-                        <Clock className="w-3 h-3" />
-                        {new Date(activity.created_at).toLocaleString()}
-                      </div>
+              {expandedSections.activity ? (
+                <ChevronUp className="w-4 h-4 text-text-muted" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-text-muted" />
+              )}
+            </button>
+            <AnimatePresence initial={false}>
+              {expandedSections.activity && (
+                <motion.div
+                  key="activity-body"
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  variants={expandCollapse}
+                  className="overflow-hidden"
+                >
+                  {allActivities.length > 0 ? (
+                    <div className="divide-y divide-border/40">
+                      {allActivities.map((activity) => (
+                        <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
+                          <div>
+                            <p className="text-sm font-medium text-text">
+                              {activity.type === 'status_changed' && activity.field && FIELD_LABELS[activity.field]
+                                ? FIELD_LABELS[activity.field]
+                                : activity.type === 'status_changed'
+                                  ? 'Status changed'
+                                  : activity.description}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              {new Date(activity.created_at).toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-4">
-                <p className="text-xs text-text-muted">No activity yet</p>
-              </div>
-            )}
+                  ) : (
+                    <div className="p-4">
+                      <p className="text-xs text-text-muted">No activity yet</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
 
           {/* Replies */}
-          <Card>
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-text mb-3 flex items-center gap-2">
+          <Card className="overflow-hidden">
+            <button
+              onClick={() => toggleSection("replies")}
+              className="w-full p-4 flex items-center justify-between text-left"
+            >
+              <h3 className="text-sm font-semibold text-text flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-blue" />
                 Replies
                 {repliesQuery.data?.replies?.length ? (
-                  <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-md">
                     {repliesQuery.data.replies.length}
                   </span>
                 ) : null}
               </h3>
-              {repliesQuery.isLoading ? (
-                <div className="flex items-center gap-2 text-xs text-text-muted py-4">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Loading replies...
-                </div>
-              ) : !repliesQuery.data?.replies?.length ? (
-                <p className="text-xs text-text-muted py-2">No replies yet</p>
+              {expandedSections.replies ? (
+                <ChevronUp className="w-4 h-4 text-text-muted" />
               ) : (
-                <div className="space-y-3">
-                  {repliesQuery.data.replies.map((r: any) => {
-                    const intentColor: Record<string, string> = {
-                      interested: "text-green", question: "text-blue", objection: "text-amber",
-                      not_now: "text-orange", not_interested: "text-red", referral: "text-purple",
-                      other: "text-text-muted",
-                    };
-                    return (
-                      <div key={r.id} className="border border-border/40 rounded-lg p-3 space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-text">{r.subject || "(no subject)"}</span>
-                          <span className="text-[10px] text-text-faint">{new Date(r.received_at).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-xs text-text-muted line-clamp-3">{r.body_plain?.slice(0, 300)}</p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {r.intent_label && (
-                            <span className={`text-[10px] font-semibold uppercase ${intentColor[r.intent_label] ?? "text-text-muted"}`}>
-                              {r.intent_label}
-                            </span>
-                          )}
-                          {r.key_phrase && (
-                            <span className="text-[10px] text-text-faint italic">"{r.key_phrase}"</span>
-                          )}
-                          {r.needs_review && (
-                            <span className="text-[10px] bg-amber/10 text-amber px-1.5 py-0.5 rounded">Needs review</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <ChevronDown className="w-4 h-4 text-text-muted" />
               )}
-            </div>
+            </button>
+            <AnimatePresence initial={false}>
+              {expandedSections.replies && (
+                <motion.div
+                  key="replies-body"
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  variants={expandCollapse}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4">
+                    {repliesQuery.isLoading ? (
+                      <div className="flex items-center gap-2 text-xs text-text-muted py-4">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Loading replies...
+                      </div>
+                    ) : !repliesQuery.data?.replies?.length ? (
+                      <p className="text-xs text-text-muted py-2">No replies yet</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {repliesQuery.data.replies.map((r: any) => {
+                          const intentColor: Record<string, string> = {
+                            interested: "text-green", question: "text-blue", objection: "text-amber",
+                            not_now: "text-orange", not_interested: "text-red", referral: "text-purple",
+                            other: "text-text-muted",
+                          };
+                          return (
+                            <div key={r.id} className="border border-border/40 rounded-lg p-3 space-y-1.5">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-medium text-text">{r.subject || "(no subject)"}</span>
+                                <span className="text-[10px] text-text-faint">{new Date(r.received_at).toLocaleDateString()}</span>
+                              </div>
+                              <p className="text-xs text-text-muted line-clamp-3">{r.body_plain?.slice(0, 300)}</p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {r.intent_label && (
+                                  <span className={`text-[10px] font-semibold uppercase ${intentColor[r.intent_label] ?? "text-text-muted"}`}>
+                                    {r.intent_label}
+                                  </span>
+                                )}
+                                {r.key_phrase && (
+                                  <span className="text-[10px] text-text-faint italic">"{r.key_phrase}"</span>
+                                )}
+                                {r.needs_review && (
+                                  <span className="text-[10px] bg-amber/10 text-amber px-1.5 py-0.5 rounded">Needs review</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
 
           {/* Notes */}
-          <Card>
-            <div className="p-4">
-              <NotesEditor leadId={leadId} initialNotes={lead.notes ?? ""} />
-            </div>
+          <Card className="overflow-hidden">
+            <button
+              onClick={() => toggleSection("notes")}
+              className="w-full p-4 flex items-center justify-between text-left"
+            >
+              <h3 className="text-sm font-semibold text-text">Notes</h3>
+              {expandedSections.notes ? (
+                <ChevronUp className="w-4 h-4 text-text-muted" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-text-muted" />
+              )}
+            </button>
+            <AnimatePresence initial={false}>
+              {expandedSections.notes && (
+                <motion.div
+                  key="notes-body"
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  variants={expandCollapse}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-4">
+                    <NotesEditor leadId={leadId} initialNotes={lead.notes ?? ""} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </Card>
         </div>
-      </div>
+      </motion.div>
     </div>
     </>
   );

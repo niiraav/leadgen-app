@@ -195,7 +195,7 @@ export default function NewSequencePage() {
                   value={step.body_template}
                   onChange={(e) => updateStep(idx, "body_template", e.target.value)}
                   placeholder="Email body..."
-                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-blue/20 resize-none"
+                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                   rows={6}
                 />
               </div>
@@ -205,7 +205,7 @@ export default function NewSequencePage() {
                   type="number"
                   value={step.delay_days}
                   onChange={(e) => updateStep(idx, "delay_days", Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-20 h-8 px-2 text-center text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                  className="w-20 h-8 px-2 text-center text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
                   min={0}
                 />
                 <span className="text-xs text-text-muted">day(s) after enrollment</span>

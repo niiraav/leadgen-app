@@ -33,7 +33,7 @@ export function TargetAreaNudge({ onDismiss }: { onDismiss: () => void }) {
             onChange={(e) => setLocation(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
             placeholder={profile?.target_geography || "City or postcode"}
-            className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-blue/20 min-h-[36px]"
+            className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[36px]"
           />
           <div className="flex items-center gap-2 mt-2">
             <button onClick={handleSave} disabled={saving || !location.trim()} className="btn btn-primary text-xs py-1 h-7 disabled:opacity-50">

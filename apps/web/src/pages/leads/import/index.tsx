@@ -297,7 +297,7 @@ export default function ImportPage() {
                         [field.key]: e.target.value,
                       }))
                     }
-                    className="flex-1 h-9 px-2 text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-blue/20"
+                    className="flex-1 h-9 px-2 text-sm rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">— Skip —</option>
                     {headers.map((h) => (
@@ -320,7 +320,7 @@ export default function ImportPage() {
               </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-xs">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/40 bg-surface-2">
                     {headers.slice(0, 5).map((h) => (

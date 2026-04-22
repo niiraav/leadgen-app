@@ -202,7 +202,7 @@ export function TopBar({ userEmail }: TopBarProps) {
                 animate="visible"
                 exit="exit"
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute right-0 top-full mt-2 w-80 max-h-96 rounded-lg border border-border/60 bg-surface shadow-xl z-50 flex flex-col"
+                className="absolute right-0 top-full mt-2 w-80 max-h-96 rounded-lg border border-border/60 bg-surface shadow-md z-50 flex flex-col"
               >
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
@@ -268,7 +268,7 @@ export function TopBar({ userEmail }: TopBarProps) {
                 animate="visible"
                 exit="exit"
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border/60 bg-surface shadow-xl py-1 z-50"
+                className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border/60 bg-surface shadow-md py-1 z-50"
               >
                 <div className="px-4 py-2 border-b border-border/40">
                   <p className="text-sm font-medium text-text truncate">{userEmail}</p>

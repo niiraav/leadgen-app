@@ -257,7 +257,7 @@ function LogForm({
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
         />
       </div>
       <div>
@@ -267,7 +267,7 @@ function LogForm({
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Notes (optional)"
           rows={2}
-          className="w-full rounded border border-gray-200 px-2 py-1 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+          className="w-full rounded border border-gray-200 px-2 py-1 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
         />
       </div>
       <button
@@ -354,7 +354,7 @@ function EmailCell({
         </Tooltip.Root>
         <Popover.Portal>
           <Popover.Content
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-xl z-50 w-72"
+            className="rounded-lg border border-gray-200 bg-white p-4 shadow-md z-50 w-72"
             side="bottom"
             align="start"
             sideOffset={5}
@@ -445,7 +445,7 @@ function EmailCell({
         </Tooltip.Root>
         <Popover.Portal>
           <Popover.Content
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-xl z-50 w-72"
+            className="rounded-lg border border-gray-200 bg-white p-4 shadow-md z-50 w-72"
             side="bottom"
             align="start"
             sideOffset={5}
@@ -535,7 +535,7 @@ function EmailCell({
         </Tooltip.Root>
         <Popover.Portal>
           <Popover.Content
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-xl z-50 w-72"
+            className="rounded-lg border border-gray-200 bg-white p-4 shadow-md z-50 w-72"
             side="bottom"
             align="start"
             sideOffset={5}
@@ -629,7 +629,7 @@ function EmailCell({
         </Tooltip.Root>
         <Popover.Portal>
           <Popover.Content
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-xl z-50 w-72"
+            className="rounded-lg border border-gray-200 bg-white p-4 shadow-md z-50 w-72"
             side="bottom"
             align="start"
             sideOffset={5}
@@ -831,7 +831,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                       checked={isSelected}
                       onChange={() => toggleRow(lead.id)}
                       aria-label="Select lead"
-                      className={`rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-opacity ${
+                      className={`rounded border-gray-300 text-blue-600 focus:ring-primary transition-opacity ${
                         isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`}
                     />
@@ -855,7 +855,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                   </td>
 
                   {/* Col 3 — Location */}
-                  <td className="px-3 py-3 text-xs text-gray-500">
+                  <td className="px-3 py-3 text-sm text-gray-500">
                     {location}
                   </td>
 
@@ -1036,7 +1036,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                   <td className="px-3 py-3">
                     {lead.lastActivity ? (
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-xs text-gray-700">
+                        <span className="text-sm text-gray-700">
                           {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
                         </span>
                         {lead.lastActivity.replyIntent && (() => {
@@ -1051,7 +1051,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                     ) : (
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
-                          <span className="text-xs text-gray-400 cursor-default">—</span>
+                          <span className="text-sm text-gray-400 cursor-default">—</span>
                         </Tooltip.Trigger>
                         <Tooltip.Portal>
                           <Tooltip.Content className="rounded bg-gray-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
@@ -1129,7 +1129,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                         </DropdownMenu.Trigger>
                         <DropdownMenu.Portal>
                           <DropdownMenu.Content
-                            className="rounded-lg border border-gray-200 bg-white p-1 shadow-xl z-50 min-w-[200px]"
+                            className="rounded-lg border border-gray-200 bg-white p-1 shadow-md z-50 min-w-[200px]"
                             side="bottom"
                             align="end"
                             sideOffset={5}
@@ -1140,7 +1140,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                 <button
                                   type="button"
                                   onClick={() => openPopover(`${lead.id}-actions`)}
-                                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-1"
+                                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1"
                                 >
                                   ← Back
                                 </button>
@@ -1157,7 +1157,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                 <button
                                   type="button"
                                   onClick={() => openPopover(`${lead.id}-actions`)}
-                                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 mb-1"
+                                  className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-1"
                                 >
                                   ← Back
                                 </button>
@@ -1168,7 +1168,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                 <button
                                   type="button"
                                   onClick={closePopover}
-                                  className="w-full rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200"
+                                  className="w-full rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200"
                                 >
                                   Done
                                 </button>
@@ -1354,7 +1354,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               </DropdownMenu.SubTrigger>
                               <DropdownMenu.Portal>
                                 <DropdownMenu.SubContent
-                                  className="rounded-lg border border-gray-200 bg-white p-1 shadow-xl z-50 min-w-[200px]"
+                                  className="rounded-lg border border-gray-200 bg-white p-1 shadow-md z-50 min-w-[200px]"
                                   sideOffset={2}
                                   alignOffset={-5}
                                 >

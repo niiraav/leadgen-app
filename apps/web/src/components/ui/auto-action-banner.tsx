@@ -23,7 +23,7 @@ export default function AutoActionBanner({ message, onUndo, onDismiss }: Props) 
 
   return (
     <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-xl">
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-md">
         <span className="text-sm text-text flex-1 truncate">{message}</span>
         {timeLeft > 0 && (
           <button

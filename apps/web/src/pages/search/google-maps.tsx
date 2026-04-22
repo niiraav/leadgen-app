@@ -462,7 +462,7 @@ export default function SearchGoogleMaps() {
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm">
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-xl">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-md">
             <span className="text-sm text-text flex-1">{toast}</span>
           </div>
         </div>
@@ -541,7 +541,7 @@ export default function SearchGoogleMaps() {
                           }
                         }}
                         placeholder="Search name..."
-                        className="h-7 w-40 text-xs bg-surface border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-blue/20"
+                        className="h-7 w-40 text-sm bg-surface border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-primary/20"
                         autoFocus
                       />
                       <button
