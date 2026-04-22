@@ -6,6 +6,18 @@ import { inngest } from '../../lib/inngest/client';
 const router = new Hono();
 
 /**
+ * Detect if an error is a network-level failure (Supabase unreachable, etc.)
+ * Returns 503 so Mailgun retries with backoff instead of hammering 500s.
+ */
+function isNetworkError(err: unknown): boolean {
+  if (err instanceof Error) {
+    const msg = err.message.toLowerCase();
+    return msg.includes('fetch failed') || msg.includes('econnrefused') || msg.includes('etimedout') || msg.includes('enotfound');
+  }
+  return false;
+}
+
+/**
  * POST /webhooks/inbound-reply
  * Handle Mailgun inbound reply webhooks.
  *
@@ -42,8 +54,8 @@ router.post('/', async (c) => {
     const mailgunMessageId = (body['Message-Id'] as string) || '';
     const timestampFloat = parseFloat(timestamp);
 
-    // Parse reply address: reply+{replyToken}@{domain}
-    const replyPattern = /reply\+([^@]+)@/;
+    // Parse reply address: reply+{replyToken}@{domain} (case-insensitive)
+    const replyPattern = /reply\+([^@]+)@/i;
     const match = recipientRaw.match(replyPattern);
 
     if (!match) {
@@ -79,17 +91,20 @@ router.post('/', async (c) => {
     const enrolmentId = (stepExec as any)?.enrolment_id || null;
 
     // Insert the reply event into reply_events
+    // Normalize sender email (strip display name if present)
+    const senderEmail = (from.match(/<([^>]+)>/) || [null, from])[1];
+
     const replyInsertData: Record<string, unknown> = {
       lead_id: leadId,
       enrolment_id: enrolmentId,
       user_id: lead.user_id,
-      sender_email: from,
+      sender_email: senderEmail,
       mailgun_message_id: mailgunMessageId || null,
       in_reply_to: null,
       subject,
       body_plain: strippedText || bodyPlain,
       body_html: strippedHtml || bodyHtml,
-      received_at: timestampFloat ? new Date(timestampFloat * 1000).toISOString() : new Date().toISOString(),
+      received_at: !isNaN(timestampFloat) ? new Date(timestampFloat * 1000).toISOString() : new Date().toISOString(),
       type: 'reply',
       needs_review: true,
     };
@@ -117,7 +132,8 @@ router.post('/', async (c) => {
 
     if (insertError) {
       console.error('[Inbound Reply Webhook] Failed to insert reply event', insertError);
-      if (insertError.code === '23505' && insertError.message?.includes('mailgun_message_id')) {
+      // 23505 = unique_violation — likely duplicate mailgun_message_id
+      if (insertError.code === '23505') {
         return c.json({ error: 'Duplicate mailgun_message_id — reply already recorded' }, 409);
       }
       return c.json({ error: 'Failed to save reply' }, 500);
@@ -125,23 +141,28 @@ router.post('/', async (c) => {
 
     // Send Inngest event for async processing (best-effort)
     let inngestId: string | undefined;
-    try {
-      const inngestResult = await inngest.send({
-        name: 'reply/received',
-        data: {
-          replyEventId: replyEvent.id,
-          leadId,
-          enrolmentId: enrolmentId || null,
-          stepExecutionId: stepExec?.id || null,
-          senderEmail: from,
-          subject,
-          bodyPlain: strippedText || bodyPlain,
-          receivedAt: replyInsertData.received_at,
-        },
-      });
-      inngestId = inngestResult.ids[0];
-    } catch (inngestErr) {
-      console.warn('[Inbound Reply Webhook] Inngest send failed (async processing will be delayed):', (inngestErr as Error).message);
+    const inngestEventKey = process.env.INNGEST_EVENT_KEY;
+    if (inngestEventKey && inngestEventKey !== 'dev-key') {
+      try {
+        const inngestResult = await inngest.send({
+          name: 'reply/received',
+          data: {
+            replyEventId: replyEvent.id,
+            leadId,
+            enrolmentId: enrolmentId || null,
+            stepExecutionId: stepExec?.id || null,
+            senderEmail: from,
+            subject,
+            bodyPlain: strippedText || bodyPlain,
+            receivedAt: replyInsertData.received_at,
+          },
+        });
+        inngestId = inngestResult.ids[0];
+      } catch (inngestErr) {
+        console.warn('[Inbound Reply Webhook] Inngest send failed (async processing will be delayed):', (inngestErr as Error).message);
+      }
+    } else {
+      console.warn('[Inbound Reply Webhook] Skipping Inngest send — INNGEST_EVENT_KEY not configured');
     }
 
     return c.json({
@@ -150,6 +171,10 @@ router.post('/', async (c) => {
       inngestId: inngestId || null,
     });
   } catch (err) {
+    if (isNetworkError(err)) {
+      console.error('[Inbound Reply Webhook] Network error (Supabase/Inngest unreachable):', (err as Error).message);
+      return c.json({ error: 'Service temporarily unavailable — please retry' }, 503);
+    }
     console.error('[Inbound Reply Webhook] Unexpected error:', err);
     return c.json({ error: 'Internal server error' }, 500);
   }
