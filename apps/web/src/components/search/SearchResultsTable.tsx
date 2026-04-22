@@ -373,6 +373,13 @@ export function SearchResultsTable({
                         isEnriching={enrichingId === r.place_id}
                       />
                     </div>
+                  ) : r.existingLeadId ? (
+                    <a
+                      href={`/leads/${r.existingLeadId}`}
+                      className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 transition-colors inline-flex items-center gap-1"
+                    >
+                      Open
+                    </a>
                   ) : null}
                 </td>
               </tr>
