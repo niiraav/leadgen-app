@@ -497,8 +497,8 @@ export default function SearchGoogleMaps() {
             />
           </div>
 
-          {/* Loading skeleton — shown while search is in progress */}
-          {loading && (
+          {/* Loading skeleton — shown while search is in progress AND no cached results */}
+          {loading && results.length === 0 && (
             <div className="mt-6 space-y-3">
               <div className="flex items-center gap-2 mb-2">
                 <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
@@ -656,7 +656,7 @@ export default function SearchGoogleMaps() {
               </div>
             )}
 
-            {loading && (
+            {loading && results.length === 0 && (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
