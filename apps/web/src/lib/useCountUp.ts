@@ -1,28 +1,41 @@
+"use client";
+
 import { useState, useEffect, useRef } from "react";
 
-export function useCountUp(end: number, duration = 1200) {
+export function useCountUp(
+  end: number,
+  duration: number = 1000,
+  delay: number = 0
+) {
   const [count, setCount] = useState(0);
-  const frameRef = useRef<number>(0);
+  const started = useRef(false);
 
   useEffect(() => {
-    const startTime = performance.now();
+    if (started.current) return;
+    started.current = true;
 
-    const step = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      // ease-out quad
-      const eased = 1 - (1 - progress) * (1 - progress);
-      setCount(Math.floor(eased * end));
+    const startTime = performance.now() + delay;
+    let raf: number;
+
+    const tick = (now: number) => {
+      if (now < startTime) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutQuart
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.round(eased * end));
+
       if (progress < 1) {
-        frameRef.current = requestAnimationFrame(step);
+        raf = requestAnimationFrame(tick);
       }
     };
 
-    frameRef.current = requestAnimationFrame(step);
-
-    return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    };
-  }, [end, duration]);
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [end, duration, delay]);
 
   return count;
 }

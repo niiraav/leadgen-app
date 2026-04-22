@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import React from "react";
+import { motion } from "framer-motion";
 
 export function Card({
   className,
@@ -73,12 +74,13 @@ export function CardFooter({
 
 // ============ KPI Card ============
 
-interface KPICardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface KPICardProps {
   title: string;
   value: string | number;
   change?: string;
   changeType?: "positive" | "negative" | "neutral";
   icon?: React.ReactNode;
+  className?: string;
   subtitle?: string;
   color?: string;
 }
@@ -93,12 +95,13 @@ export function KPICard({
   ...props
 }: KPICardProps) {
   return (
-    <div
+    <motion.div
       className={cn(
         "rounded-lg border border-border/60 bg-surface p-5 hover:shadow-sm transition-all duration-200",
         className
       )}
-      {...props}
+      whileHover={{ y: -1 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
@@ -126,7 +129,7 @@ export function KPICard({
           <span className="text-xs text-text-faint">vs last week</span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 

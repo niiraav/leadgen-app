@@ -5,6 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import OnboardingModal from "@/components/onboarding/onboarding-modal";
 import { useProfile } from "@/contexts/profile-context";
+import { useCountUp } from "@/lib/useCountUp";
+import { motion } from "framer-motion";
 import {
   Users,
   Mail,
@@ -103,6 +105,37 @@ const STATUS_COLORS: Record<string, string> = {
   out_of_office: "text-text-faint",
 };
 
+// ─── Animated KPI Card wrapper ────────────────────────────────────────────────────
+
+function KPICardMotion({
+  title,
+  end,
+  icon,
+  subtitle,
+  color,
+  delay,
+}: {
+  title: string;
+  end: number;
+  icon: React.ReactNode;
+  subtitle: string;
+  color: string;
+  delay: number;
+}) {
+  const value = useCountUp(end, 1200, delay);
+  return (
+    <motion.div variants={itemVariants}>
+      <KPICard
+        title={title}
+        value={value}
+        icon={icon}
+        subtitle={subtitle}
+        color={color}
+      />
+    </motion.div>
+  );
+}
+
 const STATUS_LABELS: Record<string, string> = {
   new: "New",
   contacted: "Contacted",
@@ -117,6 +150,39 @@ const STATUS_LABELS: Record<string, string> = {
   lost: "Lost",
   archived: "Archived",
   out_of_office: "Out of Office",
+};
+
+// ─── Motion variants ──────────────────────────────────────────────────────────────
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.05 },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" as const } },
+};
+
+const fadeInDelayVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, delay: 0.3, ease: "easeOut" as const },
+  },
+};
+
+const slideInLeftVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.35, ease: "easeOut" as const },
+  },
 };
 
 function SimpleBarChart({ data }: { data: { status: string; count: number }[] }) {
@@ -403,7 +469,12 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
   return (
     <div className="space-y-4 md:space-y-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <motion.div
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {loading ? (
           <>
             <SkeletonCard />
@@ -413,40 +484,49 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
           </>
         ) : (
           <>
-            <KPICard
+            <KPICardMotion
               title="Total Leads"
-              value={data?.kpis.total_leads ?? 0}
+              end={data?.kpis.total_leads ?? 0}
               icon={<Users className="w-5 h-5" />}
               subtitle="All time"
               color="blue"
+              delay={0}
             />
-            <KPICard
+            <KPICardMotion
               title="Contacted"
-              value={data?.kpis.contacted ?? 0}
+              end={data?.kpis.contacted ?? 0}
               icon={<Mail className="w-5 h-5" />}
               subtitle="This month"
               color="amber"
+              delay={50}
             />
-            <KPICard
+            <KPICardMotion
               title="Replied"
-              value={data?.kpis.replied ?? 0}
+              end={data?.kpis.replied ?? 0}
               icon={<MessageSquare className="w-5 h-5" />}
               subtitle="Positive responses"
               color="green"
+              delay={100}
             />
-            <KPICard
+            <KPICardMotion
               title="Active Sequences"
-              value={data?.kpis.active_sequences ?? 0}
+              end={data?.kpis.active_sequences ?? 0}
               icon={<TrendingUp className="w-5 h-5" />}
               subtitle="Currently running"
               color="blue"
+              delay={150}
             />
           </>
         )}
-      </div>
+      </motion.div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <motion.div
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+        variants={fadeInDelayVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {/* Weekly Leads */}
         <Card className="p-5">
           <h3 className="text-sm font-semibold text-text mb-4">Weekly Leads</h3>
@@ -466,7 +546,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             <SimpleBarChart data={data?.pipeline_funnel ?? []} />
           )}
         </Card>
-      </div>
+      </motion.div>
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -552,7 +632,12 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             <SkeletonCard />
           </div>
         ) : (
-          <div className="space-y-4 mt-6">
+          <motion.div
+            className="space-y-4 mt-6"
+            variants={slideInLeftVariants}
+            initial="hidden"
+            animate="visible"
+          >
             {deadLeads.length > 0 && (
               <>
                 <div className="flex items-center justify-between">
@@ -573,7 +658,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
                 </div>
               </>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
 
