@@ -103,13 +103,44 @@ ${input.bodyPlain.slice(0, 800)}`
     }
   }
 
-  const result = JSON.parse(data.choices[0].message.content) as ClassificationResult
+  const content = data.choices[0].message.content as string
 
-  // Sanitise
-  const validIntents = ['interested','not_now','not_interested','question','objection','referral','other']
-  if (!validIntents.includes(result.intent)) result.intent = 'other'
-  result.confidence = Math.max(0, Math.min(100, result.confidence ?? 50))
-  result.sentiment_score = Math.max(0, Math.min(100, result.sentiment_score ?? 50))
+  // Some models (e.g. minimax) return chain-of-thought text before the JSON.
+  // Extract the first JSON object from the response.
+  let jsonStr = content
+  const jsonBlockMatch = content.match(/```json\s*([\s\S]*?)\s*```/)
+  if (jsonBlockMatch) {
+    jsonStr = jsonBlockMatch[1]
+  } else {
+    const firstBrace = content.indexOf('{')
+    const lastBrace = content.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      jsonStr = content.slice(firstBrace, lastBrace + 1)
+    }
+  }
 
-  return result
+  try {
+    const result = JSON.parse(jsonStr) as ClassificationResult
+
+    // Sanitise
+    const validIntents = ['interested','not_now','not_interested','question','objection','referral','other']
+    if (!validIntents.includes(result.intent)) result.intent = 'other'
+    result.confidence = Math.max(0, Math.min(100, result.confidence ?? 50))
+    result.sentiment_score = Math.max(0, Math.min(100, result.sentiment_score ?? 50))
+
+    return result
+  } catch (parseErr) {
+    console.error('[classifier] JSON parse failed. Raw content:', content.slice(0, 500))
+    console.error('[classifier] Extracted JSON:', jsonStr.slice(0, 500))
+    console.error('[classifier] Parse error:', (parseErr as Error).message)
+    return {
+      intent: 'other',
+      sentiment_score: 50,
+      urgency: 'low',
+      confidence: 30,
+      suggested_next_action: 'Review reply manually',
+      key_phrase: input.bodyPlain.slice(0, 60),
+      reenrol_at: null,
+    }
+  }
 }
