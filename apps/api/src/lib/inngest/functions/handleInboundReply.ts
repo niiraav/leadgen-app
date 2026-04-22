@@ -60,7 +60,7 @@ export const handleInboundReply = inngest.createFunction(
     const lead = await step.run('fetch-lead', async () => {
       const { data, error } = await supabaseAdmin
         .from('leads')
-        .select('id, user_id, business_name, category, city, email, status')
+        .select('id, user_id, business_name, category, city, email, status, email_status')
         .eq('id', d.leadId)
         .single()
 
