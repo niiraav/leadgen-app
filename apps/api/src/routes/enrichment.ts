@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { supabaseAdmin, getUserId } from '../db';
-import { extractOwnerNameFromReviews } from '../services/owner-name-extractor';
 import { buildGmbUrl } from '../lib/gmb-urls';
 import { enforceCredits, EnforcementError } from '../lib/billing/enforce';
 
@@ -50,20 +49,9 @@ router.post('/:id/enrich', async (c) => {
 
   const updates: Record<string, unknown> = {};
 
-  // Owner name from GMB reviews (auto-extraction disabled — SerpAPI removed)
+  // Owner name auto-extraction removed in Phase 5 (SerpAPI removed).
   // Owner names can be set manually via PATCH /leads/:id/social-links
-  if (!lead.owner_name) {
-    try {
-      const result = await extractOwnerNameFromReviews(lead.data_id, lead.place_id, lead.business_name);
-      if (result.owner_name) {
-        updates.owner_name = result.owner_name;
-        updates.owner_first_name = result.first_name || null;
-        updates.owner_name_source = 'gmb_reviews';
-      }
-    } catch (e) {
-      console.error(`[Enrichment] Owner extraction failed for lead ${leadId}:`, e);
-    }
-  }
+  // or fetched via the reviews pipeline (POST /leads/:id/fetch-reviews).
 
   // Ensure GMB URL
   if (!lead.gmb_url) {
