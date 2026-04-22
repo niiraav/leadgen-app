@@ -200,13 +200,15 @@ export const handleInboundReply = inngest.createFunction(
         const { error } = await supabaseAdmin
           .from('reply_events')
           .update({
-            intent_label: rulesResult.type,
+            intent_label: null,
+            needs_review: false,
             processed_at: new Date().toISOString(),
             processing_duration_ms: Date.now() - startTime,
+            inngest_event_id: event.id || null,
           })
           .eq('id', replyRow.id)
         if (error) {
-          console.warn('[handleInboundReply] Failed to mark processed:', error.message)
+          throw new Error(`[handleInboundReply] Failed to mark processed: ${error.message}`)
         }
       })
 
