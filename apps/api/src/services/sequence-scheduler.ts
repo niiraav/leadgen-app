@@ -144,6 +144,7 @@ export function startSequenceWorker() {
             replyToken: (lead as any)?.reply_token || '',
             enrolmentId: enrollment_id,
             sequenceStepId: (step as any).id,
+            sequenceId: enrollment.sequence_id,
             userId: enrollment.user_id,
             stepNumber: step_order,
           });

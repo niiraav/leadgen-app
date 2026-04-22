@@ -1,3 +1,4 @@
+import { API_URL } from "@/lib/server-api";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase";
 
@@ -8,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   const { id } = req.query as { id?: string };
-  const url = "http://localhost:3001/sequences/" + id;
+  const url = API_URL + "/sequences/" + id;
   const headers: Record<string, string> = {
     Authorization: "Bearer " + token,
   };

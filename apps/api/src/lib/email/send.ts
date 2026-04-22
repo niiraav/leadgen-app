@@ -12,6 +12,7 @@ export interface SendEmailParams {
   replyToken:       string   // Sprint 7: opaque token for reply tracking
   enrolmentId:      string
   sequenceStepId:   string
+  sequenceId:       string     // actual sequence UUID (not step ID)
   userId:           string   // Supabase auth user id
   stepNumber:       number   // step index in the sequence
 }
@@ -41,7 +42,7 @@ export async function sendOutreachEmail(
   await supabaseAdmin
     .from('sequence_step_executions')
     .insert({
-      sequence_id:    params.sequenceStepId,
+      sequence_id:    params.sequenceId,     // actual sequence UUID
       enrolment_id:   params.enrolmentId,
       user_id:        params.userId,
       step_number:    params.stepNumber,

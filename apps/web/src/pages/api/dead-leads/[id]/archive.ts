@@ -1,3 +1,4 @@
+import { API_URL } from "@/lib/server-api";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase";
 
@@ -12,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { activity_id } = req.body as { activity_id?: string };
 
   // Archive the lead
-  await fetch("http://localhost:3001/leads/" + id, {
+  await fetch(API_URL + "/leads/" + id, {
     method: "PATCH",
     headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
     body: JSON.stringify({ status: "archived" }),
@@ -20,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Resolve the activity
   if (activity_id) {
-    await fetch("http://localhost:3001/leads/dead-leads/" + activity_id + "/resolve", {
+    await fetch(API_URL + "/leads/dead-leads/" + activity_id + "/resolve", {
       method: "POST",
       headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
       body: JSON.stringify({ resolved: true }),

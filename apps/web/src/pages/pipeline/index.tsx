@@ -2,10 +2,9 @@ import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { HotScoreBadge } from "@/components/ui/badge";
-import { api, BackendPaginatedLeads } from "@/lib/api";
-import { Plus, Loader2 } from "lucide-react";
+import { api } from "@/lib/api";
+import { Plus } from "lucide-react";
 import Link from "next/link";
-import { resolveStatusPatch, type LeadDomainFields } from "@/lib/lead-domains";
 
 const statusOptions = [
   { id: "new", title: "New Leads", color: "#1d6fa8" },
@@ -87,30 +86,33 @@ export default function PipelinePage() {
   const handleMoveLead = async (leadId: string, newStatus: string) => {
     setMovingId(leadId);
     try {
-      // Find the lead to resolve the correct domain patch
       const lead = leads.find((l) => l.id === leadId);
       if (!lead) throw new Error("Lead not found in local state");
 
-      const domainFields: LeadDomainFields = {
-        engagementStatus: lead.engagementStatus,
-        pipelineStage: lead.pipelineStage,
-        status: lead.status,
-        doNotContact: false,
-      };
-      const patch = resolveStatusPatch(domainFields, newStatus);
-      if (!patch) throw new Error("Invalid status transition");
-      await api.leads.update(leadId, patch as Record<string, unknown>);
+      const isPipelineStage = (PIPELINE_STAGES as readonly string[]).includes(newStatus);
 
-      // Optimistic local update
+      // Build flat-kanban patch: set target domain, clear the other domain so
+      // column filters (engagement requires !pipelineStage) work correctly.
+      const patch: Record<string, unknown> = { status: newStatus };
+      if (isPipelineStage) {
+        patch.pipeline_stage = newStatus;
+        patch.engagement_status = null;
+      } else {
+        patch.engagement_status = newStatus;
+        patch.pipeline_stage = null;
+      }
+
+      await api.leads.update(leadId, patch);
+
+      // Optimistic local update — mirror the patch exactly
       setLeads((prev) =>
         prev.map((l) => {
           if (l.id !== leadId) return l;
-          const isPipelineStage = (PIPELINE_STAGES as readonly string[]).includes(newStatus);
           return {
             ...l,
-            status: newStatus, // legacy compat
-            pipelineStage: isPipelineStage ? newStatus : l.pipelineStage,
-            engagementStatus: isPipelineStage ? l.engagementStatus : newStatus,
+            status: newStatus,
+            pipelineStage: isPipelineStage ? newStatus : null,
+            engagementStatus: isPipelineStage ? null : newStatus,
           };
         })
       );

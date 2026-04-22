@@ -73,7 +73,8 @@ router.get('/:id', async (c) => {
       .from('sequences')
       .select(`
         *,
-        steps:sequence_steps(*)
+        steps:sequence_steps(*),
+        leads_count:sequence_enrollments(count)
       `)
       .eq('id', id)
       .eq('user_id', userId)
@@ -271,6 +272,13 @@ router.post('/:id/enroll', async (c) => {
           { delay: 0, jobId: `${enrollment.id}-1` }
         );
       }
+
+      // Update lead status to 'sequence'
+      await supabaseAdmin
+        .from('leads')
+        .update({ status: 'sequence' })
+        .eq('id', leadId)
+        .eq('user_id', userId);
 
       enrolled++;
 

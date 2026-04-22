@@ -1,3 +1,4 @@
+import { API_URL } from "@/lib/server-api";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createServerSupabaseClient } from "@/lib/supabase";
 
@@ -8,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   if (req.method === "GET") {
-    const url = new URL("http://localhost:3001/leads/stale");
+    const url = new URL(API_URL + "/leads/stale");
     url.search = new URLSearchParams(req.query as any).toString();
     const resp = await fetch(url.toString(), { headers: { Authorization: "Bearer " + token } });
     const json = await resp.json().catch(() => ({}));
