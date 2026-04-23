@@ -40,6 +40,7 @@ app.use('/saved-filters/*', authMiddleware);
 app.use('/replies/*', authMiddleware);
 app.use('/message-picker/*', authMiddleware);
 app.use('/notifications/*', authMiddleware);
+app.use('/board/*', authMiddleware);
 
 // Billing routes need auth EXCEPT the webhook (Stripe sends its own signature)
 app.use('/billing/*', async (c, next) => {
