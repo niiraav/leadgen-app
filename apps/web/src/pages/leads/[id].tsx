@@ -71,6 +71,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   const [selectedSubjectIdx, setSelectedSubjectIdx] = useState<number>(0);
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [logEmailLoading, setLogEmailLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -291,6 +292,20 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     setEmailSent(true);
     toast.success("Email opened in your mail client");
     setTimeout(() => setEmailSent(false), 4000);
+  };
+
+  // ── Log as sent (stopgap for mailto copy-paste workflows) ──
+  const handleLogSent = async () => {
+    if (!lead) return;
+    setLogEmailLoading(true);
+    try {
+      await api.leads.update(leadId, { logEmailSent: true });
+      toast.success("Email logged as sent");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to log email");
+    } finally {
+      setLogEmailLoading(false);
+    }
   };
 
   // ── Mobile copy ──
@@ -833,6 +848,19 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                               <Send className="w-3.5 h-3.5" />
                             )}
                             {emailSent ? "Queued" : "Send Email"}
+                          </button>
+                          <button
+                            onClick={handleLogSent}
+                            disabled={logEmailLoading || !!lead.doNotContact}
+                            className="btn btn-secondary text-xs py-1.5 h-8 disabled:opacity-50 inline-flex items-center gap-1.5"
+                            title={lead.doNotContact ? 'Cannot log — do not contact' : 'Log as sent (if you used your own email client)'}
+                          >
+                            {logEmailLoading ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <NotebookPen className="w-3.5 h-3.5" />
+                            )}
+                            {logEmailLoading ? "Logging..." : "Log as sent"}
                           </button>
                           {lead.doNotContact && (
                             <span className="text-[10px] text-red flex items-center gap-1">

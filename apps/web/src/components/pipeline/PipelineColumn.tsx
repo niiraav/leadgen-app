@@ -50,6 +50,7 @@ export function PipelineColumn({
 
   const selectedCountInColumn = leads.filter((l) => selectedIds?.has(l.id)).length;
   const allSelected = leads.length > 0 && selectedCountInColumn === leads.length;
+  const totalDealValue = leads.reduce((sum, l) => sum + (l.dealValue ?? 0), 0);
 
   return (
     <div className="min-w-[300px] max-w-[300px] flex-shrink-0 flex flex-col">
@@ -69,6 +70,11 @@ export function PipelineColumn({
           {selectedCountInColumn > 0 && (
             <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               {selectedCountInColumn}
+            </span>
+          )}
+          {totalDealValue > 0 && (
+            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+              Σ £{totalDealValue.toLocaleString()}
             </span>
           )}
         </div>

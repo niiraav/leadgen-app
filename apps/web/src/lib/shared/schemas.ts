@@ -46,6 +46,18 @@ export const lifecycleStateSchema = z.enum([
 export const leadSourceSchema = z.enum(['outscraper', 'csv', 'apollo', 'manual']);
 export const emailToneSchema = z.enum(['professional', 'friendly', 'direct']);
 
+export const followUpSourceSchema = z.enum(['column_default', 'reply_received', 'manual']);
+export type FollowUpSource = z.infer<typeof followUpSourceSchema>;
+
+export const lossReasonSchema = z.enum([
+  'no_response',
+  'wrong_timing',
+  'too_expensive',
+  'competitor',
+  'not_a_fit',
+]);
+export type LossReason = z.infer<typeof lossReasonSchema>;
+
 export const searchParamsSchema = z.object({
   businessType: z.string().min(1, 'Business type is required'),
   location: z.string().min(1, 'Location is required'),
@@ -79,6 +91,11 @@ export const leadUpdateSchema = leadCreateSchema.partial().extend({
   doNotContact: z.boolean().optional(),
   notes: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  followUpDate: z.string().datetime().optional().nullable(),
+  followUpSource: followUpSourceSchema.optional().nullable(),
+  dealValue: z.number().int().min(0).optional().nullable(),
+  lossReason: lossReasonSchema.optional().nullable(),
+  logEmailSent: z.boolean().optional(),
 });
 
 export const aiEmailSchema = z.object({

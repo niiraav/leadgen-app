@@ -9,12 +9,13 @@
  * Uses supabaseAdmin (NOT Drizzle ORM) for every DB operation.
  */
 import { inngest } from '../client'
-import { supabaseAdmin } from '../../../db'
+import { supabaseAdmin, createActivity } from '../../../db'
 import { runRulesFilter } from '../../reply/rulesFilter'
 import { classifyReplyIntent } from '../../reply/classifier'
 import { computeHotScore } from '../../reply/hotScore'
 import { emitReplyNotification } from '../../reply/notifications'
 import { handleSequenceAction } from '../../reply/sequenceAction'
+import { setFollowUp, daysFromNow } from '../../follow-up'
 
 // ── Event schema (matches what the webhook sends) ──────────────────
 interface ReplyReceivedEvent {
@@ -301,6 +302,33 @@ export const handleInboundReply = inngest.createFunction(
         return { updated: false, error: error.message }
       }
       return { updated: true, leadId: (data as any).id }
+    })
+
+    // ── 10a. Log activity + set follow-up urgency for reply ───────
+    await step.run('log-reply-activity', async () => {
+      try {
+        await createActivity(lead.user_id, {
+          lead_id: d.leadId,
+          type: 'replied',
+          description: 'Inbound reply received',
+          timestamp: d.receivedAt,
+          reply_intent: classification.intent,
+          triggered_by: 'inbound_reply',
+        })
+      } catch (actErr) {
+        console.warn('[handleInboundReply] Activity log failed for replied:', actErr)
+      }
+
+      // Set follow-up: 2 days for most replies, clear for not_interested
+      try {
+        if (classification.intent === 'not_interested') {
+          await setFollowUp(d.leadId, null, null)
+        } else {
+          await setFollowUp(d.leadId, daysFromNow(2), 'reply_received')
+        }
+      } catch (fuErr) {
+        console.warn('[handleInboundReply] setFollowUp failed:', fuErr)
+      }
     })
 
     // ── 11. Handle sequence action (pause/cancel) ─────────────────

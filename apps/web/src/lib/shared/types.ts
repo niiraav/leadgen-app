@@ -114,6 +114,11 @@ export interface Lead {
   email_deliverability?: EmailDeliverabilityState;
   // Last activity summary (for Saved Leads Table)
   lastActivity?: ActivityEntry | null;
+  // Sprint P2: temporal urgency system
+  followUpDate?: string;
+  followUpSource?: string;
+  dealValue?: number;
+  lossReason?: string;
 }
 
 export interface ReviewSummary {

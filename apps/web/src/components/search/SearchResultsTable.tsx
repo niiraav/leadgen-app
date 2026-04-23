@@ -54,11 +54,25 @@ function OverflowMenu({
   isEnriching: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (open && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, left: rect.right - 180 });
+    }
+  }, [open]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -67,8 +81,9 @@ function OverflowMenu({
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
         className="p-1 rounded hover:bg-surface-2 text-text-muted hover:text-text transition-colors disabled:opacity-50"
@@ -81,7 +96,11 @@ function OverflowMenu({
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 rounded-lg border border-border bg-surface p-1 shadow-md z-50 min-w-[180px]">
+        <div
+          ref={menuRef}
+          style={{ position: "fixed", top: menuPos.top, left: menuPos.left, zIndex: 50 }}
+          className="rounded-lg border border-border bg-surface p-1 shadow-md min-w-[180px]"
+        >
           <button
             onClick={() => {
               onEnrich();
@@ -117,6 +136,7 @@ export function SearchResultsTable({
   const [sortColumn, setSortColumn] = useState<SortableColumn>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [successPopIds, setSuccessPopIds] = useState<Set<string>>(new Set());
+  const [batchSaved, setBatchSaved] = useState(false);
 
   const prevResults = usePrevious(results);
 
@@ -231,30 +251,50 @@ export function SearchResultsTable({
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-border/60 bg-surface">
         {/* Bulk action bar */}
-        {selected.size > 0 && (
+        {(selected.size > 0 || batchSaved) && (
           <div className="flex items-center justify-between px-3 py-2 bg-surface-2 border-b border-border/40">
             <span className="text-sm text-text">
-              <strong>{selected.size}</strong> selected
+              {batchSaved ? (
+                <span className="text-green font-medium">Saved</span>
+              ) : (
+                <>
+                  <strong>{selected.size}</strong> selected
+                </>
+              )}
             </span>
             <div className="flex items-center gap-2">
-              {!canAfford && (
+              {!canAfford && !batchSaved && (
                 <span className="text-xs text-red">Lead limit exceeded</span>
+              )}
+              {batchSaved ? (
+                <span className="inline-flex items-center rounded bg-green px-2 py-1 text-xs font-medium text-white">
+                  <Check className="w-3 h-3 mr-1" />
+                  Saved
+                </span>
+              ) : (
+                <button
+                  onClick={() => {
+                    const toSave = results.filter((r) =>
+                      selected.has(r.place_id)
+                    );
+                    onSaveBatch(toSave);
+                    setBatchSaved(true);
+                    setTimeout(() => {
+                      setBatchSaved(false);
+                      setSelected(new Set());
+                    }, 2500);
+                  }}
+                  disabled={savingId !== null || !canAfford}
+                  className="inline-flex items-center rounded bg-blue px-2 py-1 text-xs font-medium text-white hover:bg-blue/90 disabled:opacity-50 transition-colors"
+                >
+                  Save {selected.size} lead{selected.size > 1 ? "s" : ""}
+                </button>
               )}
               <button
                 onClick={() => {
-                  const toSave = results.filter((r) =>
-                    selected.has(r.place_id)
-                  );
-                  onSaveBatch(toSave);
+                  setBatchSaved(false);
                   setSelected(new Set());
                 }}
-                disabled={savingId !== null || !canAfford}
-                className="inline-flex items-center rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 disabled:opacity-50 transition-colors"
-              >
-                Save {selected.size} lead{selected.size > 1 ? "s" : ""}
-              </button>
-              <button
-                onClick={() => setSelected(new Set())}
                 className="text-xs text-text-muted hover:text-text px-2 py-1"
               >
                 Clear
@@ -401,7 +441,7 @@ export function SearchResultsTable({
                       <button
                         onClick={() => onSaveOne(r)}
                         disabled={savingId !== null}
-                        className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                        className="rounded bg-blue px-2 py-1 text-xs font-medium text-white hover:bg-blue/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                       >
                         {savingId === r.place_id ? (
                           <>
@@ -424,7 +464,7 @@ export function SearchResultsTable({
                     <div className="flex items-center gap-1">
                       <a
                         href={`/leads/${r.existingLeadId}`}
-                        className="rounded border border-border bg-surface px-2 py-1 text-xs font-medium text-text hover:border-border-strong hover:bg-surface-2 transition-colors inline-flex items-center gap-1"
+                        className="rounded bg-green px-2 py-1 text-xs font-medium text-white hover:bg-green/90 transition-colors inline-flex items-center gap-1"
                       >
                         Open
                       </a>

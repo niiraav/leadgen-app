@@ -16,6 +16,20 @@ const ACTIVITY_PRIORITY: LeadActivity['type'][] = [
   'created',          // lead saved (lowest meaningful)
 ];
 
+const TYPE_ALIASES: Record<string, LeadActivity['type']> = {
+  email_sent: 'emailed',
+  message_sent: 'whatsapp_sent',
+  email_drafted_sent: 'emailed',
+  lead_updated: 'updated',
+  lead_created: 'created',
+  lead_enriched: 'enriched',
+  status_change: 'status_changed',
+};
+
+function normalizeType(type: string): LeadActivity['type'] {
+  return TYPE_ALIASES[type] ?? (type as LeadActivity['type']);
+}
+
 // These activity types should NEVER surface as lastActivity.
 // They are system noise, not meaningful engagement events.
 const EXCLUDED_ACTIVITY_TYPES = new Set<LeadActivity['type']>([
@@ -78,10 +92,12 @@ export function resolveLastActivity(
 ): ActivityEntry | null {
   if (!activities || activities.length === 0) return null;
 
-  // Filter out excluded types
-  const meaningful = activities.filter(
-    (a) => !EXCLUDED_ACTIVITY_TYPES.has(a.type)
-  );
+  // Normalize legacy type names, then filter out excluded types
+  const meaningful = activities
+    .map((a) => ({ ...a, type: normalizeType(a.type ?? (a as any).activity_type ?? '') }))
+    .filter(
+      (a) => !EXCLUDED_ACTIVITY_TYPES.has(a.type)
+    );
 
   if (meaningful.length === 0) return null;
 

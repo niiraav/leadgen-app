@@ -68,6 +68,10 @@ export interface Lead {
     reviews_fetched_at?: string;
     email_deliverability?: EmailDeliverabilityState;
     lastActivity?: ActivityEntry | null;
+    followUpDate?: string;
+    followUpSource?: string;
+    dealValue?: number;
+    lossReason?: string;
 }
 export interface ReviewSummary {
     owner_name: string | null;

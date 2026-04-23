@@ -14,8 +14,9 @@
     "declarationMap": true,
     "sourceMap": true,
     "paths": {
-      "@leadgen/shared": ["../../packages/shared/src/index.ts"]
-    }
+      "@leadgen/shared": ["../../packages/shared/dist/index.js"],
+      "@leadgen/shared/*": ["../../packages/shared/dist/*"]
+    },
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

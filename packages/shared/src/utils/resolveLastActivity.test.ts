@@ -103,5 +103,31 @@ const r9 = resolveLastActivity([
 console.assert(r9 !== null, 'Expected non-null');
 console.assert(r9!.replyIntent === undefined, `Expected undefined, got "${r9!.replyIntent}"`);
 
+// ── Test: Legacy alias email_sent normalizes to emailed ──────────────────────
+console.log('Test 10: Legacy alias email_sent normalizes to emailed');
+const r10 = resolveLastActivity([
+  makeActivity({ type: 'email_sent' as any, timestamp: '2026-04-19T10:00:00Z' }),
+  makeActivity({ type: 'created', timestamp: '2026-04-18T10:00:00Z' }),
+]);
+console.assert(r10 !== null, 'Expected non-null');
+console.assert(r10!.label === 'Email sent', `Expected "Email sent", got "${r10!.label}"`);
+
+// ── Test: Legacy alias lead_updated normalizes to excluded updated ───────────
+console.log('Test 11: Legacy alias lead_updated normalizes to excluded updated');
+const r11 = resolveLastActivity([
+  makeActivity({ type: 'lead_updated' as any, timestamp: '2026-04-19T10:00:00Z' }),
+  makeActivity({ type: 'emailed', timestamp: '2026-04-18T10:00:00Z' }),
+]);
+console.assert(r11 !== null, 'Expected non-null');
+console.assert(r11!.label === 'Email sent', `Expected "Email sent", got "${r11!.label}"`);
+
+// ── Test: Legacy alias status_change normalizes to status_changed ─────────────
+console.log('Test 12: Legacy alias status_change normalizes to status_changed');
+const r12 = resolveLastActivity([
+  makeActivity({ type: 'status_change' as any, timestamp: '2026-04-19T10:00:00Z', field: 'pipeline_stage' }),
+]);
+console.assert(r12 !== null, 'Expected non-null');
+console.assert(r12!.label === 'Pipeline stage changed', `Expected "Pipeline stage changed", got "${r12!.label}"`);
+
 // ── Summary ─────────────────────────────────────────────────────────────────
 console.log('\nAll resolveLastActivity tests passed ✓');

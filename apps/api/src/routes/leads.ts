@@ -20,6 +20,8 @@ import { incrementLeads, incrementEnrichments, incrementEmailVerifications } fro
 import { mapAndMergeEnrichment, selectPrimaryContact, buildFailedEnrichmentUpdate, buildPartialEnrichmentUpdate, buildNoDataEnrichmentUpdate } from '../lib/enrichment-mapper';
 import { enforceCredits, enforceFeatureGate, EnforcementError } from '../lib/billing/enforce';
 import { enrichContact, contactsPreview, enrichmentMultiple, verifyEmail } from '../services/outscraper';
+import { setFollowUp, daysFromNow } from '../lib/follow-up';
+import { PIPELINE_COLUMNS } from '@leadgen/shared';
 
 const router = new Hono();
 
@@ -54,7 +56,18 @@ const createLeadSchema = z.object({
   do_not_contact: z.boolean().optional(),
 });
 
-const updateLeadSchema = createLeadSchema.partial();
+const updateLeadSchema = createLeadSchema.partial().extend({
+  logEmailSent: z.boolean().optional(),
+  // Phase 2: accept camelCase from shared schema (frontend sends these)
+  engagementStatus: engagementStatusSchema.nullable().optional(),
+  pipelineStage: pipelineStageSchema.nullable().optional(),
+  lifecycleState: lifecycleStateSchema.nullable().optional(),
+  doNotContact: z.boolean().optional(),
+  followUpDate: z.string().datetime().optional().nullable(),
+  followUpSource: z.enum(['column_default', 'reply_received', 'manual']).optional().nullable(),
+  dealValue: z.number().int().min(0).optional().nullable(),
+  lossReason: z.enum(['no_response', 'wrong_timing', 'too_expensive', 'competitor', 'not_a_fit']).optional().nullable(),
+});
 
 // ─── GET /leads - List with cursor pagination ────────────────────────────────
 
@@ -259,25 +272,50 @@ router.patch('/:id', async (c) => {
     if (parsed.data.gmb_reviews_url !== undefined) updateData.gmb_reviews_url = parsed.data.gmb_reviews_url || null;
     // Phase 2: domain-specific status columns
     // Phase 4: dual-write — when a domain column is written, also update legacy status
-    if (parsed.data.engagement_status !== undefined) {
-      updateData.engagement_status = parsed.data.engagement_status;
-      if (parsed.data.status === undefined) updateData.status = parsed.data.engagement_status;
+    if (parsed.data.engagementStatus !== undefined) {
+      updateData.engagement_status = parsed.data.engagementStatus;
+      if (parsed.data.status === undefined) updateData.status = parsed.data.engagementStatus;
     }
-    if (parsed.data.pipeline_stage !== undefined) {
-      updateData.pipeline_stage = parsed.data.pipeline_stage;
-      if (parsed.data.status === undefined) updateData.status = parsed.data.pipeline_stage;
+    if (parsed.data.pipelineStage !== undefined) {
+      updateData.pipeline_stage = parsed.data.pipelineStage;
+      if (parsed.data.status === undefined) updateData.status = parsed.data.pipelineStage;
     }
-    if (parsed.data.lifecycle_state !== undefined) {
-      updateData.lifecycle_state = parsed.data.lifecycle_state;
-      if (parsed.data.status === undefined) updateData.status = parsed.data.lifecycle_state;
+    if (parsed.data.lifecycleState !== undefined) {
+      updateData.lifecycle_state = parsed.data.lifecycleState;
+      if (parsed.data.status === undefined) updateData.status = parsed.data.lifecycleState;
     }
-    if (parsed.data.do_not_contact !== undefined) updateData.do_not_contact = parsed.data.do_not_contact;
+    if (parsed.data.doNotContact !== undefined) updateData.do_not_contact = parsed.data.doNotContact;
 
     await updateLead(userId, id, updateData);
 
+    // ── Follow-up urgency: set/clear based on new column default ──
+    const hasStatusChange =
+      parsed.data.status !== undefined ||
+      parsed.data.engagement_status !== undefined ||
+      parsed.data.pipeline_stage !== undefined ||
+      parsed.data.engagementStatus !== undefined ||
+      parsed.data.pipelineStage !== undefined;
+    if (hasStatusChange) {
+      const newStatus =
+        parsed.data.status ??
+        parsed.data.engagement_status ??
+        parsed.data.pipeline_stage ??
+        parsed.data.engagementStatus ??
+        parsed.data.pipelineStage ??
+        existing.status;
+      const col = PIPELINE_COLUMNS.find(
+        (c) => c.status.includes(newStatus)
+      );
+      if (col && col.defaultFollowUpDays != null) {
+        await setFollowUp(id, daysFromNow(col.defaultFollowUpDays), 'column_default');
+      } else {
+        await setFollowUp(id, null, null);
+      }
+    }
+
     // ── Board position cleanup: remove stale positions when lead changes column ──
     try {
-      const newStatus = parsed.data.status ?? parsed.data.engagement_status ?? parsed.data.pipeline_stage ?? existing.status;
+      const newStatus = parsed.data.status ?? parsed.data.engagement_status ?? parsed.data.pipeline_stage ?? parsed.data.engagementStatus ?? parsed.data.pipelineStage ?? existing.status;
       const ENGAGEMENT = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
       const PIPELINE = ['qualified', 'proposal_sent', 'converted', 'lost'];
       const targetColumnId = ENGAGEMENT.includes(newStatus)
@@ -296,6 +334,25 @@ router.patch('/:id', async (c) => {
       }
     } catch (cleanupErr) {
       console.warn('[Leads PATCH] Board position cleanup error:', cleanupErr);
+    }
+
+    // ── Log email sent (stopgap for mailto copy-paste workflows) ──
+    if (parsed.data.logEmailSent === true) {
+      await createActivity(userId, {
+        lead_id: id,
+        type: 'email_sent',
+        description: 'Email logged as sent (manual)',
+        triggered_by: 'manual_log',
+      });
+      // Advance from 'new' → 'contacted' if still new
+      if ((existing.engagement_status ?? existing.status) === 'new') {
+        await updateLead(userId, id, {
+          status: 'contacted',
+          engagement_status: 'contacted',
+        });
+      }
+      // Set follow-up to contacted default (4 days)
+      await setFollowUp(id, daysFromNow(4), 'manual');
     }
 
     // Log activity — generic update log
@@ -395,6 +452,7 @@ router.post('/batch', async (c) => {
 
     let saved = 0;
     let duplicates = 0;
+    const savedDetails: { place_id: string | null; id: string }[] = [];
 
     for (let i = 0; i < leads.length; i++) {
       const raw = leads[i];
@@ -456,9 +514,11 @@ router.post('/batch', async (c) => {
         throw new Error(`Insert failed: ${insertErr.message || insertErr.code || 'unknown'}`);
       }
 
-      console.log(`[Batch] lead[${i}] INSERTED OK, id:`, (inserted as any)?.id);
+      const insertedId = (inserted as any)?.id;
+      console.log(`[Batch] lead[${i}] INSERTED OK, id:`, insertedId);
       saved++;
       if (data.place_id) existingPids.add(data.place_id);
+      savedDetails.push({ place_id: data.place_id ?? null, id: insertedId });
 
       // Track activity
       try {
@@ -481,7 +541,7 @@ router.post('/batch', async (c) => {
       }
     }
 
-    return c.json({ saved, duplicates, credits_used: saved, total: leads.length });
+    return c.json({ saved, duplicates, credits_used: saved, total: leads.length, savedDetails });
   } catch (error: any) {
     console.error('[Batch] TOP-LEVEL ERROR:', error.message, JSON.stringify(error));
     return c.json({ error: 'Batch create failed', details: error.message || 'Unknown error' }, 500);

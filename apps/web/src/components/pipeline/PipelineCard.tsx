@@ -115,6 +115,12 @@ export function PipelineCard({
     [lead, onSelect, onClick]
   );
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const followUp = lead.followUpDate ? new Date(lead.followUpDate) : null;
+  if (followUp) followUp.setHours(0, 0, 0, 0);
+  const isUrgent = followUp ? followUp <= today : false;
+
   return (
     <motion.div
       ref={setNodeRef}
@@ -155,9 +161,17 @@ export function PipelineCard({
       >
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-semibold text-text truncate">
-              {lead.businessName}
-            </h4>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-text truncate">
+                {lead.businessName}
+              </h4>
+              {isUrgent && (
+                <span
+                  className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0"
+                  title="Follow-up due"
+                />
+              )}
+            </div>
             {lead.engagementStatus && (
               <span
                 className="inline-block mt-1 text-xs font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
@@ -170,7 +184,14 @@ export function PipelineCard({
               </span>
             )}
           </div>
-          <HotScoreBadge score={lead.hotScore} />
+          <div className="flex items-center gap-2">
+            {lead.dealValue != null && (
+              <span className="text-xs font-medium text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                £{lead.dealValue.toLocaleString()}
+              </span>
+            )}
+            <HotScoreBadge score={lead.hotScore} />
+          </div>
         </div>
 
         <p className="text-xs text-text-muted mb-0.5 truncate">

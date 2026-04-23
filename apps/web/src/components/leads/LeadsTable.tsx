@@ -276,12 +276,18 @@ export const LeadsTable = memo(function LeadsTable({
 }: LeadsTableProps) {
   const tooltip = useTooltip();
   const [overflowOpenId, setOverflowOpenId] = useState<string | null>(null);
-  const overflowRef = useRef<HTMLDivElement | null>(null);
+  const overflowTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [overflowPos, setOverflowPos] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
     if (!overflowOpenId) return;
     const handleClick = (e: MouseEvent) => {
-      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const menuEl = document.getElementById("leads-overflow-menu");
+      if (
+        menuEl && !menuEl.contains(target) &&
+        overflowTriggerRef.current && !overflowTriggerRef.current.contains(target)
+      ) {
         setOverflowOpenId(null);
       }
     };
@@ -616,9 +622,24 @@ export const LeadsTable = memo(function LeadsTable({
                           </button>
 
                           {/* Overflow */}
-                          <div className="relative" ref={overflowOpenId === lead.id ? overflowRef : undefined}>
+                          <div className="relative">
                             <button
-                              onClick={() => setOverflowOpenId((prev) => (prev === lead.id ? null : lead.id))}
+                              ref={(el) => {
+                                if (overflowOpenId === lead.id) overflowTriggerRef.current = el;
+                              }}
+                              onClick={() => {
+                                if (overflowOpenId === lead.id) {
+                                  setOverflowOpenId(null);
+                                } else {
+                                  setOverflowOpenId(lead.id);
+                                  requestAnimationFrame(() => {
+                                    if (overflowTriggerRef.current) {
+                                      const rect = overflowTriggerRef.current.getBoundingClientRect();
+                                      setOverflowPos({ top: rect.bottom + 4, left: rect.right - 192 });
+                                    }
+                                  });
+                                }
+                              }}
                               className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
                               onMouseEnter={(e) => tooltip.show("More actions", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
@@ -626,7 +647,11 @@ export const LeadsTable = memo(function LeadsTable({
                               <MoreHorizontal className="w-5 h-5" />
                             </button>
                             {overflowOpenId === lead.id && (
-                              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border/60 bg-surface shadow-lg py-1 z-30">
+                              <div
+                                id="leads-overflow-menu"
+                                style={{ position: "fixed", top: overflowPos.top, left: overflowPos.left, zIndex: 30 }}
+                                className="w-48 rounded-lg border border-border/60 bg-surface shadow-lg py-1"
+                              >
                                 <OverflowItem
                                   icon={<ListPlus className="w-4 h-4" />}
                                   label="Add to sequence"

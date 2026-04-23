@@ -403,7 +403,13 @@ export default function SearchGoogleMaps() {
         }));
 
         const result = await api.leads.batchCreate(leads);
-        const imported = (result as any).imported ?? items.length;
+        const imported = result.savedDetails?.length ?? items.length;
+
+        // Build place_id -> id map so saved rows can show an "Open" link
+        const idMap = new Map<string, string>();
+        for (const s of result.savedDetails ?? []) {
+          if (s.place_id) idMap.set(s.place_id, s.id);
+        }
 
         // Invalidate + mark locally
         queryClient.invalidateQueries({ queryKey: [SEARCH_QUERY_KEY] });
@@ -412,11 +418,16 @@ export default function SearchGoogleMaps() {
           (old: SearchResult[] | undefined) =>
             old?.map((r) => {
               const match = items.find((i) => i.place_id === r.place_id);
-              return match ? { ...r, duplicate: true } : r;
+              if (!match) return r;
+              return {
+                ...r,
+                duplicate: true,
+                existingLeadId: r.place_id ? idMap.get(r.place_id) : undefined,
+              };
             })
         );
 
-        toast.success(`Saved ${imported} lead${imported > 1 ? "s" : ""}`);
+        toast.success(`${imported} leads were saved`);
         setUserLeadsCount((c) => c + imported);
       } catch (err: any) {
         if (err instanceof UpgradeRequiredError) {

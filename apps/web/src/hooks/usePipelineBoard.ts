@@ -40,6 +40,8 @@ export interface PipelineLead {
   status: string;
   engagementStatus: string | null;
   pipelineStage: string | null;
+  followUpDate: string | null;
+  dealValue: number | null;
 }
 
 export interface SelectModifiers {
@@ -61,6 +63,11 @@ export function usePipelineBoard() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const [isMultiDrag, setIsMultiDrag] = useState(false);
+  const [dueTodayFilter, setDueTodayFilter] = useState(false);
+  const [pendingLossMove, setPendingLossMove] = useState<{
+    leadIds: string[];
+    targetColumn: PipelineColumnDef;
+  } | null>(null);
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedCount = selectedIds.size;
@@ -172,6 +179,8 @@ export function usePipelineBoard() {
         status: l.status || "new",
         engagementStatus: l.engagement_status ?? l.engagementStatus ?? null,
         pipelineStage: l.pipeline_stage ?? l.pipelineStage ?? null,
+        followUpDate: l.follow_up_date ?? l.followUpDate ?? null,
+        dealValue: l.deal_value ?? l.dealValue ?? null,
       }));
     },
     staleTime: 30_000,
@@ -222,15 +231,34 @@ export function usePipelineBoard() {
     return map;
   }, [leads, positionMap]);
 
+  // Filtered view for "Due Today" pill
+  const filteredLeadsByColumn = useMemo(() => {
+    if (!dueTodayFilter) return leadsByColumn;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const filtered: Record<string, PipelineLead[]> = {};
+    for (const colId of Object.keys(leadsByColumn)) {
+      filtered[colId] = leadsByColumn[colId].filter((lead) => {
+        if (!lead.followUpDate) return false;
+        const d = new Date(lead.followUpDate);
+        d.setHours(0, 0, 0, 0);
+        return d <= today;
+      });
+    }
+    return filtered;
+  }, [leadsByColumn, dueTodayFilter]);
+
   // ── Single lead move mutation ─────────────────────────────────
 
   const moveMutation = useMutation({
     mutationFn: async ({
       leadId,
       targetColumn,
+      lossReason,
     }: {
       leadId: string;
       targetColumn: PipelineColumnDef;
+      lossReason?: string | null;
     }) => {
       const opposingField = getOpposingField(targetColumn.id);
       const patch: Record<string, unknown> = {
@@ -238,6 +266,9 @@ export function usePipelineBoard() {
         [targetColumn.field]: targetColumn.value,
         [opposingField]: null,
       };
+      if (lossReason !== undefined) {
+        patch.loss_reason = lossReason;
+      }
       await api.leads.update(leadId, patch);
     },
     onMutate: async ({ leadId, targetColumn }) => {
@@ -248,6 +279,7 @@ export function usePipelineBoard() {
       ]);
 
       const opposingField = getOpposingField(targetColumn.id);
+      const lead = leads.find((l) => l.id === leadId);
 
       queryClient.setQueryData<PipelineLead[]>(
         ["leads", { view: "pipeline" }],
@@ -297,9 +329,11 @@ export function usePipelineBoard() {
     mutationFn: async ({
       leadIds,
       targetColumn,
+      lossReason,
     }: {
       leadIds: string[];
       targetColumn: PipelineColumnDef;
+      lossReason?: string | null;
     }) => {
       const opposingField = getOpposingField(targetColumn.id);
       const patch: Record<string, unknown> = {
@@ -307,6 +341,9 @@ export function usePipelineBoard() {
         [targetColumn.field]: targetColumn.value,
         [opposingField]: null,
       };
+      if (lossReason !== undefined) {
+        patch.loss_reason = lossReason;
+      }
       // Parallel updates — backend handles each independently
       await Promise.all(leadIds.map((id) => api.leads.update(id, patch)));
     },
@@ -480,6 +517,16 @@ export function usePipelineBoard() {
       if (targetColumn) {
         if (activeCol === overId) return; // same column — no-op
 
+        // Intercept drops to the Lost column for loss-reason modal
+        if (targetColumn.id === 'lost') {
+          if (selectedIds.has(activeId) && selectedCount > 1) {
+            setPendingLossMove({ leadIds: Array.from(selectedIds), targetColumn });
+          } else {
+            setPendingLossMove({ leadIds: [activeId], targetColumn });
+          }
+          return;
+        }
+
         // Multi-drag: move all selected cards to target column
         if (selectedIds.has(activeId) && selectedCount > 1) {
           const idsToMove = Array.from(selectedIds);
@@ -538,11 +585,30 @@ export function usePipelineBoard() {
     }),
   };
 
+  const confirmLossMove = useCallback(
+    (reason: string | null) => {
+      if (!pendingLossMove) return;
+      const { leadIds, targetColumn } = pendingLossMove;
+      if (leadIds.length === 1) {
+        moveMutation.mutate({ leadId: leadIds[0], targetColumn, lossReason: reason });
+      } else {
+        bulkMoveMutation.mutate({ leadIds, targetColumn, lossReason: reason });
+      }
+      setPendingLossMove(null);
+    },
+    [pendingLossMove, moveMutation, bulkMoveMutation]
+  );
+
+  const cancelLossMove = useCallback(() => {
+    setPendingLossMove(null);
+  }, []);
+
   const isLoading = leadsLoading;
 
   return {
     leads,
-    leadsByColumn,
+    leadsByColumn: filteredLeadsByColumn,
+    rawLeadsByColumn: leadsByColumn,
     isLoading,
     sensors,
     activeLeadId,
@@ -561,5 +627,13 @@ export function usePipelineBoard() {
     clearSelection,
     // Bulk
     bulkMoveMutation,
+    // Filter
+    dueTodayFilter,
+    setDueTodayFilter,
+    // Loss reason modal
+    pendingLossMove,
+    setPendingLossMove,
+    confirmLossMove,
+    cancelLossMove,
   };
 }

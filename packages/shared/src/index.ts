@@ -6,3 +6,4 @@ export * from './constants/scoreThresholds';
 export * from './constants/pipeline';
 export * from './utils/emailDeliverability';
 export * from './utils/resolveLastActivity';
+export * from './utils/followUp';

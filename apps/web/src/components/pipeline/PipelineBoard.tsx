@@ -4,6 +4,7 @@ import { PipelineColumn } from "./PipelineColumn";
 import { PipelineCardOverlay } from "./PipelineCard";
 import { SelectionToolbar } from "./SelectionToolbar";
 import { LeadQuickDrawer } from "./LeadQuickDrawer";
+import { LossReasonModal } from "./LossReasonModal";
 import { usePipelineBoard } from "@/hooks/usePipelineBoard";
 import { PIPELINE_COLUMNS } from "@leadgen/shared";
 import { motion } from "framer-motion";
@@ -35,6 +36,14 @@ export function PipelineBoard() {
     selectLead,
     selectAllInColumn,
     clearSelection,
+    // Filter
+    dueTodayFilter,
+    setDueTodayFilter,
+    // Loss reason modal
+    pendingLossMove,
+    setPendingLossMove,
+    confirmLossMove,
+    cancelLossMove,
   } = usePipelineBoard();
 
   const [focusedLeadId, setFocusedLeadId] = useState<string | null>(null);
@@ -86,6 +95,11 @@ export function PipelineBoard() {
   const handleToolbarMove = (columnId: string) => {
     const colDef = PIPELINE_COLUMNS.find((c) => c.id === columnId);
     if (!colDef || selectedCount === 0) return;
+    if (colDef.id === 'lost') {
+      const idsToMove = Array.from(selectedIds);
+      setPendingLossMove({ leadIds: idsToMove, targetColumn: colDef });
+      return;
+    }
     const idsToMove = Array.from(selectedIds);
     bulkMoveMutation.mutate({ leadIds: idsToMove, targetColumn: colDef });
   };
@@ -179,7 +193,11 @@ export function PipelineBoard() {
         if (prevColIdx >= 0) {
           const targetCol = PIPELINE_COLUMNS[prevColIdx];
           if (focusedLeadId) {
-            moveMutation.mutate({ leadId: focusedLeadId, targetColumn: targetCol });
+            if (targetCol.id === 'lost') {
+              setPendingLossMove({ leadIds: [focusedLeadId], targetColumn: targetCol });
+            } else {
+              moveMutation.mutate({ leadId: focusedLeadId, targetColumn: targetCol });
+            }
             // After move, try to focus the same lead in its new column
             setTimeout(() => focusCard(focusedLeadId), 150);
           }
@@ -194,7 +212,11 @@ export function PipelineBoard() {
         if (nextColIdx < PIPELINE_COLUMNS.length) {
           const targetCol = PIPELINE_COLUMNS[nextColIdx];
           if (focusedLeadId) {
-            moveMutation.mutate({ leadId: focusedLeadId, targetColumn: targetCol });
+            if (targetCol.id === 'lost') {
+              setPendingLossMove({ leadIds: [focusedLeadId], targetColumn: targetCol });
+            } else {
+              moveMutation.mutate({ leadId: focusedLeadId, targetColumn: targetCol });
+            }
             setTimeout(() => focusCard(focusedLeadId), 150);
           }
         }
@@ -266,6 +288,25 @@ export function PipelineBoard() {
 
   return (
     <>
+      {/* Filter bar */}
+      <div className="flex items-center gap-2 mb-4">
+        <button
+          onClick={() => setDueTodayFilter((v) => !v)}
+          className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-colors ${
+            dueTodayFilter
+              ? "bg-red-50 border-red-200 text-red-700"
+              : "bg-surface border-border text-text-muted hover:bg-surface-2"
+          }`}
+        >
+          {dueTodayFilter ? "Due Today · On" : "Due Today"}
+        </button>
+        {dueTodayFilter && (
+          <span className="text-xs text-text-faint">
+            Showing leads with follow-up date ≤ today
+          </span>
+        )}
+      </div>
+
       <div ref={boardRef} className="relative">
         <DndContext
           sensors={sensors}
@@ -329,6 +370,13 @@ export function PipelineBoard() {
       <LeadQuickDrawer
         leadId={drawerLeadId}
         onClose={() => setDrawerLeadId(null)}
+      />
+
+      <LossReasonModal
+        open={!!pendingLossMove}
+        leadCount={pendingLossMove?.leadIds.length ?? 0}
+        onConfirm={confirmLossMove}
+        onCancel={cancelLossMove}
       />
     </>
   );

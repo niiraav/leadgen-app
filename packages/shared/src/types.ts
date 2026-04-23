@@ -103,6 +103,11 @@ export interface Lead {
   ai_bio_generated_at?: string;
   // Sprint 9: Reply tracking token
   reply_token?: string;
+  // Sprint P2: temporal urgency system
+  followUpDate?: string;
+  followUpSource?: string;
+  dealValue?: number;
+  lossReason?: string;
   // Enrichment status tracking
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | 'no_data';
   contact_enrichment_provider?: string;

@@ -3,7 +3,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { api, UpgradeRequiredError } from "@/lib/api";
-import { Search, Download, Plus, UserPlus, X, Mail, MessageSquare, Loader2, Star } from "lucide-react";
+import { Search, Download, Plus, UserPlus, X, Mail, MessageSquare, Loader2, Star, NotebookPen } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { LeadsTable, type LeadsTableRow } from "@/components/leads/LeadsTable";
@@ -491,19 +491,9 @@ export default function LeadsPage() {
             )}
           </div>
         )}
-
-        {!loading && totalCount === 0 && (
-          <div className="card text-center py-12">
-            <UserPlus className="w-10 h-10 text-text-faint mx-auto mb-3" />
-            <p className="text-sm text-text-muted">No leads yet.</p>
-            <Link href="/search/google-maps" className="text-sm text-blue hover:underline mt-1 inline-block">
-              Search Google Maps →
-            </Link>
-          </div>
-        )}
-        </div>
       </div>
 
+      {/* Modals */}
       {/* Modals */}
       {showAddModal && (
         <AddLeadModal onClose={() => setShowAddModal(false)} onAdded={() => { triggerRefetch(); setShowAddModal(false); }} />
@@ -557,6 +547,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
   const [fullLead, setFullLead] = useState<any>(null);
   const [scanning, setScanning] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [logging, setLogging] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -690,6 +681,25 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
           <div className="flex gap-3 pt-2">
             <button onClick={onClose} className="btn btn-ghost text-sm flex-1">
               Close
+            </button>
+            <button
+              disabled={logging}
+              onClick={async () => {
+                setLogging(true);
+                try {
+                  await api.leads.update(lead.id, { logEmailSent: true });
+                  toast.success("Email logged as sent");
+                  onClose();
+                } catch (e: any) {
+                  toast.error(e.message || "Failed to log email");
+                } finally {
+                  setLogging(false);
+                }
+              }}
+              className="btn btn-secondary text-sm flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <NotebookPen className="w-4 h-4" />
+              {logging ? "Logging..." : "Log as sent"}
             </button>
             <a
               href={mailto}

@@ -20,6 +20,20 @@ const ACTIVITY_PRIORITY: string[] = [
   'created',          // lead saved (lowest meaningful)
 ];
 
+const TYPE_ALIASES: Record<string, string> = {
+  email_sent: 'emailed',
+  message_sent: 'whatsapp_sent',
+  email_drafted_sent: 'emailed',
+  lead_updated: 'updated',
+  lead_created: 'created',
+  lead_enriched: 'enriched',
+  status_change: 'status_changed',
+};
+
+function normalizeType(type: string): string {
+  return TYPE_ALIASES[type] ?? type;
+}
+
 const EXCLUDED_ACTIVITY_TYPES: Set<string> = new Set([
   'bio_generated',
   'imported',
@@ -76,9 +90,11 @@ export interface ActivityEntry {
 export function resolveLastActivity(activities: any[]): ActivityEntry | null {
   if (!activities || activities.length === 0) return null;
 
-  const meaningful = activities.filter(
-    (a: any) => !EXCLUDED_ACTIVITY_TYPES.has(a.type)
-  );
+  const meaningful = activities
+    .map((a: any) => ({ ...a, type: normalizeType(a.type ?? a.activity_type ?? '') }))
+    .filter(
+      (a: any) => !EXCLUDED_ACTIVITY_TYPES.has(a.type)
+    );
   if (meaningful.length === 0) return null;
 
   meaningful.sort((a: any, b: any) => {

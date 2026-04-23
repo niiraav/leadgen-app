@@ -9,6 +9,7 @@ import { Toaster } from "sonner";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { useUIStore } from "@/stores/ui";
 import type { AppProps } from "next/app";
 
 const queryClient = new QueryClient({
@@ -52,6 +53,14 @@ export default function App({ Component, pageProps }: AppProps) {
       else if (_event === 'SIGNED_OUT' || _event === 'USER_DELETED') setUserEmail(null);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Hydrate theme from localStorage on first mount
+  useEffect(() => {
+    const stored = typeof window !== "undefined" ? localStorage.getItem("leadgen-theme") : null;
+    if (stored === "dark" || stored === "light") {
+      useUIStore.getState().setTheme(stored);
+    }
   }, []);
 
   if (isAuthPage) {

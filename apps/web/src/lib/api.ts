@@ -88,6 +88,11 @@ export interface BackendLead {
   pipeline_stage?: string | null;
   lifecycle_state?: string | null;
   do_not_contact?: boolean | null;
+  // Sprint P2: temporal urgency system
+  follow_up_date?: string | null;
+  follow_up_source?: string | null;
+  deal_value?: number | null;
+  loss_reason?: string | null;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
@@ -168,6 +173,11 @@ export interface BackendLeadDetail {
   pipeline_stage?: string | null;
   lifecycle_state?: string | null;
   do_not_contact?: boolean | null;
+  // Sprint P2: temporal urgency system
+  follow_up_date?: string | null;
+  follow_up_source?: string | null;
+  deal_value?: number | null;
+  loss_reason?: string | null;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
@@ -284,6 +294,11 @@ export function mapBackendLead(raw: BackendLead): Lead {
     pipelineStage: (raw as any).pipeline_stage ?? undefined,
     lifecycleState: (raw as any).lifecycle_state ?? undefined,
     doNotContact: (raw as any).do_not_contact ?? false,
+    // Sprint P2: temporal urgency system
+    followUpDate: (raw as any).follow_up_date ?? undefined,
+    followUpSource: (raw as any).follow_up_source ?? undefined,
+    dealValue: (raw as any).deal_value ?? undefined,
+    lossReason: (raw as any).loss_reason ?? undefined,
     // Last activity (Sprint 3 — resolved server-side)
     lastActivity: (raw as any).lastActivity
       ? {
@@ -448,7 +463,7 @@ export const api = {
       }).then(mapBackendLead),
 
     batchCreate: (leads: Record<string, unknown>[]) =>
-      request<{ imported: number }>("/leads/batch", {
+      request<{ imported: number; savedDetails?: { place_id: string | null; id: string }[] }>("/leads/batch", {
         method: "POST",
         body: JSON.stringify({ leads }),
       }),
