@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
 import { PipelineColumn } from "./PipelineColumn";
 import { PipelineCardOverlay } from "./PipelineCard";
@@ -49,6 +49,18 @@ export function PipelineBoard() {
   const [focusedLeadId, setFocusedLeadId] = useState<string | null>(null);
   const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+
+  // Count leads with follow-up due today or overdue
+  const dueTodayCount = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return leads.filter((lead) => {
+      if (!lead.followUpDate) return false;
+      const d = new Date(lead.followUpDate);
+      d.setHours(0, 0, 0, 0);
+      return d <= today;
+    }).length;
+  }, [leads]);
 
   const activeLead = activeLeadId
     ? leads.find((l) => l.id === activeLeadId)
@@ -299,6 +311,11 @@ export function PipelineBoard() {
           }`}
         >
           {dueTodayFilter ? "Due Today · On" : "Due Today"}
+          {dueTodayCount > 0 && (
+            <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-xs font-bold bg-red-500 text-white rounded-full">
+              {dueTodayCount}
+            </span>
+          )}
         </button>
         {dueTodayFilter && (
           <span className="text-xs text-text-faint">

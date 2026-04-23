@@ -345,7 +345,7 @@ router.patch('/:id', async (c) => {
     if (parsed.data.logEmailSent === true) {
       await createActivity(userId, {
         lead_id: id,
-        type: 'email_sent',
+        type: 'emailed',
         description: 'Email logged as sent (manual)',
         triggered_by: 'manual_log',
       });

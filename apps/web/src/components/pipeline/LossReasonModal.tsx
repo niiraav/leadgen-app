@@ -63,13 +63,13 @@ export function LossReasonModal({
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="secondary" onClick={() => onConfirm("other")}>
+          <Button variant="secondary" onClick={() => onConfirm(null)}>
             Skip
           </Button>
           <Button
-            onClick={() => onConfirm(selected ?? "other")}
+            onClick={() => onConfirm(selected ?? null)}
           >
-            Confirm
+            Save
           </Button>
         </div>
       </div>
