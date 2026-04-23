@@ -18,6 +18,13 @@ interface PipelineColumnProps {
   onStatusChange: (leadId: string, newStatus: string) => void;
   recentlyMovedIds?: Set<string>;
   onLeadClick?: (lead: PipelineLead) => void;
+  selectedIds?: Set<string>;
+  onSelect?: (
+    leadId: string,
+    modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }
+  ) => void;
+  onSelectAll?: () => void;
+  isMultiDragActive?: boolean;
 }
 
 export function PipelineColumn({
@@ -27,11 +34,18 @@ export function PipelineColumn({
   onStatusChange,
   recentlyMovedIds,
   onLeadClick,
+  selectedIds,
+  onSelect,
+  onSelectAll,
+  isMultiDragActive,
 }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
     data: { type: "Column", columnId: column.id },
   });
+
+  const selectedCountInColumn = leads.filter((l) => selectedIds?.has(l.id)).length;
+  const allSelected = leads.length > 0 && selectedCountInColumn === leads.length;
 
   return (
     <div className="min-w-[300px] max-w-[300px] flex-shrink-0 flex flex-col">
@@ -48,10 +62,42 @@ export function PipelineColumn({
           <span className="text-xs text-text-faint bg-surface-2 px-2 py-0.5 rounded-full">
             {leads.length}
           </span>
+          {selectedCountInColumn > 0 && (
+            <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+              {selectedCountInColumn}
+            </span>
+          )}
         </div>
-        <button className="rounded-full p-1 text-text-faint hover:text-text hover:bg-surface-2 transition-colors">
-          <Plus className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {leads.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectAll?.();
+              }}
+              className={`rounded p-1 transition-colors ${
+                allSelected
+                  ? "text-primary bg-primary/10"
+                  : "text-text-faint hover:text-text hover:bg-surface-2"
+              }`}
+              title={allSelected ? "Deselect all" : "Select all"}
+            >
+              <svg
+                className="w-4 h-4"
+                fill={allSelected ? "currentColor" : "none"}
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                {allSelected && <path d="M7 12l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />}
+              </svg>
+            </button>
+          )}
+          <button className="rounded-full p-1 text-text-faint hover:text-text hover:bg-surface-2 transition-colors">
+            <Plus className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Droppable Area */}
@@ -76,6 +122,9 @@ export function PipelineColumn({
                   statusOptions={statusOptions}
                   isNew={recentlyMovedIds?.has(lead.id)}
                   onClick={onLeadClick}
+                  isSelected={selectedIds?.has(lead.id)}
+                  onSelect={onSelect}
+                  dimmed={isMultiDragActive && selectedIds && !selectedIds.has(lead.id)}
                 />
               ))}
             </AnimatePresence>

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { HotScoreBadge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { PipelineLead } from "@/hooks/usePipelineBoard";
 import type { PipelineColumnDef } from "@leadgen/shared";
 
@@ -34,6 +34,12 @@ interface PipelineCardProps {
   isOverlay?: boolean;
   isNew?: boolean;
   onClick?: (lead: PipelineLead) => void;
+  isSelected?: boolean;
+  onSelect?: (
+    leadId: string,
+    modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }
+  ) => void;
+  dimmed?: boolean;
 }
 
 export function PipelineCard({
@@ -44,6 +50,9 @@ export function PipelineCard({
   isOverlay = false,
   isNew = false,
   onClick,
+  isSelected = false,
+  onSelect,
+  dimmed = false,
 }: PipelineCardProps) {
   const {
     attributes,
@@ -65,7 +74,7 @@ export function PipelineCard({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.4 : 1,
+    opacity: isDragging ? 0.4 : dimmed ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
 
@@ -81,9 +90,27 @@ export function PipelineCard({
 
   const currentStatus = lead.pipelineStage || lead.engagementStatus || lead.status;
 
-  const handleClick = () => {
-    onClick?.(lead);
-  };
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Prevent selection when clicking interactive elements
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "SELECT" ||
+        target.tagName === "OPTION" ||
+        target.closest("a") ||
+        target.closest("button")
+      ) {
+        return;
+      }
+      onSelect?.(lead.id, {
+        shiftKey: e.shiftKey,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+      });
+      onClick?.(lead);
+    },
+    [lead, onSelect, onClick]
+  );
 
   return (
     <motion.div
@@ -100,10 +127,21 @@ export function PipelineCard({
       <Card
         className={`p-4 group cursor-grab active:cursor-grabbing ${
           isDragging ? "shadow-xl ring-2 ring-primary/20" : ""
-        } ${highlight ? "ring-2 ring-primary/40 bg-primary/5 transition-colors duration-300" : ""}`}
+        } ${
+          isSelected
+            ? "ring-2 ring-primary bg-primary/5"
+            : ""
+        } ${
+          highlight
+            ? "ring-2 ring-primary/40 bg-primary/5 transition-colors duration-300"
+            : ""
+        } ${
+          dimmed ? "transition-opacity duration-200" : ""
+        }`}
         {...attributes}
         {...listeners}
         data-sortable-id={lead.id}
+        data-selected={isSelected}
       >
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
@@ -138,6 +176,7 @@ export function PipelineCard({
             value={currentStatus}
             onChange={(e) => onStatusChange(lead.id, e.target.value)}
             onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
             className="w-full h-7 px-2 text-sm font-medium rounded-md bg-surface-2 border border-border text-text-muted focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer uppercase tracking-wider disabled:opacity-50"
           >
             {statusOptions.map((opt) => (
@@ -156,6 +195,7 @@ export function PipelineCard({
             href={`/leads/${lead.id}`}
             className="text-xs text-blue hover:underline"
             onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
             View profile →
           </Link>
@@ -169,16 +209,27 @@ export function PipelineCard({
 export function PipelineCardOverlay({
   lead,
   column,
-}: Omit<PipelineCardProps, "onStatusChange" | "statusOptions" | "isNew" | "onClick">) {
+  selectedCount = 1,
+}: {
+  lead: PipelineLead;
+  column: PipelineColumnDef;
+  selectedCount?: number;
+}) {
   return (
-    <div className="opacity-90 rotate-2 scale-105">
+    <div className="opacity-95 rotate-2 scale-105 relative">
       <PipelineCard
         lead={lead}
         column={column}
         onStatusChange={() => {}}
         statusOptions={[]}
         isOverlay
+        isSelected={selectedCount > 1}
       />
+      {selectedCount > 1 && (
+        <div className="absolute -top-2 -right-2 bg-primary text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg border-2 border-surface">
+          {selectedCount}
+        </div>
+      )}
     </div>
   );
 }
