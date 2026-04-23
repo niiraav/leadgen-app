@@ -116,9 +116,9 @@ export function PipelineCard({
   );
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
   const followUp = lead.followUpDate ? new Date(lead.followUpDate) : null;
-  if (followUp) followUp.setHours(0, 0, 0, 0);
+  if (followUp) followUp.setUTCHours(0, 0, 0, 0);
   const isUrgent = followUp ? followUp <= today : false;
 
   return (
