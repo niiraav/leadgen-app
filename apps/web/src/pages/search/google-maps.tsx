@@ -16,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TargetAreaNudge } from "@/components/nudges/profile-nudges";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
+import { toast } from "sonner";
 import type { SearchResult, SearchFilters, SearchSummary } from "@/components/search/types";
 import type { Lead } from "@leadgen/shared";
 
@@ -37,7 +38,6 @@ export default function SearchGoogleMaps() {
   const [enrichingId, setEnrichingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upgradeError, setUpgradeError] = useState<Error | string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
   // ── Collapse state ───────────────────────────────────────────────────────────
   const [hasSearched, setHasSearched] = useState(false);
@@ -141,11 +141,6 @@ export default function SearchGoogleMaps() {
     }
   }, []);
 
-  const showToast = useCallback((msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  }, []);
-
   // ── Save search handler ────────────────────────────────────────────────────
   const handleSaveSearch = useCallback(
     async (name: string) => {
@@ -154,15 +149,15 @@ export default function SearchGoogleMaps() {
           name,
           filters: filters as Record<string, any>,
         });
-        showToast(`Saved: ${name}`);
+        toast.success(`Saved: ${name}`);
         setShowSaveInput(false);
         setSaveSearchName("");
         setSavedSearchesRefresh((t) => t + 1);
       } catch (err: any) {
-        showToast(err.message || "Failed to save search");
+        toast.error(err.message || "Failed to save search");
       }
     },
-    [filters, showToast]
+    [filters]
   );
 
   // ── Search handler ───────────────────────────────────────────────────────────
@@ -299,7 +294,7 @@ export default function SearchGoogleMaps() {
             )
         );
 
-        showToast(`Saved ${result.name}`);
+        toast.success(`Saved ${result.name}`);
         setUserLeadsCount((c) => c + 1);
 
         // Stay on search page — button will flip to "Saved" via duplicate state
@@ -307,13 +302,13 @@ export default function SearchGoogleMaps() {
         if (err instanceof UpgradeRequiredError) {
           setUpgradeError(err);
         } else {
-          showToast(err.message || "Failed to save");
+          toast.error(err.message || "Failed to save");
         }
       } finally {
         setSavingId(null);
       }
     },
-    [showToast, router, queryClient, filters]
+    [router, queryClient, filters]
   );
 
   /** Save + Enrich in one action, then route to lead page */
@@ -362,7 +357,7 @@ export default function SearchGoogleMaps() {
             )
         );
 
-        showToast(`Saved & enriched ${result.name}`);
+        toast.success(`Saved & enriched ${result.name}`);
         setUserLeadsCount((c) => c + 1);
 
         // Route to lead detail page (enrichment will complete async)
@@ -371,13 +366,13 @@ export default function SearchGoogleMaps() {
         if (err instanceof UpgradeRequiredError) {
           setUpgradeError(err);
         } else {
-          showToast(err.message || "Save & enrich failed");
+          toast.error(err.message || "Save & enrich failed");
         }
       } finally {
         setEnrichingId(null);
       }
     },
-    [showToast, router, queryClient, filters]
+    [router, queryClient, filters]
   );
 
   const handleSaveBatch = useCallback(
@@ -421,19 +416,19 @@ export default function SearchGoogleMaps() {
             })
         );
 
-        showToast(`Saved ${imported} lead${imported > 1 ? "s" : ""}`);
+        toast.success(`Saved ${imported} lead${imported > 1 ? "s" : ""}`);
         setUserLeadsCount((c) => c + imported);
       } catch (err: any) {
         if (err instanceof UpgradeRequiredError) {
           setUpgradeError(err);
         } else {
-          showToast(err.message || "Batch save failed");
+          toast.error(err.message || "Batch save failed");
         }
       } finally {
         setSavingId(null);
       }
     },
-    [showToast, queryClient, filters]
+    [queryClient, filters]
   );
 
   const handleRefineSearch = useCallback(() => {
@@ -460,14 +455,6 @@ export default function SearchGoogleMaps() {
 
   return (
     <div className="-mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm">
-          <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-md">
-            <span className="text-sm text-text flex-1">{toast}</span>
-          </div>
-        </div>
-      )}
 
       {/* Profile nudge */}
       {showNudge("on_search") && (

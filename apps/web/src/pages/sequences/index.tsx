@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Play, Pause, Eye, ArrowRight, Loader2, Trash2 } from "lucide-react";
@@ -46,8 +47,10 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
       await fetch(`/api/sequences/${deleteId}`, { method: "DELETE", credentials: "include" });
       setDeleteId(null);
       await fetchSequences();
+      toast.success("Sequence deleted");
     } catch (err) {
       console.error("Failed to delete sequence:", err);
+      toast.error("Failed to delete sequence");
     }
   };
 
@@ -59,8 +62,10 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
         credentials: "include",
       });
       await fetchSequences();
+      toast.success(action === "pause" ? "Sequence paused" : "Sequence resumed");
     } catch (err) {
       console.error(`Failed to ${action} sequence:`, err);
+      toast.error(`Failed to ${action} sequence`);
     } finally {
       setActionLoading(null);
     }

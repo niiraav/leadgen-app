@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import {
@@ -129,7 +130,6 @@ export default function ReplyDrawer({ isOpen, replyId, onClose }: ReplyDrawerPro
   const [activities, setActivities] = useState<LeadActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [dismissReview, setDismissReview] = useState(false);
 
   const fetchData = useCallback(async (id: string) => {
@@ -165,14 +165,6 @@ export default function ReplyDrawer({ isOpen, replyId, onClose }: ReplyDrawerPro
     }
   }, [isOpen, replyId, fetchData]);
 
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (toast) {
-      const t = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(t);
-    }
-  }, [toast]);
-
   // Close on Escape
   useEffect(() => {
     if (!isOpen) return;
@@ -198,9 +190,9 @@ export default function ReplyDrawer({ isOpen, replyId, onClose }: ReplyDrawerPro
       if (!res.ok) throw new Error("Failed to update intent");
       const updated = await res.json();
       setReply(updated);
-      setToast({ msg: "Intent updated", type: "success" });
+      toast.success("Intent updated");
     } catch (err: any) {
-      setToast({ msg: err.message, type: "error" });
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -218,26 +210,26 @@ export default function ReplyDrawer({ isOpen, replyId, onClose }: ReplyDrawerPro
           headers,
           body: JSON.stringify({ intent: "interested" }),
         });
-        setToast({ msg: "Marked as Interested", type: "success" });
+        toast.success("Marked as Interested");
       } else if (action === "snooze") {
         await fetch(`${API_BASE}/replies/${reply.id}/snooze`, {
           method: "POST",
           headers,
           body: JSON.stringify({ days: 30 }),
         });
-        setToast({ msg: "Snoozed for 30 days", type: "success" });
+        toast.success("Snoozed for 30 days");
       } else if (action === "not_interested") {
         await fetch(`${API_BASE}/replies/${reply.id}/intent`, {
           method: "PATCH",
           headers,
           body: JSON.stringify({ intent: "not_interested" }),
         });
-        setToast({ msg: "Marked as Not Interested", type: "success" });
+        toast.success("Marked as Not Interested");
       }
       // Refresh reply data
       fetchData(reply.id);
     } catch (err: any) {
-      setToast({ msg: err.message, type: "error" });
+      toast.error(err.message);
     } finally {
       setSaving(false);
     }
@@ -306,24 +298,6 @@ export default function ReplyDrawer({ isOpen, replyId, onClose }: ReplyDrawerPro
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* ── Toast ──────────────────────────────────────────────────────────── */}
-        {toast && (
-          <div
-            className={`mx-5 mt-3 px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
-              toast.type === "success"
-                ? "bg-green/10 text-green border border-green/20"
-                : "bg-red/10 text-red border border-red/20"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <Check className="w-3.5 h-3.5" />
-            ) : (
-              <X className="w-3.5 h-3.5" />
-            )}
-            {toast.msg}
-          </div>
-        )}
 
         {/* ── Body ───────────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">

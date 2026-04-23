@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@leadgen/shared": ["./src/lib/shared/index.ts"]
     },
     "baseUrl": "."
   },

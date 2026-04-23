@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 import { withAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
@@ -176,7 +177,6 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -200,23 +200,17 @@ export default function BillingPage() {
 
   useEffect(() => {
     if (router.query.checkout === "success") {
-      setToast("✓ Payment successful! Your plan is active.");
+      toast.success("Payment successful! Your plan is active.");
       // Sync from Stripe first (webhook may not have arrived yet), then refresh
       api.billing.sync().catch(() => {}).finally(() => {
         fetchAll();
         router.replace("/billing");
       });
     } else if (router.query.checkout === "cancelled") {
-      setToast("Checkout cancelled — no changes made.");
+      toast("Checkout cancelled — no changes made.");
       router.replace("/billing");
     }
   }, [router.query]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(id);
-  }, [toast]);
 
   const handleSubscribe = async (planId: string) => {
     setBusy(planId);
@@ -227,7 +221,7 @@ export default function BillingPage() {
       );
       window.location.href = url;
     } catch (err: any) {
-      setToast(err.message || "Checkout failed");
+      toast.error(err.message || "Checkout failed");
       setBusy(null);
     }
   };
@@ -238,7 +232,7 @@ export default function BillingPage() {
       const { url } = await api.billing.portal();
       window.location.href = url;
     } catch (err: any) {
-      setToast(err.message || "Failed to open billing portal");
+      toast.error(err.message || "Failed to open billing portal");
       setBusy(null);
     }
   };
@@ -255,11 +249,11 @@ export default function BillingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        setToast(data.error || "Top-up failed");
+        toast.error(data.error || "Top-up failed");
         setBusy(null);
       }
     } catch {
-      setToast("Top-up failed");
+      toast.error("Top-up failed");
       setBusy(null);
     }
   };
@@ -284,15 +278,6 @@ export default function BillingPage() {
   /* ================================================================ */
   return (
     <div className="max-w-5xl mx-auto pb-20 md:pb-8 space-y-8">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-          <div className="rounded-xl border border-border bg-surface px-4 py-3 shadow-md text-sm text-text">
-            {toast}
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-text flex items-center gap-2">

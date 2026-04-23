@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/auth";
 import { useState, useEffect, useCallback } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { HotScoreBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -123,8 +124,10 @@ export default function PipelinePage() {
           };
         })
       );
+      toast.success("Lead moved");
     } catch (err: any) {
       console.error("[Pipeline] Failed to update status:", err.message);
+      toast.error("Failed to move lead");
     } finally {
       setMovingId(null);
     }

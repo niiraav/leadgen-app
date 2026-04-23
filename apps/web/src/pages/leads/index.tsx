@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/auth";
 import { useState, useCallback, useMemo, useEffect } from "react";
+import { toast } from "sonner";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { api, UpgradeRequiredError } from "@/lib/api";
 import { Search, Download, Plus, UserPlus, X, Mail, MessageSquare, Loader2, Star } from "lucide-react";
@@ -64,7 +65,6 @@ export default function LeadsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [upgradeError, setUpgradeError] = useState<Error | string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [bulkStatusMsg, setBulkStatusMsg] = useState<string | null>(null);
 
   // Modals
   const [composeLead, setComposeLead] = useState<LeadsTableRow | null>(null);
@@ -159,8 +159,9 @@ export default function LeadsPage() {
       try {
         await api.leads.update(leadId, patch);
         triggerRefetch();
+        toast.success("Status updated");
       } catch (e: any) {
-        alert(e.message || "Failed to update status");
+        toast.error(e.message || "Failed to update status");
       }
     },
     [triggerRefetch]
@@ -201,7 +202,7 @@ export default function LeadsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e: any) {
-      alert(e.message || "Export failed");
+      toast.error(e.message || "Export failed");
     }
   }, []);
 
@@ -210,8 +211,9 @@ export default function LeadsPage() {
       try {
         await api.leads.update(leadId, { do_not_contact: !current });
         triggerRefetch();
+        toast.success(current ? "Removed DNC flag" : "Marked Do Not Contact");
       } catch (e: any) {
-        alert(e.message || "Failed to update DNC");
+        toast.error(e.message || "Failed to update DNC");
       }
     },
     [triggerRefetch]
@@ -263,8 +265,13 @@ export default function LeadsPage() {
       const parts: string[] = [];
       if (moved > 0) parts.push(`${moved} lead${moved === 1 ? "" : "s"} updated`);
       if (skipped > 0) parts.push(`${skipped} skipped (wrong domain or error)`);
-      setBulkStatusMsg(parts.join(". ") || "No changes made");
-      setTimeout(() => setBulkStatusMsg(null), 5000);
+      if (moved > 0) {
+        toast.success(parts.join(". "));
+      } else if (skipped > 0) {
+        toast.error(parts.join(". "));
+      } else {
+        toast("No changes made");
+      }
 
       setSelectedIds(new Set());
       triggerRefetch();
@@ -308,8 +315,11 @@ export default function LeadsPage() {
     const parts: string[] = [];
     if (marked > 0) parts.push(`${marked} marked Do Not Contact`);
     if (skipped > 0) parts.push(`${skipped} already DNC`);
-    setBulkStatusMsg(parts.join(". ") || "No changes made");
-    setTimeout(() => setBulkStatusMsg(null), 5000);
+    if (marked > 0) {
+      toast.success(parts.join(". "));
+    } else {
+      toast(parts.join(". ") || "No changes made");
+    }
     setSelectedIds(new Set());
     triggerRefetch();
   }, [selectedLeads, triggerRefetch]);
@@ -408,9 +418,6 @@ export default function LeadsPage() {
             <div className="shrink-0 mb-3 p-3 rounded-xl bg-blue/5 border border-blue/20 flex items-center justify-between gap-3 z-20">
               <span className="text-sm text-text whitespace-nowrap">
                 <strong>{selectedIds.size}</strong> selected
-                {bulkStatusMsg && (
-                  <span className="ml-3 text-xs text-blue">{bulkStatusMsg}</span>
-                )}
               </span>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 <BulkStatusDropdown onApply={handleBulkStatusChange} />

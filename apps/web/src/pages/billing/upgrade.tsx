@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 import { withAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
@@ -90,7 +91,6 @@ export default function BillingUpgradePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -107,12 +107,6 @@ export default function BillingUpgradePage() {
     fetchStatus();
   }, [fetchStatus]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(id);
-  }, [toast]);
-
   const handleSubscribe = async (planId: string) => {
     setBusy(planId);
     try {
@@ -122,22 +116,13 @@ export default function BillingUpgradePage() {
       );
       window.location.href = url;
     } catch (err: any) {
-      setToast(err.message || "Checkout failed");
+      toast.error(err.message || "Checkout failed");
       setBusy(null);
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto pb-20 md:pb-8 space-y-8">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-          <div className="rounded-xl border border-border bg-surface px-4 py-3 shadow-md text-sm text-text">
-            {toast}
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -343,13 +328,13 @@ function Row({
 }) {
   return (
     <tr className="border-b border-border/20 last:border-0">
-      <td className="px-5 py-2.5 text-xs text-text-muted flex items-center gap-1.5">
+      <td className="px-5 py-2.5 text-sm text-text-muted flex items-center gap-1.5">
         {icon}
         {label}
       </td>
-      <td className="text-center px-4 py-2.5 text-xs text-text-faint">{free}</td>
-      <td className="text-center px-4 py-2.5 text-xs text-text">{outreach}</td>
-      <td className="text-center px-4 py-2.5 text-xs text-text font-medium">{growth}</td>
+      <td className="text-center px-4 py-2.5 text-sm text-text-faint">{free}</td>
+      <td className="text-center px-4 py-2.5 text-sm text-text">{outreach}</td>
+      <td className="text-center px-4 py-2.5 text-sm text-text font-medium">{growth}</td>
     </tr>
   );
 }

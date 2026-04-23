@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
+import { toast } from "sonner";
 import { withAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import {
@@ -52,7 +53,6 @@ export default function BillingManagePage() {
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   const fetchStatus = useCallback(async () => {
@@ -71,12 +71,6 @@ export default function BillingManagePage() {
     fetchStatus();
   }, [fetchStatus]);
 
-  useEffect(() => {
-    if (!toast) return;
-    const id = setTimeout(() => setToast(null), 4000);
-    return () => clearTimeout(id);
-  }, [toast]);
-
   const handleCancel = async () => {
     if (!confirmCancel) {
       setConfirmCancel(true);
@@ -85,11 +79,11 @@ export default function BillingManagePage() {
     setBusy("cancel");
     try {
       await api.billing.cancel();
-      setToast("Subscription will cancel at the end of the billing period.");
+      toast.success("Subscription will cancel at the end of the billing period.");
       setConfirmCancel(false);
       await fetchStatus();
     } catch (err: any) {
-      setToast(err.message || "Failed to cancel subscription");
+      toast.error(err.message || "Failed to cancel subscription");
     } finally {
       setBusy(null);
     }
@@ -99,10 +93,10 @@ export default function BillingManagePage() {
     setBusy("reactivate");
     try {
       await api.billing.reactivate();
-      setToast("Subscription reactivated! You're all set.");
+      toast.success("Subscription reactivated! You're all set.");
       await fetchStatus();
     } catch (err: any) {
-      setToast(err.message || "Failed to reactivate subscription");
+      toast.error(err.message || "Failed to reactivate subscription");
     } finally {
       setBusy(null);
     }
@@ -114,7 +108,7 @@ export default function BillingManagePage() {
       const { url } = await api.billing.portal();
       window.location.href = url;
     } catch (err: any) {
-      setToast(err.message || "Failed to open billing portal");
+      toast.error(err.message || "Failed to open billing portal");
       setBusy(null);
     }
   };
@@ -166,15 +160,6 @@ export default function BillingManagePage() {
 
   return (
     <div className="max-w-2xl mx-auto pb-20 md:pb-8 space-y-6">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-          <div className="rounded-xl border border-border bg-surface px-4 py-3 shadow-md text-sm text-text">
-            {toast}
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center gap-3">
         <button

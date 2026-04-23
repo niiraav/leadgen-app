@@ -2,15 +2,24 @@
 
 import { useState, useEffect, useRef } from "react";
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export function useCountUp(
   end: number,
   duration: number = 1000,
   delay: number = 0
 ) {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(prefersReducedMotion() ? end : 0);
   const started = useRef(false);
 
   useEffect(() => {
+    if (prefersReducedMotion()) {
+      setCount(end);
+      return;
+    }
     if (started.current) return;
     started.current = true;
 

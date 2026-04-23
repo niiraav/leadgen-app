@@ -5,6 +5,7 @@ import { TopBar } from "@/components/layout/topbar";
 import { BottomNav } from "@/components/layout/bottom-nav";
 import { UndoProvider } from "@/components/ui/undo-banner";
 import { ProfileProvider } from "@/contexts/profile-context";
+import { Toaster } from "sonner";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
@@ -59,6 +60,14 @@ export default function App({ Component, pageProps }: AppProps) {
         <UndoProvider>
           <ProfileProvider>
             <Component {...pageProps} />
+            <Toaster
+              position="bottom-right"
+              richColors
+              closeButton
+              toastOptions={{
+                className: "bg-surface border-border text-text",
+              }}
+            />
           </ProfileProvider>
         </UndoProvider>
       </QueryClientProvider>
@@ -90,6 +99,14 @@ export default function App({ Component, pageProps }: AppProps) {
               {userEmail && <BottomNav />}
             </div>
           </div>
+          <Toaster
+            position="bottom-right"
+            richColors
+            closeButton
+            toastOptions={{
+              className: "bg-surface border-border text-text",
+            }}
+          />
         </ProfileProvider>
       </UndoProvider>
     </QueryClientProvider>
