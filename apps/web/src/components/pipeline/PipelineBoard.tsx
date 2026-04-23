@@ -53,11 +53,11 @@ export function PipelineBoard() {
   // Count leads with follow-up due today or overdue
   const dueTodayCount = useMemo(() => {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    today.setUTCHours(0, 0, 0, 0);
     return leads.filter((lead) => {
       if (!lead.followUpDate) return false;
       const d = new Date(lead.followUpDate);
-      d.setHours(0, 0, 0, 0);
+      d.setUTCHours(0, 0, 0, 0);
       return d <= today;
     }).length;
   }, [leads]);

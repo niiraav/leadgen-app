@@ -235,13 +235,13 @@ export function usePipelineBoard() {
   const filteredLeadsByColumn = useMemo(() => {
     if (!dueTodayFilter) return leadsByColumn;
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const filtered: Record<string, PipelineLead[]> = {};
-    for (const colId of Object.keys(leadsByColumn)) {
-      filtered[colId] = leadsByColumn[colId].filter((lead) => {
+    today.setUTCHours(0, 0, 0, 0);
+    const filtered: Record<string, typeof leadsByColumn[string]> = {};
+    for (const [colId, leads] of Object.entries(leadsByColumn)) {
+      filtered[colId] = leads.filter((lead) => {
         if (!lead.followUpDate) return false;
         const d = new Date(lead.followUpDate);
-        d.setHours(0, 0, 0, 0);
+        d.setUTCHours(0, 0, 0, 0);
         return d <= today;
       });
     }
