@@ -40,6 +40,8 @@ interface PipelineCardProps {
     modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }
   ) => void;
   dimmed?: boolean;
+  isFocused?: boolean;
+  onFocus?: (leadId: string) => void;
 }
 
 export function PipelineCard({
@@ -53,6 +55,8 @@ export function PipelineCard({
   isSelected = false,
   onSelect,
   dimmed = false,
+  isFocused = false,
+  onFocus,
 }: PipelineCardProps) {
   const {
     attributes,
@@ -92,7 +96,6 @@ export function PipelineCard({
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      // Prevent selection when clicking interactive elements
       const target = e.target as HTMLElement;
       if (
         target.tagName === "SELECT" ||
@@ -123,13 +126,20 @@ export function PipelineCard({
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={isOverlay ? "shadow-2xl rotate-2 scale-105" : ""}
       onClick={handleClick}
+      tabIndex={0}
+      onFocus={() => onFocus?.(lead.id)}
+      data-lead-id={lead.id}
     >
       <Card
-        className={`p-4 group cursor-grab active:cursor-grabbing ${
+        className={`p-4 group cursor-grab active:cursor-grabbing outline-none ${
           isDragging ? "shadow-xl ring-2 ring-primary/20" : ""
         } ${
           isSelected
             ? "ring-2 ring-primary bg-primary/5"
+            : ""
+        } ${
+          isFocused && !isSelected
+            ? "ring-1 ring-primary/40 bg-primary/[0.03]"
             : ""
         } ${
           highlight

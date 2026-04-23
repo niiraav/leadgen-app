@@ -25,6 +25,8 @@ interface PipelineColumnProps {
   ) => void;
   onSelectAll?: () => void;
   isMultiDragActive?: boolean;
+  focusedLeadId?: string | null;
+  onCardFocus?: (leadId: string) => void;
 }
 
 export function PipelineColumn({
@@ -38,6 +40,8 @@ export function PipelineColumn({
   onSelect,
   onSelectAll,
   isMultiDragActive,
+  focusedLeadId,
+  onCardFocus,
 }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -125,6 +129,8 @@ export function PipelineColumn({
                   isSelected={selectedIds?.has(lead.id)}
                   onSelect={onSelect}
                   dimmed={isMultiDragActive && selectedIds && !selectedIds.has(lead.id)}
+                  isFocused={focusedLeadId === lead.id}
+                  onFocus={onCardFocus}
                 />
               ))}
             </AnimatePresence>
