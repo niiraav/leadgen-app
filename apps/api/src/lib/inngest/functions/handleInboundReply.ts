@@ -324,7 +324,7 @@ export const handleInboundReply = inngest.createFunction(
         if (classification.intent === 'not_interested') {
           await setFollowUp(d.leadId, null, null)
         } else {
-          await setFollowUp(d.leadId, daysFromNow(2), 'reply_received')
+          await setFollowUp(d.leadId, daysFromNow(1), 'reply_received')
         }
       } catch (fuErr) {
         console.warn('[handleInboundReply] setFollowUp failed:', fuErr)

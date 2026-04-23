@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const REASONS = [
-  { value: "no_budget", label: "No budget" },
-  { value: "no_decision_power", label: "No decision power" },
-  { value: "went_competitor", label: "Chose a competitor" },
-  { value: "timing", label: "Wrong timing" },
-  { value: "not_interested", label: "Not interested" },
-  { value: "other", label: "Other" },
+  { value: "no_response",       label: "No response" },
+  { value: "wrong_timing",      label: "Wrong timing" },
+  { value: "too_expensive",     label: "Too expensive" },
+  { value: "competitor",        label: "Chose a competitor" },
+  { value: "not_a_fit",         label: "Not a fit" },
+  { value: "other",             label: "Other" },
 ];
 
 export function LossReasonModal({
@@ -29,7 +29,7 @@ export function LossReasonModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
         <h2 className="text-lg font-semibold mb-1">
-          Mark {leadCount} {leadCount === 1 ? "Lead" : "Leads"} as Lost
+          Why was this lead lost?
         </h2>
         <p className="text-sm text-gray-500 mb-4">
           Select a loss reason or skip to continue.
@@ -63,12 +63,11 @@ export function LossReasonModal({
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="secondary" onClick={() => onConfirm(null)}>
+          <Button variant="secondary" onClick={() => onConfirm("other")}>
             Skip
           </Button>
           <Button
-            onClick={() => selected && onConfirm(selected)}
-            disabled={!selected}
+            onClick={() => onConfirm(selected ?? "other")}
           >
             Confirm
           </Button>

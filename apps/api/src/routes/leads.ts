@@ -66,7 +66,7 @@ const updateLeadSchema = createLeadSchema.partial().extend({
   followUpDate: z.string().datetime().optional().nullable(),
   followUpSource: z.enum(['column_default', 'reply_received', 'manual']).optional().nullable(),
   dealValue: z.number().int().min(0).optional().nullable(),
-  lossReason: z.enum(['no_response', 'wrong_timing', 'too_expensive', 'competitor', 'not_a_fit']).optional().nullable(),
+  lossReason: z.enum(['no_response', 'wrong_timing', 'too_expensive', 'competitor', 'not_a_fit', 'other']).optional().nullable(),
 });
 
 // ─── GET /leads - List with cursor pagination ────────────────────────────────
@@ -271,6 +271,11 @@ router.patch('/:id', async (c) => {
     if (parsed.data.gmb_url !== undefined) updateData.gmb_url = parsed.data.gmb_url || null;
     if (parsed.data.gmb_reviews_url !== undefined) updateData.gmb_reviews_url = parsed.data.gmb_reviews_url || null;
     // Phase 2: domain-specific status columns
+    // Phase 4: temporal urgency fields
+    if (parsed.data.dealValue !== undefined) updateData.deal_value = parsed.data.dealValue;
+    if (parsed.data.followUpDate !== undefined) updateData.follow_up_date = parsed.data.followUpDate;
+    if (parsed.data.followUpSource !== undefined) updateData.follow_up_source = parsed.data.followUpSource;
+    if (parsed.data.lossReason !== undefined) updateData.loss_reason = parsed.data.lossReason;
     // Phase 4: dual-write — when a domain column is written, also update legacy status
     if (parsed.data.engagementStatus !== undefined) {
       updateData.engagement_status = parsed.data.engagementStatus;
@@ -351,8 +356,10 @@ router.patch('/:id', async (c) => {
           engagement_status: 'contacted',
         });
       }
-      // Set follow-up to contacted default (4 days)
-      await setFollowUp(id, daysFromNow(4), 'manual');
+      // Set follow-up to contacted column default (3 days)
+      const contactedCol = PIPELINE_COLUMNS.find((c) => c.id === 'contacted');
+      const contactedDays = contactedCol?.defaultFollowUpDays ?? 3;
+      await setFollowUp(id, daysFromNow(contactedDays), 'manual');
     }
 
     // Log activity — generic update log

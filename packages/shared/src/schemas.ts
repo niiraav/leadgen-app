@@ -55,6 +55,7 @@ export const lossReasonSchema = z.enum([
   'too_expensive',
   'competitor',
   'not_a_fit',
+  'other',
 ]);
 export type LossReason = z.infer<typeof lossReasonSchema>;
 
