@@ -26,7 +26,8 @@
     "pg": "^8.20.0",
     "socket.io": "^4.8.3",
     "uuid": "^10.0.0",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "@leadgen/shared": "^0.1.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.0",
