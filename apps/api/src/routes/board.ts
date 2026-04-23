@@ -38,8 +38,8 @@ router.get('/positions', async (c) => {
 
     return c.json({ positions });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[Board GET /positions] Error:', message);
+    const message = error instanceof Error ? error.message : JSON.stringify(error);
+    console.error('[Board GET /positions] Error:', message, error);
     return c.json({ error: 'Failed to fetch board positions', details: message }, 500);
   }
 });
