@@ -494,6 +494,18 @@ export const api = {
       request<BackendActivityResponse>(`/pipeline/${id}/activity`),
   },
 
+  // ── Board (persistent card ordering) ──
+  board: {
+    getPositions: () =>
+      request<{ positions: Record<string, { lead_id: string; position: number }[]> }>("/board/positions"),
+
+    reorder: (leadId: string, columnId: string, prevLeadId?: string | null, nextLeadId?: string | null) =>
+      request<{ success: boolean; position: number }>("/board/reorder", {
+        method: "POST",
+        body: JSON.stringify({ lead_id: leadId, column_id: columnId, prev_lead_id: prevLeadId ?? null, next_lead_id: nextLeadId ?? null }),
+      }),
+  },
+
   // ── Sequences ──
   sequences: {
     list: () => request<Sequence[]>("/sequences"),

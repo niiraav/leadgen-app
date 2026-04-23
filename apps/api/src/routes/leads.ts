@@ -275,6 +275,29 @@ router.patch('/:id', async (c) => {
 
     await updateLead(userId, id, updateData);
 
+    // ── Board position cleanup: remove stale positions when lead changes column ──
+    try {
+      const newStatus = parsed.data.status ?? parsed.data.engagement_status ?? parsed.data.pipeline_stage ?? existing.status;
+      const ENGAGEMENT = ['new', 'contacted', 'replied', 'interested', 'not_interested', 'out_of_office'];
+      const PIPELINE = ['qualified', 'proposal_sent', 'converted', 'lost'];
+      const targetColumnId = ENGAGEMENT.includes(newStatus)
+        ? newStatus
+        : PIPELINE.includes(newStatus)
+          ? newStatus
+          : null;
+      if (targetColumnId) {
+        const { error: delErr } = await supabaseAdmin
+          .from('lead_board_positions')
+          .delete()
+          .eq('lead_id', id)
+          .eq('user_id', userId)
+          .neq('column_id', targetColumnId);
+        if (delErr) console.warn('[Leads PATCH] Failed to clean up stale board positions:', delErr.message);
+      }
+    } catch (cleanupErr) {
+      console.warn('[Leads PATCH] Board position cleanup error:', cleanupErr);
+    }
+
     // Log activity — generic update log
     const changedFields = Object.keys(updateData).filter((k) => k !== 'updated_at');
     await createActivity(userId, {

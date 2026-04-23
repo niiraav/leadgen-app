@@ -13,6 +13,25 @@ import {
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+// ─── Lead Board Positions ─────────────────────────────────────────────────────
+
+export const leadBoardPositions = pgTable('lead_board_positions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  leadId: uuid('lead_id').notNull().references(() => leads.id, { onDelete: 'cascade' }),
+  columnId: text('column_id').notNull(),
+  position: real('position').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const leadBoardPositionsRelations = relations(leadBoardPositions, ({ one }) => ({
+  lead: one(leads, {
+    fields: [leadBoardPositions.leadId],
+    references: [leads.id],
+  }),
+}));
+
 // ─── Leads Table ──────────────────────────────────────────────────────────────
 
 export const leads = pgTable('leads', {

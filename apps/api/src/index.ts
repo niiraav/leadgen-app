@@ -111,11 +111,18 @@ import messagePickerRouter from './routes/message-picker';
 import reviewsRouter from './routes/reviews';
 import notificationsRouter from './routes/notifications';
 app.route('/dead-leads', deadLeadsRouter);
-app.route('/leads', aiEmailRouter);
-app.route('/leads', reviewsRouter);
-app.route('/replies', repliesRouter);
+import boardRouter   from './routes/board';
+
+// ─── Mount routers ────────────────────────────────────────────────────────────
+app.route('/leads',     leadsRouter);
+app.route('/pipeline',  pipelineRouter);
+app.route('/board',     boardRouter);
+app.route('/dead-leads', deadLeadsRouter);
+app.route('/leads',     aiEmailRouter);
+app.route('/leads',     reviewsRouter);
+app.route('/replies',   repliesRouter);
 app.route('/message-picker', messagePickerRouter);
-app.route('/notifications', notificationsRouter);
+app.route('/notifications',  notificationsRouter);
 
 // ─── Server startup ──────────────────────────────────────────────────────
 const PORT = parseInt(process.env.PORT || '3001', 10);
