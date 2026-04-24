@@ -24,7 +24,8 @@ COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 
 # Build shared workspace package (required for imports)
-RUN npm run build -w packages/shared
+# --force ensures cache bust if dist is stale; test -f fails build early if tsc doesn't emit
+RUN npm run build -w packages/shared && test -f /app/packages/shared/dist/index.js
 
 WORKDIR /app/apps/api
 
