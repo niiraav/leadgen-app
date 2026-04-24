@@ -15,8 +15,17 @@ const app = new Hono();
 
 // CORS first
 const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+const allowedOrigins = CORS_ORIGIN === '*' ? '*' : CORS_ORIGIN.split(',').map(s => s.trim()).filter(Boolean);
+
 app.use('*', cors({
-  origin: CORS_ORIGIN,
+  origin: (origin, c) => {
+    if (allowedOrigins === '*') return origin || '*';
+    if (!origin) return allowedOrigins[0] || '*';
+    if (allowedOrigins.includes(origin)) return origin;
+    // Allow Vercel preview deploys (niiraavs-projects.vercel.app subdomains)
+    if (origin.endsWith('.vercel.app')) return origin;
+    return allowedOrigins[0] || '*';
+  },
   allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   maxAge: 86400,
