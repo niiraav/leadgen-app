@@ -27,6 +27,7 @@ interface PipelineColumnProps {
   isMultiDragActive?: boolean;
   focusedLeadId?: string | null;
   onCardFocus?: (leadId: string) => void;
+  isDropTarget?: boolean;
 }
 
 export function PipelineColumn({
@@ -42,6 +43,7 @@ export function PipelineColumn({
   isMultiDragActive,
   focusedLeadId,
   onCardFocus,
+  isDropTarget,
 }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -114,7 +116,9 @@ export function PipelineColumn({
       <div
         ref={setNodeRef}
         className={`flex-1 min-h-[200px] rounded-xl transition-colors ${
-          isOver ? "bg-primary/5 ring-2 ring-primary/20 ring-dashed" : ""
+          isOver || isDropTarget
+            ? "bg-primary/5 ring-2 ring-primary/20 ring-dashed"
+            : ""
         }`}
       >
         <SortableContext

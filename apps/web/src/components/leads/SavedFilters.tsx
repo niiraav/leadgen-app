@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { Star, Plus, X, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +32,10 @@ export function SavedFilters({
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [newName, setNewName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Use passed filters (parent manages state)
@@ -44,6 +47,16 @@ export function SavedFilters({
     }
   }, [open]);
 
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 4,
+      left: rect.right - 240, // align right edge (w-60 = 240px)
+      width: 240,
+    });
+  }, [open]);
+
   useEffect(() => {
     if (showSaveInput && inputRef.current) {
       inputRef.current.focus();
@@ -53,18 +66,27 @@ export function SavedFilters({
   useEffect(() => {
     if (!open) return;
     const onClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        containerRef.current && !containerRef.current.contains(target) &&
+        buttonRef.current && !buttonRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     };
     const onEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    const handleScrollResize = () => setOpen(false);
     document.addEventListener("mousedown", onClickOutside);
     document.addEventListener("keydown", onEscape);
+    window.addEventListener("scroll", handleScrollResize, true);
+    window.addEventListener("resize", handleScrollResize);
     return () => {
       document.removeEventListener("mousedown", onClickOutside);
       document.removeEventListener("keydown", onEscape);
+      window.removeEventListener("scroll", handleScrollResize, true);
+      window.removeEventListener("resize", handleScrollResize);
     };
   }, [open]);
 
@@ -113,6 +135,7 @@ export function SavedFilters({
   return (
     <div className="relative" ref={containerRef}>
       <button
+        ref={buttonRef}
         onClick={() => setOpen(!open)}
         className={cn(
           "flex items-center gap-1.5 h-9 px-3 rounded-full text-xs border transition-colors",
@@ -125,8 +148,15 @@ export function SavedFilters({
         <Star className={cn("w-3.5 h-3.5", open && "fill-amber")} />
       </button>
 
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-60 bg-surface border border-border rounded-xl shadow-lg z-50 overflow-hidden">
+      {open && dropdownPos && createPortal(
+        <div
+          className="fixed bg-surface border border-border rounded-xl shadow-lg z-[100] overflow-hidden"
+          style={{
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+          }}
+        >
           <div className="p-2 border-b border-border/40">
             <h4 className="text-xs font-semibold text-text-faint uppercase tracking-wider px-2 py-1">
               Saved Filters
@@ -219,7 +249,8 @@ export function SavedFilters({
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

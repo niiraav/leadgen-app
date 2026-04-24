@@ -548,6 +548,16 @@ export function usePipelineBoard() {
         const colDef = getColumnDef(overCol);
         if (!colDef) return;
 
+        // Intercept drops to the Lost column for loss-reason modal
+        if (colDef.id === "lost") {
+          if (selectedIds.has(activeId) && selectedCount > 1) {
+            setPendingLossMove({ leadIds: Array.from(selectedIds), targetColumn: colDef });
+          } else {
+            setPendingLossMove({ leadIds: [activeId], targetColumn: colDef });
+          }
+          return;
+        }
+
         if (selectedIds.has(activeId) && selectedCount > 1) {
           const idsToMove = Array.from(selectedIds);
           bulkMoveMutation.mutate({ leadIds: idsToMove, targetColumn: colDef });

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, memo } from "react";
+import { useState, useRef, useEffect, memo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, AlertTriangle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -49,7 +50,19 @@ export const StatusDropdown = memo(function StatusDropdown({
 }: StatusDropdownProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom + 4,
+      left: rect.left,
+      width: rect.width < 200 ? 200 : rect.width,
+    });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -58,8 +71,15 @@ export const StatusDropdown = memo(function StatusDropdown({
         setOpen(false);
       }
     };
+    const handleScrollResize = () => setOpen(false);
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    window.addEventListener("scroll", handleScrollResize, true);
+    window.addEventListener("resize", handleScrollResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("scroll", handleScrollResize, true);
+      window.removeEventListener("resize", handleScrollResize);
+    };
   }, [open]);
 
   const primary = getPrimaryStatus(lead);
@@ -91,10 +111,85 @@ export const StatusDropdown = memo(function StatusDropdown({
 
   const badgeClass = STATUS_COLORS[primary] ?? "bg-surface-2 text-text-faint";
 
+  const dropdown = open && dropdownPos && (
+    <div
+      className="fixed rounded-lg border border-border/60 bg-surface shadow-lg py-1 z-[100]"
+      style={{
+        top: dropdownPos.top,
+        left: dropdownPos.left,
+        width: 208,
+      }}
+    >
+      {/* Domain header */}
+      <div className="px-3 py-1.5 border-b border-border/40">
+        <p className="text-[10px] font-medium text-text-faint uppercase tracking-wider">
+          {DOMAIN_LABELS[domain]} Status
+        </p>
+      </div>
+
+      {/* Current-domain statuses */}
+      {options
+        .filter((o) => !o.isBridge)
+        .map((option) => (
+          <button
+            key={option.value}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChange(option);
+            }}
+            className={cn(
+              "w-full px-3 py-1.5 text-xs text-left hover:bg-surface-2 transition-colors truncate",
+              option.value === primary && "font-semibold text-blue"
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+
+      {/* Divider before bridge actions */}
+      <div className="border-t border-border/40 my-1" />
+
+      {/* Bridge actions */}
+      {options
+        .filter((o) => o.isBridge)
+        .map((option) => (
+          <button
+            key={option.value}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleChange(option);
+            }}
+            className={cn(
+              "w-full px-3 py-1.5 text-xs text-left hover:bg-surface-2 transition-colors truncate",
+              option.value === "__toggle_dnc__" && isDNC
+                ? "text-red"
+                : "text-text-muted",
+              option.value === "__toggle_dnc__" && !isDNC
+                ? "text-amber"
+                : ""
+            )}
+          >
+            {option.value === "__toggle_dnc__" ? (
+              <span className="inline-flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                {isDNC ? "Remove Do Not Contact" : "Mark Do Not Contact"}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1">
+                <ArrowRight className="w-3 h-3" />
+                {option.label}
+              </span>
+            )}
+          </button>
+        ))}
+    </div>
+  );
+
   return (
     <div ref={ref} className="relative inline-flex items-center gap-1">
       {/* Current status badge — click to open dropdown */}
       <button
+        ref={buttonRef}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(!open);
@@ -111,73 +206,8 @@ export const StatusDropdown = memo(function StatusDropdown({
         <ChevronDown className="w-2.5 h-2.5 opacity-60" />
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-border/60 bg-surface shadow-lg py-1 z-30">
-          {/* Domain header */}
-          <div className="px-3 py-1.5 border-b border-border/40">
-            <p className="text-[10px] font-medium text-text-faint uppercase tracking-wider">
-              {DOMAIN_LABELS[domain]} Status
-            </p>
-          </div>
+      {dropdown && createPortal(dropdown, document.body)}
 
-          {/* Current-domain statuses */}
-          {options
-            .filter((o) => !o.isBridge)
-            .map((option) => (
-              <button
-                key={option.value}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleChange(option);
-                }}
-                className={cn(
-                  "w-full px-3 py-1.5 text-xs text-left hover:bg-surface-2 transition-colors truncate",
-                  option.value === primary && "font-semibold text-blue"
-                )}
-              >
-                {option.label}
-              </button>
-            ))}
-
-          {/* Divider before bridge actions */}
-          <div className="border-t border-border/40 my-1" />
-
-          {/* Bridge actions */}
-          {options
-            .filter((o) => o.isBridge)
-            .map((option) => (
-              <button
-                key={option.value}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleChange(option);
-                }}
-                className={cn(
-                  "w-full px-3 py-1.5 text-xs text-left hover:bg-surface-2 transition-colors truncate",
-                  option.value === "__toggle_dnc__" && isDNC
-                    ? "text-red"
-                    : "text-text-muted",
-                  option.value === "__toggle_dnc__" && !isDNC
-                    ? "text-amber"
-                    : ""
-                )}
-              >
-                {option.value === "__toggle_dnc__" ? (
-                  <span className="inline-flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    {isDNC ? "Remove Do Not Contact" : "Mark Do Not Contact"}
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1">
-                    <ArrowRight className="w-3 h-3" />
-                    {option.label}
-                  </span>
-                )}
-              </button>
-            ))}
-        </div>
-      )}
       {/* Do-not-contact indicator */}
       {isDNC && (
         <span

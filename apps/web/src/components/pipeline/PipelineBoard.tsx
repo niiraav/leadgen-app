@@ -50,6 +50,29 @@ export function PipelineBoard() {
   const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // Track active droppable column for visual drop-zone feedback
+  const [activeDropColumn, setActiveDropColumn] = useState<string | null>(null);
+
+  // Click outside to deselect
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Don't clear if clicking inside a card, button, toolbar, or modal
+      if (
+        target.closest("[data-lead-id]") ||
+        target.closest("[role='toolbar']") ||
+        target.closest("[data-dialog]") ||
+        target.closest("button") ||
+        target.closest("a")
+      ) {
+        return;
+      }
+      if (hasSelection) clearSelection();
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [hasSelection, clearSelection]);
+
   // Count leads with follow-up due today or overdue
   const dueTodayCount = useMemo(() => {
     const today = new Date();
@@ -329,7 +352,35 @@ export function PipelineBoard() {
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
+          onDragOver={(event) => {
+            const { over } = event;
+            if (!over) {
+              setActiveDropColumn(null);
+              return;
+            }
+            // Check if over a column droppable
+            const col = PIPELINE_COLUMNS.find((c) => c.id === over.id);
+            if (col) {
+              setActiveDropColumn(col.id);
+              return;
+            }
+            // Check if over a card — infer its column
+            const overLead = leads.find((l) => l.id === over.id);
+            if (overLead) {
+              const colId =
+                overLead.pipelineStage ||
+                overLead.engagementStatus ||
+                overLead.status;
+              const colDef = PIPELINE_COLUMNS.find((c) => c.id === colId || c.status.includes(colId));
+              setActiveDropColumn(colDef?.id ?? null);
+              return;
+            }
+            setActiveDropColumn(null);
+          }}
+          onDragEnd={(event) => {
+            setActiveDropColumn(null);
+            handleDragEnd(event);
+          }}
           autoScroll={{
             enabled: true,
             layoutShiftCompensation: true,
@@ -361,6 +412,7 @@ export function PipelineBoard() {
                 isMultiDragActive={isMultiDrag}
                 focusedLeadId={focusedLeadId}
                 onCardFocus={setFocusedLeadId}
+                isDropTarget={activeDropColumn === column.id}
               />
             ))}
           </motion.div>
