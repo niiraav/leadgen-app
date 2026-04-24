@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Link,
@@ -95,10 +96,10 @@ function OverflowMenu({
           <MoreHorizontal className="w-4 h-4" />
         )}
       </button>
-      {open && (
+      {open && createPortal(
         <div
           ref={menuRef}
-          style={{ position: "fixed", top: menuPos.top, left: menuPos.left, zIndex: 50 }}
+          style={{ position: "fixed", top: menuPos.top, left: menuPos.left, zIndex: 100 }}
           className="rounded-lg border border-border bg-surface p-1 shadow-md min-w-[180px]"
         >
           <button
@@ -116,7 +117,8 @@ function OverflowMenu({
             )}
             {isEnriching ? "Enriching…" : "Save & Enrich — 2 credits"}
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

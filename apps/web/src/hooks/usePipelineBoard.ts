@@ -42,6 +42,9 @@ export interface PipelineLead {
   pipelineStage: string | null;
   followUpDate: string | null;
   dealValue: number | null;
+  latestReply?: any | null;
+  unreadReplyCount?: number;
+  sequencePaused?: boolean;
 }
 
 export interface SelectModifiers {
@@ -181,6 +184,9 @@ export function usePipelineBoard() {
         pipelineStage: l.pipeline_stage ?? l.pipelineStage ?? null,
         followUpDate: l.follow_up_date ?? l.followUpDate ?? null,
         dealValue: l.deal_value ?? l.dealValue ?? null,
+        latestReply: l.latest_reply ?? l.latestReply ?? null,
+        unreadReplyCount: l.unread_reply_count ?? l.unreadReplyCount ?? 0,
+        sequencePaused: l.sequence_paused ?? l.sequencePaused ?? false,
       }));
     },
     staleTime: 30_000,

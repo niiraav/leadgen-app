@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/router";
 import { DndContext, DragOverlay, closestCorners } from "@dnd-kit/core";
 import { PipelineColumn } from "./PipelineColumn";
 import { PipelineCardOverlay } from "./PipelineCard";
@@ -49,6 +50,7 @@ export function PipelineBoard() {
   const [focusedLeadId, setFocusedLeadId] = useState<string | null>(null);
   const [drawerLeadId, setDrawerLeadId] = useState<string | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Track active droppable column for visual drop-zone feedback
   const [activeDropColumn, setActiveDropColumn] = useState<string | null>(null);
@@ -83,6 +85,10 @@ export function PipelineBoard() {
       d.setUTCHours(0, 0, 0, 0);
       return d <= today;
     }).length;
+  }, [leads]);
+
+  const totalUnreadReplies = useMemo(() => {
+    return leads.reduce((sum, l) => sum + (l.unreadReplyCount ?? 0), 0);
   }, [leads]);
 
   const activeLead = activeLeadId
@@ -340,14 +346,32 @@ export function PipelineBoard() {
             </span>
           )}
         </button>
-        {dueTodayFilter && (
-          <span className="text-xs text-text-faint">
-            Showing leads with follow-up date ≤ today
-          </span>
-        )}
-      </div>
+      {dueTodayFilter && (
+        <span className="text-xs text-text-faint">
+          Showing leads with follow-up date ≤ today
+        </span>
+      )}
+    </div>
 
-      <div ref={boardRef} className="relative">
+    {/* Unread replies sticky banner */}
+    {totalUnreadReplies > 0 && (
+      <div className="sticky top-0 z-30 mb-4 bg-red-50 border border-red-100 rounded-xl px-4 py-2.5 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-sm font-semibold text-red-700">
+            {totalUnreadReplies} unread repl{totalUnreadReplies !== 1 ? "ies" : "y"}
+          </span>
+        </div>
+        <button
+          onClick={() => router.push("/replies")}
+          className="text-xs font-medium text-red-700 hover:text-red-800 underline"
+        >
+          View Replies →
+        </button>
+      </div>
+    )}
+
+    <div ref={boardRef} className="relative">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
@@ -397,24 +421,30 @@ export function PipelineBoard() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            {PIPELINE_COLUMNS.map((column) => (
-              <PipelineColumn
-                key={column.id}
-                column={column}
-                leads={leadsByColumn[column.id] || []}
-                statusOptions={statusOptions}
-                onStatusChange={handleStatusChange}
-                recentlyMovedIds={recentlyMovedIds}
-                onLeadClick={handleLeadClick}
-                selectedIds={selectedIds}
-                onSelect={handleSelect}
-                onSelectAll={() => handleSelectAllInColumn(column.id)}
-                isMultiDragActive={isMultiDrag}
-                focusedLeadId={focusedLeadId}
-                onCardFocus={setFocusedLeadId}
-                isDropTarget={activeDropColumn === column.id}
-              />
-            ))}
+            {PIPELINE_COLUMNS.map((column) => {
+              const colUnread = (leadsByColumn[column.id] || []).reduce(
+                (sum, l) => sum + (l.unreadReplyCount ?? 0), 0
+              );
+              return (
+                <PipelineColumn
+                  key={column.id}
+                  column={column}
+                  leads={leadsByColumn[column.id] || []}
+                  statusOptions={statusOptions}
+                  onStatusChange={handleStatusChange}
+                  recentlyMovedIds={recentlyMovedIds}
+                  onLeadClick={handleLeadClick}
+                  selectedIds={selectedIds}
+                  onSelect={handleSelect}
+                  onSelectAll={() => handleSelectAllInColumn(column.id)}
+                  isMultiDragActive={isMultiDrag}
+                  focusedLeadId={focusedLeadId}
+                  onCardFocus={setFocusedLeadId}
+                  isDropTarget={activeDropColumn === column.id}
+                  unreadCount={colUnread}
+                />
+              );
+            })}
           </motion.div>
 
           <DragOverlay dropAnimation={dropAnimation}>

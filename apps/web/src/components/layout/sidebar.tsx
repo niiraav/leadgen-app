@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useReplyToast } from "@/components/replies/ReplyToastProvider";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -33,6 +34,7 @@ const navItems = [
 export function Sidebar() {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const { unreadCount } = useReplyToast();
 
   // Inform page content of sidebar width via CSS variable
   useEffect(() => {
@@ -95,6 +97,11 @@ export function Sidebar() {
               >
                 {item.label}
               </motion.span>
+              {!collapsed && item.href === "/replies" && unreadCount > 0 && (
+                <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
             </Link>
           );
         })}

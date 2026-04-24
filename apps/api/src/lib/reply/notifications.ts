@@ -43,3 +43,44 @@ export async function emitReplyNotification({
     ctaHref: `/replies/${replyEventId}`,
   })
 }
+
+export async function emitReplyRead({
+  userId,
+  replyEventId,
+  leadId,
+}: {
+  userId: string
+  replyEventId: string
+  leadId: string
+}) {
+  const io = getSocketServer()
+  if (!io) return
+
+  io.to(`user:${userId}`).emit('reply:read', {
+    type: 'reply_read',
+    replyEventId,
+    leadId,
+  })
+}
+
+export async function emitReplyHandled({
+  userId,
+  replyEventId,
+  leadId,
+  action,
+}: {
+  userId: string
+  replyEventId: string
+  leadId: string
+  action: string
+}) {
+  const io = getSocketServer()
+  if (!io) return
+
+  io.to(`user:${userId}`).emit('reply:handled', {
+    type: 'reply_handled',
+    replyEventId,
+    leadId,
+    action,
+  })
+}

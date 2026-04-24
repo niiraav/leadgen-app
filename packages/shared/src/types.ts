@@ -103,6 +103,10 @@ export interface Lead {
   ai_bio_generated_at?: string;
   // Sprint 9: Reply tracking token
   reply_token?: string;
+  // Reply awareness (Phase 4)
+  latestReply?: any | null;
+  unreadReplyCount?: number;
+  sequencePaused?: boolean;
   // Sprint P2: temporal urgency system
   followUpDate?: string;
   followUpSource?: string;

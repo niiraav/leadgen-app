@@ -26,6 +26,24 @@ const engagementLabels: Record<string, string> = {
   out_of_office: "Out of Office",
 };
 
+const replyIntentColors: Record<string, string> = {
+  interested: "#16a34a",
+  question: "#3b82f6",
+  objection: "#d97706",
+  not_now: "#f59e0b",
+  not_interested: "#ef4444",
+  unknown: "#9ca3af",
+};
+
+const replyIntentLabels: Record<string, string> = {
+  interested: "Interested",
+  question: "Question",
+  objection: "Objection",
+  not_now: "Not Now",
+  not_interested: "Not Interested",
+  unknown: "Reply",
+};
+
 interface PipelineCardProps {
   lead: PipelineLead;
   column: PipelineColumnDef;
@@ -121,6 +139,10 @@ export function PipelineCard({
   if (followUp) followUp.setUTCHours(0, 0, 0, 0);
   const isUrgent = followUp ? followUp <= today : false;
 
+  const replyIntent = lead.latestReply?.user_corrected_label || lead.latestReply?.intent_label || 'unknown';
+  const isRepliedUrgent = (lead.unreadReplyCount ?? 0) > 0 && column.id === 'replied';
+  const replyBorderColor = replyIntentColors[replyIntent] || replyIntentColors.unknown;
+
   return (
     <motion.div
       ref={setNodeRef}
@@ -153,7 +175,10 @@ export function PipelineCard({
             : ""
         } ${
           dimmed ? "transition-opacity duration-200" : ""
+        } ${
+          isRepliedUrgent ? "border-l-[3px]" : ""
         }`}
+        style={isRepliedUrgent ? { borderLeftColor: replyBorderColor } : undefined}
         {...attributes}
         {...listeners}
         data-sortable-id={lead.id}
@@ -171,16 +196,38 @@ export function PipelineCard({
                   title="Follow-up due"
                 />
               )}
+              {isRepliedUrgent && (
+                <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-red-50 text-red-600 border border-red-100 shrink-0">
+                  New Reply
+                </span>
+              )}
             </div>
-            {lead.engagementStatus && (
+            {isRepliedUrgent ? (
               <span
                 className="inline-block mt-1 text-xs font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
                 style={{
-                  color: engagementColors[lead.engagementStatus] || "#6b7280",
-                  backgroundColor: `${engagementColors[lead.engagementStatus] || "#6b7280"}18`,
+                  color: replyBorderColor,
+                  backgroundColor: `${replyBorderColor}18`,
                 }}
               >
-                {engagementLabels[lead.engagementStatus] || lead.engagementStatus}
+                {replyIntentLabels[replyIntent] || replyIntent}
+              </span>
+            ) : (
+              lead.engagementStatus && (
+                <span
+                  className="inline-block mt-1 text-xs font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                  style={{
+                    color: engagementColors[lead.engagementStatus] || "#6b7280",
+                    backgroundColor: `${engagementColors[lead.engagementStatus] || "#6b7280"}18`,
+                  }}
+                >
+                  {engagementLabels[lead.engagementStatus] || lead.engagementStatus}
+                </span>
+              )
+            )}
+            {isRepliedUrgent && lead.sequencePaused && (
+              <span className="inline-block mt-1 ml-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">
+                Sequence paused
               </span>
             )}
           </div>

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { api, type Lead } from "@/lib/api";
-import { X, Mail, Phone, MapPin, Globe, Star, Tag, Calendar, ArrowRight, Flame } from "lucide-react";
+import { X, Mail, Phone, MapPin, Globe, Star, Tag, Calendar, ArrowRight, Flame, Frown } from "lucide-react";
 import Link from "next/link";
 import { PIPELINE_COLUMNS, getColumnDef } from "@leadgen/shared";
 
@@ -54,6 +54,17 @@ export function LeadQuickDrawer({ leadId, onClose }: LeadQuickDrawerProps) {
 
   const columnDef = lead ? getColumnDef(lead.status) : undefined;
   const columnTitle = columnDef?.title ?? lead?.status ?? "";
+
+  const LOSS_REASON_LABELS: Record<string, string> = {
+    no_response: "No response",
+    wrong_timing: "Wrong timing",
+    too_expensive: "Too expensive",
+    competitor: "Chose competitor",
+    not_a_fit: "Not a fit",
+    other: "Other",
+  };
+
+  const isLost = lead?.status === "lost" || lead?.pipelineStage === "lost";
 
   return (
     <AnimatePresence>
@@ -121,6 +132,16 @@ export function LeadQuickDrawer({ leadId, onClose }: LeadQuickDrawerProps) {
                       Hot Score {lead.hot_score ?? 0}
                     </span>
                   </div>
+
+                  {/* Loss Reason (only for Lost leads) */}
+                  {isLost && lead?.lossReason && (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-red-500/10 text-red-600">
+                        <Frown className="w-3 h-3" />
+                        Lost: {LOSS_REASON_LABELS[lead.lossReason] ?? lead.lossReason}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Contact */}
                   <div className="space-y-2.5">

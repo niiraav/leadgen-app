@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { leadStatusSchema } from '@leadgen/shared';
-import { getUserId, getLeadById, updateLead, createActivity, getActivitiesForLead } from '../db';
+import { getUserId, getLeadById, updateLead, createActivity, getActivitiesForLead, supabaseAdmin } from '../db';
 
 const router = new Hono();
 
@@ -101,6 +101,38 @@ router.get('/:id/activity', async (c) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Pipeline GET /:id/activity] Error:', message);
     return c.json({ error: 'Failed to fetch activities', details: message }, 500);
+  }
+});
+
+// ─── GET /pipeline/leads ───────────────────────────────────────────────────────
+// Returns all leads for the user with reply metadata via RPC.
+// Replaces the old two-step fetch (leads list + separate reply queries).
+
+router.get('/leads', async (c) => {
+  try {
+    const userId = getUserId(c);
+
+    const { data, error } = await supabaseAdmin
+      .rpc('get_pipeline_leads_with_replies', { p_user_id: userId });
+
+    if (error) {
+      console.error('[Pipeline GET /leads] RPC error:', error);
+      return c.json({ error: 'Failed to fetch pipeline leads', details: error.message }, 500);
+    }
+
+    // Flatten RPC result: merge lead JSONB with computed columns
+    const leads = (data ?? []).map((row: any) => ({
+      ...row.lead,
+      latest_reply: row.latest_reply,
+      unread_reply_count: row.unread_reply_count,
+      sequence_paused: row.sequence_paused,
+    }));
+
+    return c.json({ data: leads });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[Pipeline GET /leads] Error:', message);
+    return c.json({ error: 'Failed to fetch pipeline leads', details: message }, 500);
   }
 });
 

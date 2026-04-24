@@ -93,12 +93,16 @@ router.post('/', async (c) => {
     // Insert the reply event into reply_events
     // Normalize sender email (strip display name if present)
     const senderEmail = (from.match(/<([^>]+)>/) || [null, from])[1];
+    // Extract sender display name from "Name" <email> format
+    const senderNameMatch = from.match(/^"?([^"<]+)"?\s*</);
+    const senderName = senderNameMatch ? senderNameMatch[1].trim() : null;
 
     const replyInsertData: Record<string, unknown> = {
       lead_id: leadId,
       enrolment_id: enrolmentId,
       user_id: lead.user_id,
       sender_email: senderEmail,
+      sender_name: senderName,
       mailgun_message_id: mailgunMessageId || null,
       in_reply_to: null,
       subject,
@@ -106,7 +110,9 @@ router.post('/', async (c) => {
       body_html: strippedHtml || bodyHtml,
       received_at: !isNaN(timestampFloat) ? new Date(timestampFloat * 1000).toISOString() : new Date().toISOString(),
       type: 'reply',
+      reply_status: 'new',
       needs_review: true,
+      original_step_execution_id: stepExec?.id || null,
     };
 
     // Try to extract In-Reply-To header if present

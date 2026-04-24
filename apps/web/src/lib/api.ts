@@ -93,6 +93,10 @@ export interface BackendLead {
   follow_up_source?: string | null;
   deal_value?: number | null;
   loss_reason?: string | null;
+  // Reply awareness (Phase 4)
+  latest_reply?: any | null;
+  unread_reply_count?: number;
+  sequence_paused?: boolean;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
@@ -178,6 +182,10 @@ export interface BackendLeadDetail {
   follow_up_source?: string | null;
   deal_value?: number | null;
   loss_reason?: string | null;
+  // Reply awareness (Phase 4)
+  latest_reply?: any | null;
+  unread_reply_count?: number;
+  sequence_paused?: boolean;
   // AI bio (cached per lead)
   ai_bio?: string | null;
   ai_bio_generated_at?: string | null;
@@ -299,6 +307,10 @@ export function mapBackendLead(raw: BackendLead): Lead {
     followUpSource: (raw as any).follow_up_source ?? undefined,
     dealValue: (raw as any).deal_value ?? undefined,
     lossReason: (raw as any).loss_reason ?? undefined,
+    // Reply awareness (Phase 4)
+    latestReply: (raw as any).latest_reply ?? null,
+    unreadReplyCount: (raw as any).unread_reply_count ?? 0,
+    sequencePaused: (raw as any).sequence_paused ?? false,
     // Last activity (Sprint 3 — resolved server-side)
     lastActivity: (raw as any).lastActivity
       ? {
@@ -494,8 +506,7 @@ export const api = {
   // ── Pipeline ──
   pipeline: {
     list: async () => {
-      // Backend doesn't have a standalone pipeline list — use leads with wider scope
-      const res = await api.leads.list({ limit: 500 });
+      const res = await request<{ data: BackendLead[] }>('/pipeline/leads');
       return res.data.map(mapBackendLead);
     },
 
@@ -775,8 +786,20 @@ export const api = {
 
   // ── Replies ────────────────────────────────────────────────────────────
   replies: {
-    list: (leadId: string) =>
-      request<{ replies: any[] }>(`/leads/${leadId}/replies`),
+    list: (params?: { leadId?: string; intent?: string; needsReview?: boolean; limit?: number; offset?: number }) => {
+      const qs = new URLSearchParams();
+      if (params?.leadId) qs.set('leadId', params.leadId);
+      if (params?.intent) qs.set('intent', params.intent);
+      if (params?.needsReview !== undefined) qs.set('needsReview', String(params.needsReview));
+      if (params?.limit) qs.set('limit', String(params.limit));
+      if (params?.offset !== undefined) qs.set('offset', String(params.offset));
+      return request<{ replies: any[]; total: number }>(`/replies?${qs.toString()}`);
+    },
+    unreadCount: () => request<{ unreadCount: number }>('/replies/unread-count'),
+    get: (id: string) => request<any>(`/replies/${id}`),
+    read: (id: string) => request<{ success: boolean; replyId: string; readAt: string }>(`/replies/${id}/read`, { method: 'PATCH' }),
+    handled: (id: string, action: string) => request<{ success: boolean; replyId: string; action: string; status: string }>(`/replies/${id}/handled`, { method: 'POST', body: JSON.stringify({ action }) }),
+    regenerateDraft: (id: string) => request<{ success: boolean; draft: string }>(`/replies/${id}/regenerate-draft`, { method: 'POST' }),
   },
 
   // ── Utility: map raw search leads to frontend-friendly shape ──────────────

@@ -11,6 +11,7 @@ import { useRouter } from "next/router";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { useUIStore } from "@/stores/ui";
 import type { AppProps } from "next/app";
+import { ReplyToastProvider } from "@/components/replies/ReplyToastProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,19 +67,21 @@ export default function App({ Component, pageProps }: AppProps) {
   if (isAuthPage) {
     return (
       <QueryClientProvider client={queryClient}>
-        <UndoProvider>
-          <ProfileProvider>
-            <Component {...pageProps} />
-            <Toaster
-              position="bottom-right"
-              richColors
-              closeButton
-              toastOptions={{
-                className: "bg-surface border-border text-text",
-              }}
-            />
-          </ProfileProvider>
-        </UndoProvider>
+        <ReplyToastProvider>
+          <UndoProvider>
+            <ProfileProvider>
+              <Component {...pageProps} />
+              <Toaster
+                position="bottom-right"
+                richColors
+                closeButton
+                toastOptions={{
+                  className: "bg-surface border-border text-text",
+                }}
+              />
+            </ProfileProvider>
+          </UndoProvider>
+        </ReplyToastProvider>
       </QueryClientProvider>
     );
   }
@@ -94,30 +97,32 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <UndoProvider>
-        <ProfileProvider>
-          <div className="min-h-screen flex bg-bg">
-            {userEmail && <Sidebar />}
-            <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-[var(--sidebar-width,256px)]" : ""}`}>
-              {userEmail && <TopBar userEmail={userEmail} />}
-              <main className="flex-1 pb-24 md:pb-6 overflow-y-auto">
-                <div className="p-4 md:p-6">
-                  <Component {...pageProps} />
-                </div>
-              </main>
-              {userEmail && <BottomNav />}
+      <ReplyToastProvider>
+        <UndoProvider>
+          <ProfileProvider>
+            <div className="min-h-screen flex bg-bg">
+              {userEmail && <Sidebar />}
+              <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-[var(--sidebar-width,256px)]" : ""}`}>
+                {userEmail && <TopBar userEmail={userEmail} />}
+                <main className="flex-1 pb-24 md:pb-6 overflow-y-auto">
+                  <div className="p-4 md:p-6">
+                    <Component {...pageProps} />
+                  </div>
+                </main>
+                {userEmail && <BottomNav />}
+              </div>
             </div>
-          </div>
-          <Toaster
-            position="bottom-right"
-            richColors
-            closeButton
-            toastOptions={{
-              className: "bg-surface border-border text-text",
-            }}
-          />
-        </ProfileProvider>
-      </UndoProvider>
+            <Toaster
+              position="bottom-right"
+              richColors
+              closeButton
+              toastOptions={{
+                className: "bg-surface border-border text-text",
+              }}
+            />
+          </ProfileProvider>
+        </UndoProvider>
+      </ReplyToastProvider>
     </QueryClientProvider>
   );
 }

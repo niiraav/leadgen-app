@@ -2,6 +2,7 @@ import { withAuth } from "@/lib/auth";
 import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { api } from "@/lib/api";
 import ReplyDrawer from "@/components/replies/ReplyDrawer";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
@@ -30,6 +31,7 @@ interface ReplyEvent {
   hot_score: number;
   received_at: string;
   needs_review: boolean;
+  is_read: boolean;
   lead: {
     business_name: string;
     email: string | null;
@@ -110,12 +112,16 @@ export default function RepliesPage() {
   // Filters
   const [intentFilter, setIntentFilter] = useState("");
   const [needsReviewOnly, setNeedsReviewOnly] = useState(false);
+  const [unreadOnly, setUnreadOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"hot_score" | "recent">("hot_score");
   const [page, setPage] = useState(0);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerReplyId, setDrawerReplyId] = useState<string | null>(null);
+
+  // Local read tracking (optimistic)
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
   const fetchReplies = useCallback(async () => {
     setLoading(true);
@@ -127,6 +133,7 @@ export default function RepliesPage() {
       params.set("offset", String(page * PAGE_SIZE));
       if (intentFilter) params.set("intent", intentFilter);
       if (needsReviewOnly) params.set("needsReview", "true");
+      if (unreadOnly) params.set("unread", "true");
 
       const res = await fetch(`${API_BASE}/replies?${params.toString()}`, { headers });
       if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -148,15 +155,22 @@ export default function RepliesPage() {
     } finally {
       setLoading(false);
     }
-  }, [intentFilter, needsReviewOnly, sortBy, page]);
+  }, [intentFilter, needsReviewOnly, unreadOnly, sortBy, page]);
 
   useEffect(() => { fetchReplies(); }, [fetchReplies]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  const openDrawer = (id: string) => {
+  const openDrawer = async (id: string) => {
     setDrawerReplyId(id);
     setDrawerOpen(true);
+    // Optimistically mark as read
+    setReadIds((prev) => new Set(prev).add(id));
+    try {
+      await api.replies.read(id);
+    } catch (err) {
+      // Ignore — non-critical
+    }
   };
 
   const closeDrawer = () => {
@@ -167,12 +181,14 @@ export default function RepliesPage() {
 
   // Empty state messages
   const emptyMessage = useMemo(() => {
-    if (intentFilter === "" && !needsReviewOnly)
+    if (intentFilter === "" && !needsReviewOnly && !unreadOnly)
       return "No replies yet — your sequences are running";
     if (needsReviewOnly)
       return "No replies need review right now";
+    if (unreadOnly)
+      return "No unread replies";
     return `No ${intentFilter} replies found`;
-  }, [intentFilter, needsReviewOnly]);
+  }, [intentFilter, needsReviewOnly, unreadOnly]);
 
   return (
     <div className="space-y-4">
@@ -211,17 +227,30 @@ export default function RepliesPage() {
 
         {/* Toggles row */}
         <div className="flex items-center justify-between">
-          <button
-            onClick={() => { setNeedsReviewOnly(!needsReviewOnly); setPage(0); }}
-            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
-              needsReviewOnly
-                ? "bg-amber/10 text-amber border border-amber/20"
-                : "bg-surface-2 text-text-muted hover:bg-surface-2/80"
-            }`}
-          >
-            {needsReviewOnly && <span className="w-1.5 h-1.5 rounded-full bg-amber" />}
-            Needs Review only
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setNeedsReviewOnly(!needsReviewOnly); setPage(0); }}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                needsReviewOnly
+                  ? "bg-amber/10 text-amber border border-amber/20"
+                  : "bg-surface-2 text-text-muted hover:bg-surface-2/80"
+              }`}
+            >
+              {needsReviewOnly && <span className="w-1.5 h-1.5 rounded-full bg-amber" />}
+              Needs Review only
+            </button>
+            <button
+              onClick={() => { setUnreadOnly(!unreadOnly); setPage(0); }}
+              className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                unreadOnly
+                  ? "bg-red/10 text-red border border-red/20"
+                  : "bg-surface-2 text-text-muted hover:bg-surface-2/80"
+              }`}
+            >
+              {unreadOnly && <span className="w-1.5 h-1.5 rounded-full bg-red" />}
+              Unread only
+            </button>
+          </div>
 
           <button
             onClick={() => setSortBy(sortBy === "hot_score" ? "recent" : "hot_score")}
@@ -283,10 +312,12 @@ export default function RepliesPage() {
                     : reply.key_phrase
                   : "—";
 
+                const isUnread = !reply.is_read && !readIds.has(reply.id);
+
                 return (
                   <div
                     key={reply.id}
-                    className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-surface-2/30 transition-colors items-center"
+                    className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-surface-2/30 transition-colors items-center ${isUnread ? "bg-red/5" : ""}`}
                   >
                     {/* Hot score bar */}
                     <div className="col-span-2 flex items-center gap-2">
@@ -300,7 +331,10 @@ export default function RepliesPage() {
                     </div>
 
                     {/* Business */}
-                    <div className="col-span-3 text-sm font-medium text-text truncate">{businessName}</div>
+                    <div className="col-span-3 text-sm font-medium text-text truncate flex items-center gap-1.5">
+                      {businessName}
+                      {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-red shrink-0" title="Unread" />}
+                    </div>
 
                     {/* Intent */}
                     <div className="col-span-1">
@@ -353,11 +387,12 @@ export default function RepliesPage() {
               replies.map((reply) => {
                 const businessName = reply.lead?.business_name || "Unknown";
                 const intent = reply.user_corrected_label || reply.intent_label;
+                const isUnread = !reply.is_read && !readIds.has(reply.id);
 
                 return (
                   <div
                     key={reply.id}
-                    className="p-4 border-b border-border/30 last:border-b-0 flex items-start gap-3"
+                    className={`p-4 border-b border-border/30 last:border-b-0 flex items-start gap-3 ${isUnread ? "bg-red/5" : ""}`}
                   >
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-sm ${intentColor(intent)} border border-current/10`}
@@ -366,7 +401,10 @@ export default function RepliesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-text truncate">{businessName}</span>
+                        <span className="text-sm font-medium text-text truncate flex items-center gap-1.5">
+                          {businessName}
+                          {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-red shrink-0" title="Unread" />}
+                        </span>
                         <span className="text-[10px] font-bold text-text-muted">{reply.hot_score}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">

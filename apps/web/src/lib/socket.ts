@@ -33,10 +33,14 @@ function getSocket(token: string): Socket {
 
 // ─── React hook ─────────────────────────────────────────────────────────────
 
-export function useRealtimeSocket(onReply?: (data: ReplyNotification) => void) {
+export function useRealtimeSocket(opts: {
+  onReply?: (data: ReplyNotification) => void;
+  onRead?: () => void;
+  onHandled?: () => void;
+} = {}) {
   const [connected, setConnected] = useState(false);
-  const callbackRef = useRef(onReply);
-  callbackRef.current = onReply;
+  const callbackRef = useRef(opts);
+  callbackRef.current = opts;
 
   useEffect(() => {
     let cleanup = false;
@@ -50,13 +54,21 @@ export function useRealtimeSocket(onReply?: (data: ReplyNotification) => void) {
       socket.on('connect', () => setConnected(true));
       socket.on('disconnect', () => setConnected(false));
       socket.on('reply:detected', (data: ReplyNotification) => {
-        callbackRef.current?.(data);
+        callbackRef.current.onReply?.(data);
+      });
+      socket.on('reply:read', () => {
+        callbackRef.current.onRead?.();
+      });
+      socket.on('reply:handled', () => {
+        callbackRef.current.onHandled?.();
       });
 
       return () => {
         socket.off('connect');
         socket.off('disconnect');
         socket.off('reply:detected');
+        socket.off('reply:read');
+        socket.off('reply:handled');
       };
     });
 

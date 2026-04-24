@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import {
   Mail, Phone, MapPin, Globe, ExternalLink, Sparkles, Pencil, Check, X,
-  Linkedin, Search, Info, Loader2, Building2, Tag, AlertTriangle,
+  Linkedin, Search, Info, Loader2, Building2, Tag, AlertTriangle, Frown,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { ChannelButtons } from "./ChannelButtons";
@@ -489,6 +489,22 @@ export default function ContactProfileCard({
               {lead.category && (
                 <InfoRow icon={Tag} label="Category">
                   {lead.category}
+                </InfoRow>
+              )}
+
+              {/* Loss Reason — only shown for lost leads */}
+              {(lead.status === "lost" || lead.pipelineStage === "lost") && lead.lossReason && (
+                <InfoRow icon={Frown} label="Lost reason">
+                  <span className="text-red font-medium">
+                    {({
+                      no_response: "No response",
+                      wrong_timing: "Wrong timing",
+                      too_expensive: "Too expensive",
+                      competitor: "Chose competitor",
+                      not_a_fit: "Not a fit",
+                      other: "Other",
+                    } as Record<string, string>)[lead.lossReason] ?? lead.lossReason}
+                  </span>
                 </InfoRow>
               )}
 

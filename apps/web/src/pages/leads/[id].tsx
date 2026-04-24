@@ -143,7 +143,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
 
   const repliesQuery = useQuery({
     queryKey: ["lead-replies", leadId],
-    queryFn: () => api.replies.list(leadId),
+    queryFn: () => api.replies.list({ leadId }),
     enabled: !!leadId,
     staleTime: 30_000,
   });

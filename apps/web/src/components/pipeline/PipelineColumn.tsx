@@ -28,6 +28,7 @@ interface PipelineColumnProps {
   focusedLeadId?: string | null;
   onCardFocus?: (leadId: string) => void;
   isDropTarget?: boolean;
+  unreadCount?: number;
 }
 
 export function PipelineColumn({
@@ -44,6 +45,7 @@ export function PipelineColumn({
   focusedLeadId,
   onCardFocus,
   isDropTarget,
+  unreadCount = 0,
 }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -69,6 +71,11 @@ export function PipelineColumn({
           <span className="text-xs text-text-faint bg-surface-2 px-2 py-0.5 rounded-full">
             {leads.length}
           </span>
+          {unreadCount > 0 && (
+            <span className="text-xs font-bold text-white bg-red-500 px-2 py-0.5 rounded-full">
+              {unreadCount}
+            </span>
+          )}
           {selectedCountInColumn > 0 && (
             <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
               {selectedCountInColumn}

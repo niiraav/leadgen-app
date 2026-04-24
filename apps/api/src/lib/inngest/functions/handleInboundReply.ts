@@ -205,6 +205,7 @@ export const handleInboundReply = inngest.createFunction(
           .update({
             intent_label: null,
             needs_review: false,
+            reply_status: 'new',
             processed_at: new Date().toISOString(),
             processing_duration_ms: Date.now() - startTime,
             inngest_event_id: event.id || null,
@@ -262,6 +263,7 @@ export const handleInboundReply = inngest.createFunction(
           suggested_next_action: classification.suggested_next_action,
           key_phrase: classification.key_phrase,
           needs_review: needsReview,
+          reply_status: 'new',
           hot_score: hotScore,
           processed_at: new Date().toISOString(),
           processing_duration_ms: Date.now() - startTime,
@@ -278,6 +280,7 @@ export const handleInboundReply = inngest.createFunction(
     const leadUpdate = await step.run('update-lead', async () => {
       const leadPatch: Record<string, unknown> = {
         status: 'replied',
+        engagement_status: 'replied',
         hot_score: hotScore,
         last_reply_at: d.receivedAt,
         last_reply_intent: classification.intent,

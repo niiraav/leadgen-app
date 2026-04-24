@@ -1,462 +1,475 @@
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
-import { SCORE_THRESHOLDS } from "@leadgen/shared";
-import { createBrowserSupabaseClient } from "@/lib/supabase";
+import React, { useState, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { useRealtimeSocket, type ReplyNotification } from '@/lib/socket';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   X,
-  Clock,
-  Flame,
-  AlertTriangle,
-  MessageSquare,
-  Sparkles,
+  ArrowLeft,
+  Mail,
+  Reply as ReplyIcon,
+  Copy,
   Check,
-  PauseCircle,
+  Sparkles,
+  ShieldAlert,
+  AlertTriangle,
+  Clock,
+  Send,
+  Bot,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  Archive,
   Ban,
-  Loader2,
-  Edit3,
-} from "lucide-react";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
-// ─── Types ────────────────────────────────────────────────────────────────────────
-
-interface ReplyEvent {
-  id: string;
-  intent_label: string;
-  user_corrected_label: string | null;
-  confidence: number | null;
-  body_plain: string | null;
-  key_phrase: string | null;
-  suggested_next_action: string | null;
-  suggested_reply_draft: string | null;
-  hot_score: number;
-  received_at: string;
-  needs_review: boolean;
-  lead_id: string;
-  lead: {
-    business_name: string;
-    email: string | null;
-    city: string | null;
-    suggested_reply_draft?: string | null;
-  } | null;
-}
-
-interface LeadActivity {
-  id: string;
-  type: string;
-  description: string;
-  created_at: string;
-}
-
-// ─── Helpers ────────────────────────────────────────────────────────────────────────
-
-async function fetchAuthHeaders(): Promise<Record<string, string>> {
-  const supabase = createBrowserSupabaseClient();
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
-
-function intentColor(intent: string) {
-  const map: Record<string, string> = {
-    interested: "bg-green/10 text-green border-green/20",
-    question: "bg-blue/10 text-blue border-blue/20",
-    objection: "bg-amber/10 text-amber border-amber/20",
-    "not_interested": "bg-red/10 text-red border-red/20",
-    "not_now": "bg-purple/10 text-purple border-purple/20",
-    "out_of_office": "bg-cyan/10 text-cyan border-cyan/20",
-  };
-  return map[intent] || "bg-surface-2 text-text-muted border-border";
-}
-
-function intentEmoji(intent: string) {
-  const map: Record<string, string> = {
-    interested: "✉️",
-    question: "❓",
-    objection: "🚧",
-    "not_interested": "👋",
-    "not_now": "⏰",
-    "out_of_office": "🏖️",
-  };
-  return map[intent] || "📩";
-}
-
-function urgencyLabel(score: number) {
-  if (score >= SCORE_THRESHOLDS.GREEN) return { text: "Urgent", cls: "bg-red/10 text-red border-red/20" };
-  if (score >= SCORE_THRESHOLDS.AMBER) return { text: "Warm", cls: "bg-amber/10 text-amber border-amber/20" };
-  return { text: "Low", cls: "bg-surface-2 text-text-muted border-border" };
-}
-
-function relativeTime(dateStr: string) {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffM = Math.floor(diffMs / (1000 * 60));
-  if (diffM < 1) return "just now";
-  if (diffM < 60) return `${diffM}m ago`;
-  const diffH = Math.floor(diffM / 60);
-  if (diffH < 24) return `${diffH}h ago`;
-  const diffD = Math.floor(diffH / 24);
-  if (diffD < 7) return `${diffD}d ago`;
-  return date.toLocaleDateString();
-}
-
-function highlightKeyPhrase(text: string, keyPhrase: string | null) {
-  if (!keyPhrase || !text) return text;
-  const idx = text.toLowerCase().indexOf(keyPhrase.toLowerCase());
-  if (idx === -1) return text;
-  const before = text.slice(0, idx);
-  const match = text.slice(idx, idx + keyPhrase.length);
-  const after = text.slice(idx + keyPhrase.length);
-  return (
-    <>
-      {before}
-      <span className="bg-amber/20 text-amber px-0.5 rounded">{match}</span>
-      {after}
-    </>
-  );
-}
-
-// ─── Component ──────────────────────────────────────────────────────────────────────
+  ArrowUpRight,
+} from 'lucide-react';
 
 interface ReplyDrawerProps {
-  isOpen: boolean;
   replyId: string | null;
+  isOpen: boolean;
   onClose: () => void;
 }
 
-export default function ReplyDrawer({ isOpen, replyId, onClose }: ReplyDrawerProps) {
-  const [reply, setReply] = useState<ReplyEvent | null>(null);
-  const [activities, setActivities] = useState<LeadActivity[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [dismissReview, setDismissReview] = useState(false);
+const intentMeta: Record<string, { label: string; colour: string; icon: React.ReactNode }> = {
+  interested: { label: 'Interested', colour: 'bg-green-600 hover:bg-green-700', icon: <Sparkles className="h-3 w-3 mr-1" /> },
+  'not-interested': { label: 'Not Interested', colour: 'bg-red-600 hover:bg-red-700', icon: <ShieldAlert className="h-3 w-3 mr-1" /> },
+  'needs-info': { label: 'Needs Info', colour: 'bg-amber-600 hover:bg-amber-700', icon: <AlertTriangle className="h-3 w-3 mr-1" /> },
+  'out-of-office': { label: 'Out of Office', colour: 'bg-blue-600 hover:bg-blue-700', icon: <Clock className="h-3 w-3 mr-1" /> },
+  'forwarded-to-colleague': { label: 'Forwarded', colour: 'bg-purple-600 hover:bg-purple-700', icon: <Send className="h-3 w-3 mr-1" /> },
+  'no-intent-detected': { label: 'No Intent', colour: 'bg-slate-600 hover:bg-slate-700', icon: <Bot className="h-3 w-3 mr-1" /> },
+};
 
-  const fetchData = useCallback(async (id: string) => {
-    setLoading(true);
-    setDismissReview(false);
-    try {
-      const headers = await fetchAuthHeaders();
+function IntentBadge({ intent }: { intent: string }) {
+  const meta = intentMeta[intent] ?? intentMeta['no-intent-detected'];
+  return (
+    <span className={`inline-flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full ${meta.colour}`}>
+      {meta.icon}
+      {meta.label}
+    </span>
+  );
+}
 
-      const res = await fetch(`${API_BASE}/replies/${id}`, { headers });
-      if (!res.ok) throw new Error(`Failed to fetch reply`);
-      const data = await res.json();
-      setReply(data);
+function UrgentBanner({ score }: { score: number }) {
+  if (score < 85) return null;
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+      <p className="text-sm font-medium text-amber-800">
+        High-priority reply — this lead requires immediate attention.
+      </p>
+    </div>
+  );
+}
 
-      // Fetch lead activities
-      const actRes = await fetch(`${API_BASE}/pipeline/${data.lead_id}/activity`, { headers });
-      if (actRes.ok) {
-        const actData = await actRes.json();
-        setActivities(actData.activities ?? []);
-      }
-    } catch (err: any) {
-      console.error("[ReplyDrawer] Failed:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+function HotScoreBar({ score }: { score: number }) {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-xs font-medium text-muted-foreground">Hot Score</span>
+      <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full bg-orange-500 transition-all duration-500"
+          style={{ width: `${Math.min(score, 100)}%` }}
+        />
+      </div>
+      <span className="text-sm font-semibold tabular-nums">{score}</span>
+    </div>
+  );
+}
+
+export default function ReplyDrawer({ replyId, isOpen, onClose }: ReplyDrawerProps) {
+  const queryClient = useQueryClient();
+  const [composeMode, setComposeMode] = useState(false);
+  const [draftText, setDraftText] = useState('');
+  const [subject, setSubject] = useState('');
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [toastNotification, setToastNotification] = useState<ReplyNotification | null>(null);
+
+  const { data: reply, isLoading } = useQuery<any>({
+    queryKey: ['reply', replyId],
+    queryFn: async () => {
+      if (!replyId) throw new Error('No reply ID');
+      return api.replies.get(replyId);
+    },
+    enabled: isOpen && !!replyId,
+    staleTime: 30_000,
+  });
+
+  const { mutate: markRead } = useMutation({
+    mutationFn: (id: string) => api.replies.read(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['replies'] });
+      queryClient.invalidateQueries({ queryKey: ['replies-unread-count'] });
+    },
+  });
+
+  const { mutate: regenerateDraft } = useMutation({
+    mutationFn: (id: string) => api.replies.regenerateDraft(id),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['reply', replyId] });
+      if (data?.draft) setDraftText(data.draft);
+    },
+  });
 
   useEffect(() => {
     if (isOpen && replyId) {
-      fetchData(replyId);
-    } else {
-      setReply(null);
-      setActivities([]);
+      markRead(replyId);
     }
-  }, [isOpen, replyId, fetchData]);
+  }, [isOpen, replyId, markRead]);
 
-  // Close on Escape
   useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
-
-  // ── Actions ──────────────────────────────────────────────────────────────────
-
-  const handleIntentChange = async (newIntent: string) => {
-    if (!reply) return;
-    setSaving(true);
-    try {
-      const headers = await fetchAuthHeaders();
-      const res = await fetch(`${API_BASE}/replies/${reply.id}/intent`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ intent: newIntent }),
-      });
-      if (!res.ok) throw new Error("Failed to update intent");
-      const updated = await res.json();
-      setReply(updated);
-      toast.success("Intent updated");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setSaving(false);
+    if (reply?.suggested_reply_draft) {
+      setDraftText(reply.suggested_reply_draft);
     }
+    if (reply?.lead?.business_name) {
+      setSubject(`Re: ${reply.lead.business_name}`);
+    }
+    setComposeMode(false);
+    setShowOriginal(false);
+  }, [replyId, reply?.suggested_reply_draft, reply?.lead?.business_name]);
+
+  const handleNewReply = useCallback((payload: ReplyNotification) => {
+    if (replyId && payload.replyEventId !== replyId) {
+      setToastNotification(payload);
+      setTimeout(() => setToastNotification(null), 8000);
+    }
+  }, [replyId]);
+
+  useRealtimeSocket({ onReply: handleNewReply });
+
+  const handleCopy = () => {
+    if (!reply?.lead?.email) return;
+    navigator.clipboard.writeText(reply.lead.email);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleAction = async (action: "interested" | "snooze" | "not_interested") => {
-    if (!reply) return;
-    setSaving(true);
-    try {
-      const headers = await fetchAuthHeaders();
-
-      if (action === "interested") {
-        await fetch(`${API_BASE}/replies/${reply.id}/intent`, {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({ intent: "interested" }),
-        });
-        toast.success("Marked as Interested");
-      } else if (action === "snooze") {
-        await fetch(`${API_BASE}/replies/${reply.id}/snooze`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ days: 30 }),
-        });
-        toast.success("Snoozed for 30 days");
-      } else if (action === "not_interested") {
-        await fetch(`${API_BASE}/replies/${reply.id}/intent`, {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({ intent: "not_interested" }),
-        });
-        toast.success("Marked as Not Interested");
-      }
-      // Refresh reply data
-      fetchData(reply.id);
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setSaving(false);
-    }
+  const handleOpenMail = () => {
+    if (!reply?.lead?.email || !subject || !draftText) return;
+    const mailto = `mailto:${reply.lead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(draftText)}`;
+    window.location.href = mailto;
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────────
+  const handleLogSent = () => {
+    if (!replyId) return;
+    api.replies.handled(replyId, 'replied').then(() => {
+      queryClient.invalidateQueries({ queryKey: ['replies'] });
+      queryClient.invalidateQueries({ queryKey: ['reply', replyId] });
+      setComposeMode(false);
+      onClose();
+    });
+  };
 
-  if (!isOpen || !replyId) return null;
+  const handleAction = (action: 'not_interested' | 'snoozed' | 'archived') => {
+    if (!replyId) return;
+    api.replies.handled(replyId, action).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['replies'] });
+      queryClient.invalidateQueries({ queryKey: ['reply', replyId] });
+      onClose();
+    });
+  };
 
-  const effectiveIntent = reply?.user_corrected_label || reply?.intent_label || "";
-  const urgency = reply ? urgencyLabel(reply.hot_score) : null;
-  const needsReview = reply?.needs_review && reply.confidence != null && reply.confidence < 70;
+  // Compose mode width: 900px, view mode: 640px
+  const drawerWidth = composeMode ? 'sm:w-[900px]' : 'sm:w-[640px]';
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/40 z-40 transition-opacity"
-        onClick={onClose}
-      />
-
-      {/* Drawer panel */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-bg border-l border-border/60 z-50 flex flex-col shadow-2xl overflow-hidden animate-slide-in-right">
-        {/* ── Header ─────────────────────────────────────────────────────────── */}
-        <div className="flex items-start justify-between p-5 border-b border-border/40">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-lg font-semibold text-text truncate">
-              {reply ? reply.lead?.business_name || "Unknown" : "Loading..."}
-            </h2>
-            {reply && (
-              <p className="text-xs text-text-muted mt-0.5">
-                {reply.lead?.email || "No email"} · {reply.lead?.city || ""}
-              </p>
-            )}
-            {reply && (
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${intentColor(effectiveIntent)}`}
-                >
-                  {intentEmoji(effectiveIntent)} {effectiveIntent?.replace("_", " ") || "unknown"}
-                </span>
-                {urgency && (
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${urgency.cls}`}
-                  >
-                    {urgency.text}
-                  </span>
-                )}
-                {reply && (
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-text-muted">
-                    <Flame className="w-3 h-3" /> {reply.hot_score}
-                  </span>
-                )}
-                {reply && (
-                  <span className="inline-flex items-center gap-1 text-xs text-text-faint">
-                    <Clock className="w-3 h-3" /> {relativeTime(reply.received_at)}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-          <button
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/20 z-40"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-surface-2 text-text-muted transition-colors shrink-0"
+          />
+
+          {/* Drawer */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 350, damping: 32 }}
+            className={`fixed right-0 top-0 h-full w-full ${drawerWidth} bg-white border-l border-border shadow-2xl z-50 flex flex-col transition-[width] duration-300 ease-in-out`}
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* ── Body ───────────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {loading ? (
-            <div className="space-y-4">
-              <div className="animate-pulse h-4 w-24 bg-surface-2 rounded" />
-              <div className="animate-pulse h-20 bg-surface-2 rounded-lg" />
-              <div className="animate-pulse h-16 bg-surface-2 rounded-lg" />
-            </div>
-          ) : reply ? (
-            <>
-              {/* Needs Review Banner */}
-              {needsReview && !dismissReview && (
-                <div className="flex items-start gap-2 bg-amber/5 border border-amber/20 rounded-lg px-3 py-2.5">
-                  <AlertTriangle className="w-4 h-4 text-amber shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-amber">Needs Review</p>
-                    <p className="text-[10px] text-text-muted mt-0.5">
-                      AI confidence is {Math.round(reply.confidence || 0)}%. Verify the intent below.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setDismissReview(true)}
-                    className="p-0.5 text-amber/60 hover:text-amber"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Reply Body */}
-              <div>
-                <h4 className="text-xs font-semibold text-text-uppercase text-text-faint uppercase tracking-wider mb-2">
-                  Reply
-                </h4>
-                <div className="bg-surface rounded-lg p-3 text-sm text-text whitespace-pre-wrap leading-relaxed border border-border/40">
-                  {reply.body_plain
-                    ? highlightKeyPhrase(reply.body_plain, reply.key_phrase)
-                    : <span className="text-text-faint italic">No message body</span>}
-                </div>
-                {reply.key_phrase && (
-                  <p className="text-[10px] text-text-faint mt-1.5">
-                    Key phrase: <span className="text-amber italic">"{reply.key_phrase}"</span>
+            {/* Toast Notification */}
+            {toastNotification && (
+              <motion.div
+                initial={{ y: -40, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -40, opacity: 0 }}
+                className="absolute top-4 left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 shadow-lg flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-amber-600" />
+                  <p className="text-sm font-medium text-amber-800">
+                    {toastNotification.title}
                   </p>
-                )}
-              </div>
-
-              {/* AI Suggested Action */}
-              {(reply.suggested_next_action || reply.suggested_reply_draft) && (
-                <div>
-                  <h4 className="text-xs font-semibold text-text-faint uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-blue" />
-                    AI Suggested Action
-                  </h4>
-                  {reply.suggested_next_action && (
-                    <p className="text-xs text-text bg-blue/5 border border-blue/20 rounded-lg px-3 py-2 mb-2">
-                      {reply.suggested_next_action}
+                  {toastNotification.subtitle && (
+                    <p className="text-xs text-amber-600 truncate max-w-[200px]">
+                      {toastNotification.subtitle}
                     </p>
                   )}
-                  {reply.suggested_reply_draft && (
-                    <div className="bg-surface rounded-lg p-3 text-xs text-text-muted leading-relaxed border border-border/40">
-                      <p className="text-[10px] text-text-faint uppercase tracking-wider mb-1">
-                        Suggested Reply
-                      </p>
-                      {reply.suggested_reply_draft}
-                    </div>
-                  )}
                 </div>
-              )}
-
-              {/* Intent Label Editable */}
-              <div>
-                <h4 className="text-xs font-semibold text-text-faint uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Edit3 className="w-3.5 h-3.5" />
-                  Intent Label
-                </h4>
-                <select
-                  value={effectiveIntent}
-                  onChange={(e) => handleIntentChange(e.target.value)}
-                  disabled={saving}
-                  className="w-full bg-surface border border-border/60 rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50"
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-amber-700 hover:text-amber-900"
+                  onClick={() => {
+                    setToastNotification(null);
+                    onClose();
+                  }}
                 >
-                  {["", "interested", "question", "objection", "not_now", "not_interested", "out_of_office"].map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt === "" ? "unknown" : opt.replace("_", " ")}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <ArrowUpRight className="w-4 h-4" />
+                </Button>
+              </motion.div>
+            )}
 
-              {/* Lead Timeline */}
-              <div>
-                <h4 className="text-xs font-semibold text-text-faint uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  Lead Timeline
-                </h4>
-                {activities.length > 0 ? (
-                  <div className="space-y-2">
-                    {activities.slice(0, 8).map((act) => (
-                      <div key={act.id} className="flex items-start gap-2 text-xs">
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue shrink-0 mt-1.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-text truncate">{act.description}</p>
-                          <p className="text-text-faint">{relativeTime(act.created_at)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-text-faint italic">No activity recorded</p>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                {composeMode && (
+                  <button
+                    onClick={() => setComposeMode(false)}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors shrink-0"
+                    aria-label="Back to view mode"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
                 )}
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold truncate">
+                    {isLoading ? 'Loading…' : reply?.lead?.business_name ?? 'Reply Details'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-0.5 flex items-center gap-1 truncate">
+                    <Mail className="w-3.5 h-3.5" />
+                    {reply?.lead?.email ?? '—'}
+                    {reply?.lead?.email && (
+                      <button
+                        onClick={handleCopy}
+                        className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Copy email"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
+                  </p>
+                </div>
               </div>
-            </>
-          ) : (
-            <p className="text-sm text-text-faint text-center py-8">Reply not found</p>
-          )}
-        </div>
-
-        {/* ── Footer Actions ─────────────────────────────────────────────────── */}
-        {!loading && reply && (
-          <div className="border-t border-border/40 p-4 space-y-2">
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleAction("interested")}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-1.5 btn text-xs py-2 bg-green hover:bg-green/90 text-white disabled:opacity-50"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Mark Interested
-              </button>
-              <button
-                onClick={() => handleAction("snooze")}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-1.5 btn btn-ghost text-xs py-2 disabled:opacity-50"
-              >
-                <PauseCircle className="w-3.5 h-3.5" />
-                Snooze 30d
-              </button>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleAction("not_interested")}
-                disabled={saving}
-                className="flex-1 flex items-center justify-center gap-1.5 btn btn-ghost text-xs py-2 text-red disabled:opacity-50"
-              >
-                <Ban className="w-3.5 h-3.5" />
-                Do Not Contact
-              </button>
               <button
                 onClick={onClose}
-                disabled={saving}
-                className="flex-1 btn btn-secondary text-xs py-2 disabled:opacity-50"
+                className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors shrink-0"
+                aria-label="Close drawer"
               >
-                Close
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </div>
-        )}
-      </div>
-    </>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto px-6 pb-6">
+              {isLoading || !reply ? (
+                <div className="space-y-4 mt-4">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                  <Skeleton className="h-32 w-full" />
+                </div>
+              ) : (
+                <>
+                  {/* Meta row */}
+                  <div className="flex items-center gap-2 flex-wrap mt-2">
+                    <IntentBadge intent={reply.intent ?? 'no-intent-detected'} />
+                    {reply.hot_score !== undefined && reply.hot_score >= 85 && (
+                      <span className="inline-flex items-center text-xs font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        High Priority
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {reply.received_at ? new Date(reply.received_at).toLocaleString() : '—'}
+                    </span>
+                  </div>
+
+                  {reply.hot_score !== undefined && (
+                    <div className="mt-3">
+                      <HotScoreBar score={reply.hot_score} />
+                      {reply.score_breakdown && (
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                          <span>Recency: {reply.score_breakdown.recency ?? 0}</span>
+                          <span>Intent: {reply.score_breakdown.intent ?? 0}</span>
+                          <span>Response: {reply.score_breakdown.response ?? 0}</span>
+                          <span>History: {reply.score_breakdown.history ?? 0}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <UrgentBanner score={reply.hot_score ?? 0} />
+
+                  {/* Original Email collapsible */}
+                  <div className="mt-4">
+                    <button
+                      onClick={() => setShowOriginal(!showOriginal)}
+                      className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+                    >
+                      <Mail className="w-4 h-4" />
+                      Your Last Email
+                      {showOriginal ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    {showOriginal && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="mt-2 bg-surface-2 border border-border rounded-lg p-4 overflow-hidden"
+                      >
+                        {reply.original_email ? (
+                          <>
+                            <p className="text-xs text-muted-foreground mb-1">
+                              <strong>Subject:</strong> {reply.original_email.subject}
+                            </p>
+                            <div className="text-sm text-text whitespace-pre-line leading-relaxed max-h-64 overflow-y-auto">
+                              {reply.original_email.body}
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">
+                            Original email not available — no sent step execution was found for this lead.
+                          </p>
+                        )}
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Reply content */}
+                  <div className="mt-4 bg-surface-2 border border-border rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <ReplyIcon className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reply Content</span>
+                    </div>
+                    <div className="text-sm text-text whitespace-pre-line leading-relaxed">
+                      {reply.content || 'No content available.'}
+                    </div>
+                  </div>
+
+                  {/* Compose Mode */}
+                  {composeMode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mt-4 space-y-3"
+                    >
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">Subject</label>
+                        <input
+                          type="text"
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block">To</label>
+                        <input
+                          type="text"
+                          readOnly
+                          value={reply.lead?.email ?? ''}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-surface-2 text-sm text-muted-foreground cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1 block flex items-center justify-between">
+                          <span>Draft Reply</span>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 text-xs"
+                            onClick={() => replyId && regenerateDraft(replyId)}
+                          >
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            Regenerate
+                          </Button>
+                        </label>
+                        <textarea
+                          value={draftText}
+                          onChange={(e) => setDraftText(e.target.value)}
+                          rows={10}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t shrink-0 bg-surface">
+              {composeMode ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={handleOpenMail}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Open in Mail
+                  </Button>
+                  <Button
+                    className="flex-1 bg-foreground text-background hover:bg-foreground/90"
+                    onClick={handleLogSent}
+                  >
+                    <Check className="w-4 h-4 mr-2" />
+                    Log as Sent
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Button
+                    className="w-full bg-foreground text-background hover:bg-foreground/90"
+                    onClick={() => {
+                      setComposeMode(true);
+                      setDraftText(reply?.suggested_reply_draft ?? '');
+                    }}
+                  >
+                    <ReplyIcon className="w-4 h-4 mr-2" />
+                    Reply to this email
+                  </Button>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleAction('not_interested')}
+                    >
+                      <Ban className="h-4 w-4 mr-1" />
+                      Not Interested
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleAction('snoozed')}
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      Snooze
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleAction('archived')}
+                    >
+                      <Archive className="h-4 w-4 mr-1" />
+                      Archive
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   );
 }

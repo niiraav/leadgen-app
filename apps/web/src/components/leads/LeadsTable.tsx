@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, memo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -646,10 +647,10 @@ export const LeadsTable = memo(function LeadsTable({
                             >
                               <MoreHorizontal className="w-5 h-5" />
                             </button>
-                            {overflowOpenId === lead.id && (
+                            {overflowOpenId === lead.id && createPortal(
                               <div
                                 id="leads-overflow-menu"
-                                style={{ position: "fixed", top: overflowPos.top, left: overflowPos.left, zIndex: 30 }}
+                                style={{ position: "fixed", top: overflowPos.top, left: overflowPos.left, zIndex: 100 }}
                                 className="w-48 rounded-lg border border-border/60 bg-surface shadow-lg py-1"
                               >
                                 <OverflowItem
@@ -700,7 +701,8 @@ export const LeadsTable = memo(function LeadsTable({
                                   disabled
                                   onClick={() => setOverflowOpenId(null)}
                                 />
-                              </div>
+                              </div>,
+                              document.body
                             )}
                           </div>
                         </div>
