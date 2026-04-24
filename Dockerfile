@@ -23,6 +23,9 @@ RUN npm ci
 COPY apps/api ./apps/api
 COPY packages/shared ./packages/shared
 
+# Build shared workspace package (required for imports)
+RUN npm run build -w packages/shared
+
 WORKDIR /app/apps/api
 
 ENV NODE_ENV=production
