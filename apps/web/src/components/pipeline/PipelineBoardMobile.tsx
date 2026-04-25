@@ -7,6 +7,7 @@ interface PipelineBoardMobileProps {
   selection: Set<string>;
   recentlyMovedIds: Set<string>;
   onCardClick: (lead: PipelineLead) => void;
+  onStatusChange?: (leadId: string, newColumnId: string) => void;
   onSelect: (leadId: string, modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => void;
 }
 
@@ -16,6 +17,7 @@ export default function PipelineBoardMobile({
   selection,
   recentlyMovedIds,
   onCardClick,
+  onStatusChange,
   onSelect,
 }: PipelineBoardMobileProps) {
   return (
@@ -39,14 +41,31 @@ export default function PipelineBoardMobile({
 
             <div className="flex flex-col gap-2">
               {leads.map((lead) => (
-                <PipelineCard
-                  key={lead.id}
-                  lead={lead}
-                  isSelected={selection.has(lead.id)}
-                  isRecentlyMoved={recentlyMovedIds.has(lead.id)}
-                  onClick={onCardClick}
-                  onSelect={onSelect}
-                />
+                <div key={lead.id}>
+                  <PipelineCard
+                    lead={lead}
+                    isSelected={selection.has(lead.id)}
+                    isRecentlyMoved={recentlyMovedIds.has(lead.id)}
+                    onClick={onCardClick}
+                    onSelect={onSelect}
+                  />
+                  {onStatusChange && (
+                    <select
+                      value={lead.status}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onStatusChange(lead.id, e.target.value);
+                      }}
+                      className="mt-1 w-full h-8 px-2 text-xs rounded-md bg-surface-2 border border-border"
+                    >
+                      {columns.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               ))}
               {leads.length === 0 && (
                 <div className="rounded-md border border-dashed border-gray-200 bg-gray-50/30 h-12 flex items-center justify-center">

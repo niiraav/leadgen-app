@@ -8,11 +8,12 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { followUpHealth, formatCompactDealValue, PIPELINE_COLUMNS, getColumnDef } from "@leadgen/shared";
 import { usePipelineBoard, PipelineLead } from "@/hooks/usePipelineBoard";
+import { usePipelineGates } from "@/hooks/usePipelineGates";
 import PipelineBoardDesktop from "@/components/pipeline/PipelineBoardDesktop";
 import PipelineBoardMobile from "@/components/pipeline/PipelineBoardMobile";
 import SelectionToolbar from "@/components/pipeline/SelectionToolbar";
-import FollowUpModal from "@/components/pipeline/FollowUpModal";
-import LossReasonModal from "@/components/pipeline/LossReasonModal";
+import BulkFollowUpModal from "@/components/pipeline/BulkFollowUpModal";
+import BulkLossModal from "@/components/pipeline/BulkLossModal";
 import LeadQuickDrawer from "@/components/pipeline/LeadQuickDrawer";
 
 type FilterType = "all" | "due_today" | "overdue" | "this_week" | "stale";
@@ -37,12 +38,6 @@ export default function PipelinePage() {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [quickDrawer, setQuickDrawer] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
-  const [followUpModal, setFollowUpModal] = useState<{
-    open: boolean;
-    lead: PipelineLead | null;
-    targetColumnId?: string;
-  }>({ open: false, lead: null });
-  const [lossModal, setLossModal] = useState<{ open: boolean; lead: PipelineLead | null }>({ open: false, lead: null });
 
   // URL params
   const [urlSynced, setUrlSynced] = useState(false);
@@ -79,6 +74,9 @@ export default function PipelinePage() {
 
   // Board hook
   const board = usePipelineBoard();
+
+  // Gate controller (Sprint B)
+  const gates = usePipelineGates(board.moveMutation, board.bulkMoveMutation);
 
   // Filter leads
   const filteredLeads = useMemo(() => {
@@ -160,96 +158,36 @@ export default function PipelinePage() {
     return map;
   }, [filteredLeads, board.positionMap]);
 
-  // Move handler with gating
+  // Move handler → gates
   const handleMoveLead = useCallback(
     (leadId: string, newColumnId: string, _newIndex: number) => {
-      const lead = board.leads.find((l) => l.id === leadId);
-      if (!lead) return;
-
-      const targetColumn = getColumnDef(newColumnId);
-      if (!targetColumn) return;
-
-      const isLost = newColumnId === "lost";
-      const isCommitment = ["proposal_sent"].includes(newColumnId);
-
-      if (isLost) {
-        setLossModal({ open: true, lead });
-        return;
-      }
-
-      if (isCommitment && !lead.followUpDate) {
-        setFollowUpModal({ open: true, lead, targetColumnId: newColumnId });
-        return;
-      }
-
-      board.moveMutation.mutate({ leadId, targetColumn });
+      gates.requestMove([leadId], newColumnId, board.leads);
     },
-    [board]
+    [gates, board.leads]
   );
 
-  // Bulk move handler
+  // Bulk move handler → gates
   const handleBulkMove = useCallback(
     (columnId: string) => {
-      const targetColumn = getColumnDef(columnId);
-      if (!targetColumn) return;
       const ids = Array.from(board.selectedIds);
       if (ids.length === 0) return;
-      board.bulkMoveMutation.mutate({ leadIds: ids, targetColumn });
+      gates.requestMove(ids, columnId, board.leads);
     },
-    [board]
+    [gates, board.selectedIds, board.leads]
+  );
+
+  // Mobile status change → gates
+  const handleStatusChange = useCallback(
+    (leadId: string, newColumnId: string) => {
+      gates.requestMove([leadId], newColumnId, board.leads);
+    },
+    [gates, board.leads]
   );
 
   // Card click → open drawer
   const handleCardClick = useCallback((lead: PipelineLead) => {
     setQuickDrawer({ open: true, lead: lead as unknown as Lead });
   }, []);
-
-  // Follow-up confirm
-  const handleFollowUpConfirm = useCallback(
-    async (date: string) => {
-      const lead = followUpModal.lead;
-      const colId = followUpModal.targetColumnId;
-      if (!lead) return;
-
-      await api.leads.update(lead.id, {
-        followUpDate: date,
-        followUpSource: "manual",
-      });
-
-      if (colId) {
-        const targetColumn = getColumnDef(colId);
-        if (targetColumn) {
-          board.moveMutation.mutate({ leadId: lead.id, targetColumn });
-        }
-      }
-
-      setFollowUpModal({ open: false, lead: null });
-    },
-    [followUpModal, board.moveMutation]
-  );
-
-  // Loss confirm
-  const handleLossConfirm = useCallback(
-    async (reason: string, notes: string) => {
-      const lead = lossModal.lead;
-      if (!lead) return;
-
-      await api.leads.update(lead.id, {
-        status: "lost",
-        lossReason: reason,
-        lossReasonNotes: notes,
-        followUpDate: null,
-      });
-
-      const targetColumn = getColumnDef("lost");
-      if (targetColumn) {
-        board.moveMutation.mutate({ leadId: lead.id, targetColumn });
-      }
-
-      setLossModal({ open: false, lead: null });
-    },
-    [lossModal, board.moveMutation]
-  );
 
   const handleUpdateLead = useCallback(async (id: string, data: Record<string, unknown>) => {
     try {
@@ -404,6 +342,7 @@ export default function PipelinePage() {
                 selection={board.selectedIds}
                 recentlyMovedIds={board.recentlyMovedIds}
                 onCardClick={handleCardClick}
+                onStatusChange={handleStatusChange}
                 onSelect={(leadId, modifiers) => {
                   const columnId = getColumnDef(board.leads.find((l) => l.id === leadId)?.status || "")?.id || "new";
                   const columnLeads = leadsByColumn[columnId] || [];
@@ -423,24 +362,27 @@ export default function PipelinePage() {
         onClear={board.clearSelection}
       />
 
-      {/* Modals */}
-      <FollowUpModal
-        isOpen={followUpModal.open}
-        onClose={() => setFollowUpModal({ open: false, lead: null })}
-        onConfirm={handleFollowUpConfirm}
-        leadName={followUpModal.lead?.business_name || ""}
-        defaultDays={getColumnDef(followUpModal.targetColumnId || "proposal_sent")?.defaultFollowUpDays || 5}
-        existingDate={followUpModal.lead?.followUpDate || null}
-      />
+      {/* Bulk Modals (Sprint B) */}
+      {gates.pendingGate?.type === "follow_up" && (
+        <BulkFollowUpModal
+          isOpen={true}
+          leads={gates.pendingGate.leads}
+          onConfirm={(date) => gates.confirmGate({ followUpDate: date })}
+          onSkip={gates.skipGate}
+          onCancel={gates.cancelGate}
+          defaultDays={getColumnDef(gates.pendingGate.targetColumn)?.defaultFollowUpDays || 5}
+        />
+      )}
 
-      <LossReasonModal
-        isOpen={lossModal.open}
-        onClose={() => setLossModal({ open: false, lead: null })}
-        onConfirm={handleLossConfirm}
-        leadName={lossModal.lead?.business_name || ""}
-        existingReason={lossModal.lead?.lossReason || null}
-        existingNotes={lossModal.lead?.lossReasonNotes || null}
-      />
+      {gates.pendingGate?.type === "loss" && (
+        <BulkLossModal
+          isOpen={true}
+          leads={gates.pendingGate.leads}
+          onConfirm={(reason, notes) => gates.confirmGate({ lossReason: reason, lossNotes: notes })}
+          onSkip={gates.skipGate}
+          onCancel={gates.cancelGate}
+        />
+      )}
 
       <LeadQuickDrawer
         lead={quickDrawer.lead}
