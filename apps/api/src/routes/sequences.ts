@@ -165,7 +165,7 @@ router.patch('/:id', async (c) => {
 
     const { data: existing } = await supabaseAdmin
       .from('sequences')
-      .select('id')
+      .select('id, status, steps:sequence_steps(count)')
       .eq('id', id)
       .eq('user_id', userId)
       .single();
@@ -177,6 +177,14 @@ router.patch('/:id', async (c) => {
     const updates: Record<string, unknown> = {};
     if (parsed.data.name !== undefined) updates.name = parsed.data.name;
     if (parsed.data.status !== undefined) updates.status = parsed.data.status;
+
+    // Guard: require at least 1 step to activate
+    if (updates.status === 'active') {
+      const stepCount = (existing as any).steps?.[0]?.count ?? 0;
+      if (stepCount === 0) {
+        return c.json({ error: 'Sequence must have at least one step to activate' }, 400);
+      }
+    }
 
     if (Object.keys(updates).length > 0) {
       await supabaseAdmin
@@ -223,16 +231,28 @@ router.post('/:id/enroll', async (c) => {
       throw err;
     }
 
-    // Verify sequence exists
+    // Verify sequence exists and is active
     const { data: sequence } = await supabaseAdmin
       .from('sequences')
-      .select('id')
+      .select('id, status, steps:sequence_steps(count)')
       .eq('id', sequenceId)
       .eq('user_id', userId)
       .single();
 
     if (!sequence) {
       return c.json({ error: 'Sequence not found' }, 404);
+    }
+
+    if ((sequence as any).status === 'draft') {
+      return c.json({ error: 'Sequence must be active before enrolling leads.' }, 400);
+    }
+    if ((sequence as any).status === 'paused') {
+      return c.json({ error: 'Sequence is paused. Resume first.' }, 400);
+    }
+
+    const stepCount = (sequence as any).steps?.[0]?.count ?? 0;
+    if (stepCount === 0) {
+      return c.json({ error: 'Sequence has no steps.' }, 400);
     }
 
     let enrolled = 0;

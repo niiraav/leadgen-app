@@ -33,6 +33,9 @@ export default function SequenceDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const [activating, setActivating] = useState(false);
+  const [resuming, setResuming] = useState(false);
+
   const fetchSequence = useCallback(async () => {
     if (!seqId) return;
     setLoading(true);
@@ -87,6 +90,52 @@ export default function SequenceDetailPage() {
       console.error("Failed to save step:", err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const activateSequence = async () => {
+    if (!seqId) return;
+    setActivating(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sequences/${seqId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "active" }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Failed to activate sequence");
+      } else {
+        await fetchSequence();
+      }
+    } catch (err) {
+      setError("Failed to activate sequence");
+    } finally {
+      setActivating(false);
+    }
+  };
+
+  const resumeSequence = async () => {
+    if (!seqId) return;
+    setResuming(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/sequences/${seqId}/resume`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Failed to resume sequence");
+      } else {
+        await fetchSequence();
+      }
+    } catch (err) {
+      setError("Failed to resume sequence");
+    } finally {
+      setResuming(false);
     }
   };
 
@@ -212,10 +261,40 @@ export default function SequenceDetailPage() {
       </div>
 
       <div className="flex gap-3">
-        <Link href={`/sequences/${seqId}/enroll`} className="btn btn-primary">
-          <ArrowRight className="w-4 h-4" />
-          Enroll Leads
-        </Link>
+        {sequence.status === "draft" && (
+          <button
+            onClick={activateSequence}
+            disabled={activating}
+            className="btn btn-primary"
+          >
+            {activating ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Check className="w-4 h-4" />
+            )}
+            Activate
+          </button>
+        )}
+        {sequence.status === "active" && (
+          <Link href={`/sequences/${seqId}/enroll`} className="btn btn-primary">
+            <ArrowRight className="w-4 h-4" />
+            Enroll Leads
+          </Link>
+        )}
+        {sequence.status === "paused" && (
+          <button
+            onClick={resumeSequence}
+            disabled={resuming}
+            className="btn btn-primary"
+          >
+            {resuming ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ArrowRight className="w-4 h-4" />
+            )}
+            Resume
+          </button>
+        )}
       </div>
     </div>
   );
