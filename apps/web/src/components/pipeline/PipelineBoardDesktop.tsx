@@ -25,6 +25,8 @@ interface PipelineBoardDesktopProps {
   onCardClick: (lead: PipelineLead) => void;
   onSelect: (leadId: string, modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => void;
   onMoveLead: (leadId: string, newColumnId: string, newIndex: number) => void;
+  onReorderLead?: (leadId: string, columnId: string, prevLeadId: string | null, nextLeadId: string | null) => void;
+  onClearSelection?: () => void;
 }
 
 export default function PipelineBoardDesktop({
@@ -35,6 +37,8 @@ export default function PipelineBoardDesktop({
   onCardClick,
   onSelect,
   onMoveLead,
+  onReorderLead,
+  onClearSelection,
 }: PipelineBoardDesktopProps) {
   const [activeLead, setActiveLead] = useState<PipelineLead | null>(null);
   const [localLeadsByColumn, setLocalLeadsByColumn] = useState(leadsByColumn);
@@ -104,17 +108,21 @@ export default function PipelineBoardDesktop({
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
     setActiveLead(null);
-    dragStartColumn.current = null;
 
-    if (!over) return;
+    if (!over) {
+      dragStartColumn.current = null;
+      return;
+    }
 
     const activeId = active.id as string;
     const overId = over.id as string;
 
-    const activeCol = findLeadColumn(activeId);
+    const activeCol = dragStartColumn.current || findLeadColumn(activeId);
     const overCol = columns.find((c) => c.id === overId)
       ? overId
       : findLeadColumn(overId);
+
+    dragStartColumn.current = null;
 
     if (!activeCol || !overCol) return;
 
@@ -126,7 +134,13 @@ export default function PipelineBoardDesktop({
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
         const reordered = arrayMove(leads, oldIndex, newIndex);
         setLocalLeadsByColumn((prev) => ({ ...prev, [activeCol]: reordered }));
-        onMoveLead(activeId, activeCol, newIndex);
+        if (onReorderLead) {
+          const prevLeadId = newIndex > 0 ? reordered[newIndex - 1].id : null;
+          const nextLeadId = newIndex < reordered.length - 1 ? reordered[newIndex + 1].id : null;
+          onReorderLead(activeId, activeCol, prevLeadId, nextLeadId);
+        } else {
+          onMoveLead(activeId, activeCol, newIndex);
+        }
       }
     } else {
       // Different column — move
@@ -165,6 +179,7 @@ export default function PipelineBoardDesktop({
             recentlyMovedIds={recentlyMovedIds}
             onCardClick={onCardClick}
             onSelect={onSelect}
+            onClearSelection={onClearSelection}
           />
         ))}
       </div>

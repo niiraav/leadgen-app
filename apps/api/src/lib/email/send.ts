@@ -48,6 +48,7 @@ export async function sendOutreachEmail(
       step_number:    params.stepNumber,
       subject:        params.subject,
       body_plain:     params.text,
+      status:        'sent',
       mailgun_message_id: result.id,
       sent_via:       'mailgun',
     })

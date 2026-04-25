@@ -16,6 +16,9 @@ export interface PipelineLead {
   id: string;
   business_name: string;
   email: string;
+  phone: string;
+  address: string;
+  website_url: string;
   category: string;
   city: string;
   country: string;
@@ -31,6 +34,25 @@ export interface PipelineLead {
   updated_at?: string;
   lossReason?: string | null;
   lossReasonNotes?: string | null;
+  // Phase 0: expanded fields for drawer enrichment
+  rating: number | null;
+  review_count: number | null;
+  tags: string[] | null;
+  notes: string | null;
+  ai_bio: string | null;
+  review_summary: any | null;
+  email_status: string | null;
+  doNotContact: boolean;
+  contact_full_name: string | null;
+  contact_title: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  last_contacted: string | null;
+  lastActivity?: {
+    label: string;
+    timestamp: string;
+    replyIntent?: string;
+  } | null;
 }
 
 export interface SelectModifiers {
@@ -128,8 +150,13 @@ export function usePipelineBoard() {
         return;
       }
 
-      // Plain click = single select (replaces previous)
-      setSelectedIds(new Set([leadId]));
+      // Plain click = single select (replaces previous), or deselect if already only selected
+      setSelectedIds((prev) => {
+        if (prev.size === 1 && prev.has(leadId)) {
+          return new Set();
+        }
+        return new Set([leadId]);
+      });
       setLastSelectedId(leadId);
     },
     [lastSelectedId]
@@ -173,6 +200,9 @@ export function usePipelineBoard() {
         id: l.id,
         business_name: l.business_name || "",
         email: l.email || "",
+        phone: l.phone || "",
+        address: l.address || "",
+        website_url: l.website_url || "",
         category: l.category || "",
         city: l.city || "",
         country: l.country || "",
@@ -188,6 +218,21 @@ export function usePipelineBoard() {
         updated_at: l.updated_at ?? undefined,
         lossReason: l.lossReason ?? l.loss_reason ?? null,
         lossReasonNotes: l.lossReasonNotes ?? l.loss_reason_notes ?? null,
+        // Phase 0: expanded fields
+        rating: l.rating ?? null,
+        review_count: l.review_count ?? null,
+        tags: l.tags || null,
+        notes: l.notes || null,
+        ai_bio: l.ai_bio || null,
+        review_summary: l.review_summary ?? null,
+        email_status: l.email_status || null,
+        doNotContact: l.doNotContact ?? l.do_not_contact ?? false,
+        contact_full_name: l.contact_full_name || null,
+        contact_title: l.contact_title || null,
+        contact_email: l.contact_email || null,
+        contact_phone: l.contact_phone || null,
+        last_contacted: l.last_contacted || null,
+        lastActivity: l.lastActivity ?? null,
       }));
     },
     staleTime: 30_000,
@@ -215,6 +260,31 @@ export function usePipelineBoard() {
   }, [positionsData]);
 
   // ── Sprint A: Filtered leads (flat list) ─────────────────────
+
+  // Sort state (Phase 2)
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+
+  const handleSortChange = useCallback((field: string) => {
+    setSortField((prev) => {
+      if (prev === field) {
+        setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
+        return prev;
+      }
+      setSortOrder("asc");
+      return field;
+    });
+  }, []);
+
+  // Stage order map for sorting
+  const stageOrderMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    PIPELINE_COLUMNS.forEach((col, idx) => {
+      map[col.id] = idx;
+      map[col.value] = idx;
+    });
+    return map;
+  }, []);
 
   const filteredLeads = useMemo(() => {
     let result = leads;
@@ -271,8 +341,40 @@ export function usePipelineBoard() {
         break;
     }
 
+    // Sort (Phase 2)
+    if (sortField) {
+      const order = sortOrder === "asc" ? 1 : -1;
+      result = [...result].sort((a, b) => {
+        switch (sortField) {
+          case "business_name":
+            return order * (a.business_name || "").localeCompare(b.business_name || "");
+          case "stage": {
+            const colA = getLeadColumn(a);
+            const colB = getLeadColumn(b);
+            const ordA = stageOrderMap[colA] ?? 999;
+            const ordB = stageOrderMap[colB] ?? 999;
+            return order * (ordA - ordB);
+          }
+          case "replies":
+            return order * ((a.unreadReplyCount ?? 0) - (b.unreadReplyCount ?? 0));
+          case "followUpDate": {
+            const da = a.followUpDate ? new Date(a.followUpDate).getTime() : order === 1 ? Infinity : -Infinity;
+            const db = b.followUpDate ? new Date(b.followUpDate).getTime() : order === 1 ? Infinity : -Infinity;
+            return order * (da - db);
+          }
+          case "dealValue": {
+            const va = a.dealValue ?? (order === 1 ? Infinity : -Infinity);
+            const vb = b.dealValue ?? (order === 1 ? Infinity : -Infinity);
+            return order * (va - vb);
+          }
+          default:
+            return 0;
+        }
+      });
+    }
+
     return result;
-  }, [leads, searchQuery, activeFilter]);
+  }, [leads, searchQuery, activeFilter, sortField, sortOrder, stageOrderMap]);
 
   // ── Sprint A: Board leads grouped by column ────────────────────
 
@@ -305,11 +407,13 @@ export function usePipelineBoard() {
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
-  }, []);
+    clearSelection();
+  }, [clearSelection]);
 
   const handleFilterChange = useCallback((filter: FilterType) => {
     setActiveFilter(filter);
-  }, []);
+    clearSelection();
+  }, [clearSelection]);
 
   const setViewMode = useCallback(
     (mode: ViewMode) => {
@@ -396,6 +500,7 @@ export function usePipelineBoard() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+      clearSelection();
     },
   });
 
@@ -475,6 +580,7 @@ export function usePipelineBoard() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
+      clearSelection();
     },
   });
 
@@ -583,5 +689,9 @@ export function usePipelineBoard() {
     selectAllInColumn,
     clearSelection,
     refresh,
+    // Phase 2: Sort
+    sortField,
+    sortOrder,
+    handleSortChange,
   };
 }

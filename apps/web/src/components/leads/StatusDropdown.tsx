@@ -72,11 +72,11 @@ export const StatusDropdown = memo(function StatusDropdown({
       }
     };
     const handleScrollResize = () => setOpen(false);
-    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("click", handleClick);
     window.addEventListener("scroll", handleScrollResize, true);
     window.addEventListener("resize", handleScrollResize);
     return () => {
-      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("click", handleClick);
       window.removeEventListener("scroll", handleScrollResize, true);
       window.removeEventListener("resize", handleScrollResize);
     };

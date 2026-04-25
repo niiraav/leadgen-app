@@ -6,7 +6,7 @@ import { HotScoreBadge } from "@/components/ui/badge";
 import {
   MapPin, Sparkles, Send, Loader2, Copy,
   Check, MessageSquare, Clock, AlertCircle, ArrowLeft, ChevronDown,
-  Star, AlertTriangle, NotebookPen, RefreshCw,
+  Star, AlertTriangle, NotebookPen, RefreshCw, PoundSterling,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
@@ -87,35 +87,13 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   const [saving, setSaving] = useState(false);
 
   // ── Pipeline field editing state ──
-  const [editFollowUp, setEditFollowUp] = useState(lead?.follow_up_date?.slice(0, 10) ?? "");
-  const [editDealValue, setEditDealValue] = useState<string>(lead?.deal_value ? String(lead.deal_value) : "");
-  const [editLossReason, setEditLossReason] = useState(lead?.loss_reason ?? "");
-  const [editLossNotes, setEditLossNotes] = useState(lead?.loss_reason_notes ?? "");
+  // NOTE: initialized to empty — synced via useEffect once lead loads
+  const [editFollowUp, setEditFollowUp] = useState("");
+  const [editDealValue, setEditDealValue] = useState<string>("");
+  const [editLossReason, setEditLossReason] = useState("");
+  const [editLossNotes, setEditLossNotes] = useState("");
 
-  // Sync local state when lead changes
-  useEffect(() => {
-    if (lead) {
-      setEditFollowUp(lead.follow_up_date ? lead.follow_up_date.slice(0, 10) : "");
-      setEditDealValue(lead.deal_value ? String(lead.deal_value) : "");
-      setEditLossReason(lead.loss_reason ?? "");
-      setEditLossNotes(lead.loss_reason_notes ?? "");
-    }
-  }, [lead?.follow_up_date, lead?.deal_value, lead?.loss_reason, lead?.loss_reason_notes]);
 
-  const saveField = useCallback(async (field: string, value: unknown) => {
-    if (!lead) return;
-    setSaving(true);
-    try {
-      await api.leads.update(leadId, { [field]: value });
-      queryClient.setQueryData(["lead", leadId], (prev: Lead | undefined) =>
-        prev ? { ...prev, [field]: value } : undefined
-      );
-    } catch (e: any) {
-      toast.error(e.message || `Failed to save ${field}`);
-    } finally {
-      setSaving(false);
-    }
-  }, [lead, leadId, queryClient]);
 
   // Sequence enrollment
   const [sequencesDropdown, setSequencesDropdown] = useState(false);
@@ -194,6 +172,31 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     ? `Failed to load lead: ${(leadQuery.error as Error).message}`
     : null;
   const allActivities = activityQuery.data?.activities ?? [];
+
+  // Sync pipeline edit state when lead loads or changes
+  useEffect(() => {
+    if (lead) {
+      setEditFollowUp(lead.follow_up_date ? lead.follow_up_date.slice(0, 10) : "");
+      setEditDealValue(lead.deal_value ? String(lead.deal_value) : "");
+      setEditLossReason(lead.loss_reason ?? "");
+      setEditLossNotes(lead.loss_reason_notes ?? "");
+    }
+  }, [lead?.follow_up_date, lead?.deal_value, lead?.loss_reason, lead?.loss_reason_notes]);
+
+  const saveField = useCallback(async (field: string, value: unknown) => {
+    if (!lead) return;
+    setSaving(true);
+    try {
+      await api.leads.update(leadId, { [field]: value });
+      queryClient.setQueryData(["lead", leadId], (prev: Lead | undefined) =>
+        prev ? { ...prev, [field]: value } : undefined
+      );
+    } catch (e: any) {
+      toast.error(e.message || `Failed to save ${field}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [lead, leadId, queryClient]);
 
   // Memoized derived values — avoid recalculating on every render
   const hasEmail = useMemo(() => !!(lead?.email && lead.email.trim().length > 0), [lead?.email]);
@@ -496,14 +499,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               status: lead.status ?? null,
               doNotContact: !!lead.doNotContact,
             }}
-            onStatusChange={async (_leadId, patch) => {
-              try {
-                await api.leads.update(leadId, patch);
-                queryClient.invalidateQueries({ queryKey: ["lead", leadId] });
-              } catch (e: any) {
-                toast.error(e.message || "Failed to update status");
-              }
-            }}
+                  onStatusChange={async (_leadId, patch) => {
+                    try {
+                      await api.leads.update(leadId, patch);
+                      queryClient.invalidateQueries({ queryKey: ["lead", leadId] });
+                    } catch (e: any) {
+                      toast.error(e.message || "Failed to update status");
+                    }
+                  }}
           />
           <span className="text-[10px] uppercase tracking-wider text-text-faint font-medium">
             {DOMAIN_LABELS[getLeadDomain({

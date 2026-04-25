@@ -1,17 +1,17 @@
 import { withAuth } from "@/lib/auth";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, KPICard } from "@/components/ui/card";
-import { api, Lead } from "@/lib/api";
+import { api } from "@/lib/api";
 import { Plus, Search, X, Clock, AlertTriangle, PoundSterling, Eye, BarChart3, Users, LayoutGrid, List as ListIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { followUpHealth, formatCompactDealValue, PIPELINE_COLUMNS, getColumnDef } from "@leadgen/shared";
+import { followUpHealth, formatCompactDealValue, PIPELINE_COLUMNS, getColumnDef, getLeadColumn } from "@leadgen/shared";
 import { usePipelineBoard, PipelineLead, FilterType, ViewMode } from "@/hooks/usePipelineBoard";
 import { usePipelineGates } from "@/hooks/usePipelineGates";
 import PipelineBoardDesktop from "@/components/pipeline/PipelineBoardDesktop";
 import PipelineBoardMobile from "@/components/pipeline/PipelineBoardMobile";
-import PipelineListView from "@/components/pipeline/PipelineListView";
+import { PipelineTable } from "@/components/pipeline/PipelineTable";
 import SelectionToolbar from "@/components/pipeline/SelectionToolbar";
 import BulkFollowUpModal from "@/components/pipeline/BulkFollowUpModal";
 import BulkLossModal from "@/components/pipeline/BulkLossModal";
@@ -36,10 +36,16 @@ interface HealthSummary {
 
 export default function PipelinePage() {
   const router = useRouter();
-  const [quickDrawer, setQuickDrawer] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
+  const [quickDrawer, setQuickDrawer] = useState<{ open: boolean; leadId: string | null }>({ open: false, leadId: null });
 
   // Board hook (Sprint A: now owns search, filter, viewMode)
   const board = usePipelineBoard();
+
+  // Derive live lead from React Query cache so stage transitions update drawer without re-open
+  const drawerLead = useMemo(
+    () => board.leads.find((l) => l.id === quickDrawer.leadId) ?? null,
+    [board.leads, quickDrawer.leadId]
+  );
 
   // URL params
   const [urlSynced, setUrlSynced] = useState(false);
@@ -91,6 +97,14 @@ export default function PipelinePage() {
     [gates, board.leads]
   );
 
+  // Reorder handler → direct mutation (same-column)
+  const handleReorderLead = useCallback(
+    (leadId: string, columnId: string, prevLeadId: string | null, nextLeadId: string | null) => {
+      board.reorderMutation.mutate({ leadId, columnId, prevLeadId, nextLeadId });
+    },
+    [board.reorderMutation]
+  );
+
   // Bulk move handler → gates
   const handleBulkMove = useCallback(
     (columnId: string) => {
@@ -111,7 +125,7 @@ export default function PipelinePage() {
 
   // Card click → open drawer
   const handleCardClick = useCallback((lead: PipelineLead) => {
-    setQuickDrawer({ open: true, lead: lead as unknown as Lead });
+    setQuickDrawer({ open: true, leadId: lead.id });
   }, []);
 
   const handleUpdateLead = useCallback(async (id: string, data: Record<string, unknown>) => {
@@ -145,7 +159,7 @@ export default function PipelinePage() {
             {board.isLoading ? "Loading..." : `${board.leads.length} leads in your pipeline`}
           </p>
         </div>
-        <Link href="/leads/new" className="btn btn-primary text-sm">
+        <Link href="/leads" className="btn btn-primary text-sm">
           <Plus className="w-4 h-4" />
           Add Lead
         </Link>
@@ -214,10 +228,10 @@ export default function PipelinePage() {
             <button
               key={pill.id}
               onClick={() => onFilterChange(pill.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-colors ${
+              className={`rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-all min-h-[32px] ${
                 board.activeFilter === pill.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-surface-2 text-text-muted border-border hover:bg-secondary"
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border/60 bg-surface text-text-muted hover:text-text"
               }`}
             >
               {pill.label}
@@ -285,18 +299,27 @@ export default function PipelinePage() {
                     board.selectLead(leadId, columnLeads, modifiers);
                   }}
                   onMoveLead={handleMoveLead}
+                  onReorderLead={handleReorderLead}
+                  onClearSelection={board.clearSelection}
                 />
               ) : (
                 <div className="h-full overflow-y-auto pr-1">
-                  <PipelineListView
+                  <PipelineTable
                     leads={board.filteredLeads}
-                    selection={board.selectedIds}
+                    loading={board.isLoading}
+                    selected={board.selectedIds}
                     recentlyMovedIds={board.recentlyMovedIds}
-                    onCardClick={handleCardClick}
                     onSelect={(leadId, modifiers) => {
-                      // In list view, use the full filtered list as the "column" for range select
                       board.selectLead(leadId, board.filteredLeads, modifiers);
                     }}
+                    onSelectAll={() => board.selectAllInColumn("list", board.filteredLeads)}
+                    onRowClick={handleCardClick}
+                    onStageChange={(leadId, newColumnId) => {
+                      gates.requestMove([leadId], newColumnId, board.leads);
+                    }}
+                    sortField={board.sortField}
+                    sortOrder={board.sortOrder}
+                    onSortChange={board.handleSortChange}
                   />
                 </div>
               )}
@@ -316,6 +339,7 @@ export default function PipelinePage() {
                   const columnLeads = board.boardLeadsByColumn[columnId] || [];
                   board.selectLead(leadId, columnLeads, modifiers);
                 }}
+                onClearSelection={board.clearSelection}
               />
             </div>
           </>
@@ -353,9 +377,9 @@ export default function PipelinePage() {
       )}
 
       <LeadQuickDrawer
-        lead={quickDrawer.lead}
+        lead={drawerLead}
         isOpen={quickDrawer.open}
-        onClose={() => setQuickDrawer({ open: false, lead: null })}
+        onClose={() => setQuickDrawer({ open: false, leadId: null })}
         onUpdate={handleUpdateLead}
       />
     </div>

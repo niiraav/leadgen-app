@@ -9,6 +9,7 @@ interface PipelineBoardMobileProps {
   onCardClick: (lead: PipelineLead) => void;
   onStatusChange?: (leadId: string, newColumnId: string) => void;
   onSelect: (leadId: string, modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => void;
+  onClearSelection?: () => void;
 }
 
 export default function PipelineBoardMobile({
@@ -19,9 +20,10 @@ export default function PipelineBoardMobile({
   onCardClick,
   onStatusChange,
   onSelect,
+  onClearSelection,
 }: PipelineBoardMobileProps) {
   return (
-    <div className="flex flex-col gap-6 pb-6">
+    <div className="flex flex-col gap-6 pb-6" onClick={() => onClearSelection?.()}>
       {columns.map((column) => {
         const leads = leadsByColumn[column.id] ?? [];
         return (

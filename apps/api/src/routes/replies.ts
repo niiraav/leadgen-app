@@ -111,7 +111,7 @@ router.get('/:id', async (c) => {
       .from('sequence_step_executions')
       .select('id, step_number, subject, body_plain, sent_at, enrolment_id')
       .eq('status', 'sent')
-      .order('sent_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(1)
       .not('sent_at', 'is', null);
 

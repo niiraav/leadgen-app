@@ -8,6 +8,7 @@ interface PipelineListViewProps {
   recentlyMovedIds: Set<string>;
   onCardClick: (lead: PipelineLead) => void;
   onSelect: (leadId: string, modifiers: SelectModifiers) => void;
+  onClearSelection?: () => void;
 }
 
 function ListCard({
@@ -27,6 +28,7 @@ function ListCard({
   const column = getColumnDef(columnId);
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onSelect(lead.id, {
       shiftKey: e.shiftKey,
       metaKey: e.metaKey,
@@ -107,13 +109,20 @@ function ListCard({
       onClick={handleClick}
       className={`
         relative group cursor-pointer select-none
-        rounded-lg border p-3 transition-colors
+        rounded-2xl border p-4 transition-colors
         ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-surface hover:border-primary/30 hover:bg-primary/[0.02]"}
         ${isRecentlyMoved ? "border-primary/35 bg-primary/5 shadow-sm" : ""}
       `}
+      style={{ borderLeftColor: column?.color ?? undefined, borderLeftWidth: "4px" }}
     >
-      {/* Checkbox */}
-      <div className={`absolute top-3 left-3 z-10 ${isSelected || "opacity-0 group-hover:opacity-100 transition-opacity"}`}>
+      {/* Checkbox — toggles this card only, never opens drawer */}
+      <div
+        className={`absolute top-4 left-4 z-10 ${isSelected || "opacity-0 group-hover:opacity-100 transition-opacity"}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(lead.id, { shiftKey: false, metaKey: true, ctrlKey: false });
+        }}
+      >
         <div
           className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
             isSelected ? "bg-primary border-primary" : "bg-surface border-border group-hover:border-primary/40"
@@ -127,12 +136,12 @@ function ListCard({
         </div>
       </div>
 
-      <div className="pl-7 flex items-center justify-between gap-4">
-        {/* Left: Name + meta */}
+      <div className="pl-8 flex items-start justify-between gap-4">
+        {/* Left: structured content */}
         <div className="min-w-0 flex-1">
+          {/* Header row: name + badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <h4 className="text-sm font-semibold text-text truncate">{lead.business_name}</h4>
-            {/* Status badge */}
             <span
               className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white flex-shrink-0"
               style={{ backgroundColor: column?.color ?? "#6b7280" }}
@@ -140,22 +149,28 @@ function ListCard({
               {column?.title ?? lead.status}
             </span>
             {followUpChip}
+            {lead.hot_score > 0 && (
+              <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">
+                ★ {lead.hot_score}
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 mt-1 text-xs text-text-faint">
-            {lead.category && <span>{lead.category}</span>}
+          {/* Meta row */}
+          <div className="flex items-center gap-2 mt-1.5 text-xs text-text-faint">
+            {lead.category && <span className="font-medium text-text-muted">{lead.category}</span>}
             {lead.city && <span>· {lead.city}</span>}
             {lead.email && <span>· {lead.email}</span>}
           </div>
 
-          {/* Context pills */}
+          {/* Footer pills */}
           {contextPills.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">{contextPills}</div>
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">{contextPills}</div>
           )}
         </div>
 
-        {/* Right: Arrow */}
-        <ChevronRight className="w-4 h-4 text-text-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        {/* Right: chevron */}
+        <ChevronRight className="w-4 h-4 text-text-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
       </div>
     </div>
   );
@@ -167,6 +182,7 @@ export default function PipelineListView({
   recentlyMovedIds,
   onCardClick,
   onSelect,
+  onClearSelection,
 }: PipelineListViewProps) {
   if (leads.length === 0) {
     return (
@@ -177,7 +193,7 @@ export default function PipelineListView({
   }
 
   return (
-    <div className="space-y-2 pb-4">
+    <div className="space-y-2 pb-4" onClick={() => onClearSelection?.()}>
       {leads.map((lead) => (
         <ListCard
           key={lead.id}

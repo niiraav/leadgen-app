@@ -314,14 +314,30 @@ export function mapBackendLead(raw: BackendLead): Lead {
     latestReply: (raw as any).latest_reply ?? null,
     unreadReplyCount: (raw as any).unread_reply_count ?? 0,
     sequencePaused: (raw as any).sequence_paused ?? false,
-    // Last activity (Sprint 3 — resolved server-side)
+    // Last activity (Sprint 3 — resolved server-side, with client-side fallback)
     lastActivity: (raw as any).lastActivity
       ? {
           label: (raw as any).lastActivity.label,
           timestamp: new Date((raw as any).lastActivity.timestamp),
           ...(((raw as any).lastActivity.replyIntent) ? { replyIntent: (raw as any).lastActivity.replyIntent } : {}),
         }
-      : null,
+      : (() => {
+          const reply = (raw as any).latest_reply;
+          if (reply) {
+            const ts = reply.received_at || reply.created_at || reply.timestamp;
+            if (ts) return { label: 'Replied', timestamp: new Date(ts) };
+          }
+          if (raw.last_contacted) {
+            return { label: 'Contacted', timestamp: new Date(raw.last_contacted) };
+          }
+          if (raw.updated_at) {
+            return { label: 'Updated', timestamp: new Date(raw.updated_at) };
+          }
+          if (raw.created_at) {
+            return { label: 'Lead saved', timestamp: new Date(raw.created_at) };
+          }
+          return null;
+        })(),
   };
 }
 

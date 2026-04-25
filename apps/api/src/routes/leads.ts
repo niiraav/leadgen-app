@@ -326,7 +326,18 @@ router.patch('/:id', async (c) => {
     }
     if (parsed.data.doNotContact !== undefined) updateData.do_not_contact = parsed.data.doNotContact;
 
-    await updateLead(userId, id, updateData);
+    try {
+      await updateLead(userId, id, updateData);
+    } catch (updateErr: any) {
+      const msg = updateErr instanceof Error ? updateErr.message : String(updateErr);
+      if (updateData.converted_at !== undefined && msg.toLowerCase().includes('converted_at')) {
+        console.warn('[Leads PATCH] converted_at column missing — retrying without it. Apply migration 031_add_converted_at.sql');
+        const { converted_at: _discard, ...fallbackData } = updateData;
+        await updateLead(userId, id, fallbackData);
+      } else {
+        throw updateErr;
+      }
+    }
 
     // ── Follow-up urgency: set/clear based on new column default ──
     const hasStatusChange =
@@ -429,7 +440,7 @@ router.patch('/:id', async (c) => {
     return c.json({ message: 'Lead updated' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[Leads PATCH /:id] Error:', message);
+    console.error('[Leads PATCH /:id] Error:', message, error);
     return c.json({ error: 'Failed to update lead', details: message }, 500);
   }
 });
@@ -966,8 +977,19 @@ router.post('/:id/generate-bio', async (c) => {
     }
 
     const completion = await resp.json() as { choices?: { message?: { content?: string } }[] };
-    const bio = completion.choices?.[0]?.message?.content?.trim() ?? '';
+    let bio = completion.choices?.[0]?.message?.content?.trim() ?? '';
     if (!bio) return c.json({ error: 'Failed to generate bio' }, 500);
+
+    // Sanitize: strip markdown, collapse whitespace, hard-truncate to 200 chars
+    bio = bio
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`/g, '')
+      .replace(/#{1,6}\s+/g, '')
+      .replace(/\n{2,}/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200);
 
     await supabaseAdmin
       .from('leads')

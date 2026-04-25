@@ -10,6 +10,7 @@ interface PipelineColumnProps {
   recentlyMovedIds: Set<string>;
   onCardClick: (lead: PipelineLead) => void;
   onSelect: (leadId: string, modifiers: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => void;
+  onClearSelection?: () => void;
 }
 
 export default function PipelineColumn({
@@ -19,6 +20,7 @@ export default function PipelineColumn({
   recentlyMovedIds,
   onCardClick,
   onSelect,
+  onClearSelection,
 }: PipelineColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -46,6 +48,7 @@ export default function PipelineColumn({
       {/* Droppable area */}
       <div
         ref={setNodeRef}
+        onClick={() => onClearSelection?.()}
         className={`
           flex-1 flex flex-col gap-2 min-h-[120px] rounded-lg p-2
           transition-colors

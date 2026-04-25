@@ -48,8 +48,10 @@ router.get('/', async (c) => {
     if (error || !profile) return c.json({ error: 'Profile not found' }, 404);
 
     const { score, missing } = calcCompleteness(profile);
-    (profile as any).profile_score = score;
-    (profile as any).profile_complete = isProfileComplete(profile);
+    if (profile) {
+      (profile as any).profile_score = score;
+      (profile as any).profile_complete = isProfileComplete(profile);
+    }
 
     return c.json(profile);
   } catch (err: any) {
@@ -88,7 +90,9 @@ router.patch('/', async (c) => {
     const { data: updated } = await supabaseAdmin
       .from('profiles').update(updates).eq('id', userId).select().single();
 
-    (updated as any).profile_score = score;
+    if (updated) {
+      (updated as any).profile_score = score;
+    }
     return c.json(updated);
   } catch (err: any) {
     return c.json({ error: 'Failed to update profile', details: err.message }, 500);

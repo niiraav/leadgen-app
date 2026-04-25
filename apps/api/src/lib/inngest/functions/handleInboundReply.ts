@@ -163,7 +163,7 @@ export const handleInboundReply = inngest.createFunction(
           case 'unsubscribe': {
             await supabaseAdmin
               .from('leads')
-              .update({ status: 'do_not_contact', do_not_contact: true })  // Phase 3: dual-write domain column
+              .update({ status: 'not_interested', engagement_status: 'not_interested', do_not_contact: true })  // Phase 3: dual-write — unsubscribe maps to not_interested column
               .eq('id', d.leadId)
               .eq('user_id', lead.user_id)
             // Log activity — Phase 3: field-aware label "Marked do not contact"

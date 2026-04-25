@@ -126,6 +126,7 @@ export default function PipelineCard({
   };
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     onSelect(lead.id, {
       shiftKey: e.shiftKey,
       metaKey: e.metaKey,
@@ -148,12 +149,16 @@ export default function PipelineCard({
         ${isRecentlyMoved ? "border-primary/35 bg-primary/5 shadow-sm" : ""}
       `}
     >
-      {/* Selection checkbox (visible on hover or when selected) */}
+      {/* Selection checkbox — toggles this card only, never opens drawer */}
       <div
         className={`
           absolute top-2 left-2 z-10
           ${isSelected || "opacity-0 group-hover:opacity-100 transition-opacity"}
         `}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(lead.id, { shiftKey: false, metaKey: true, ctrlKey: false });
+        }}
       >
         <div
           className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${

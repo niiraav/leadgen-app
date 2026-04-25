@@ -13,7 +13,7 @@ export default function SelectionToolbar({ count, columns, onMoveTo, onClear }: 
   if (count === 0) return null;
 
   return (
-    <div className="sticky bottom-4 z-30 flex items-center justify-center px-4">
+    <div className="fixed bottom-4 left-0 right-0 z-30 flex items-center justify-center px-4">
       <div className="flex items-center gap-3 bg-surface border border-border shadow-lg shadow-black/10 rounded-xl px-4 py-2.5">
         <span className="text-sm font-medium text-text tabular-nums">
           {count} selected

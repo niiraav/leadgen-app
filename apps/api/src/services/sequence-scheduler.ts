@@ -156,6 +156,18 @@ export function startSequenceWorker() {
           });
         } catch (err) {
           console.error('[Sequence Worker] Failed to send email:', err);
+          await supabaseAdmin
+            .from('sequence_step_executions')
+            .insert({
+              sequence_id:    enrollment.sequence_id,
+              enrolment_id:   enrollment_id,
+              user_id:        enrollment.user_id,
+              step_number:    step_order,
+              subject:        step.subject_template,
+              body_plain:     step.body_template,
+              status:         'failed',
+              sent_via:       'mailgun',
+            });
           await createActivity(enrollment.user_id, {
             lead_id: enrollment.lead_id,
             type: 'email_failed',

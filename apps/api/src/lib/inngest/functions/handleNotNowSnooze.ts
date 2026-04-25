@@ -57,7 +57,7 @@ export const handleNotNowSnooze = inngest.createFunction(
         user_id: string
       }
 
-      if (leadRecord.status === 'do_not_contact') {
+      if (leadRecord.status === 'do_not_contact' || leadRecord.status === 'not_interested') {
         return { eligible: false, reason: 'do_not_contact' }
       }
 

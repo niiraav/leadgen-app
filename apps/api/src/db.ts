@@ -185,7 +185,7 @@ export async function createLead(userId: string, values: any) {
   };
 
   const { data, error } = await supabaseAdmin.from('leads').insert(insertData).select('id').single();
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
   return { id: (data as any).id };
 }
 
@@ -208,7 +208,7 @@ export async function updateLead(userId: string, id: string, values: Record<stri
     .update(values)
     .eq('id', id)
     .eq('user_id', userId);
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
 }
 
 export async function deleteLead(userId: string, id: string): Promise<boolean> {
@@ -218,7 +218,7 @@ export async function deleteLead(userId: string, id: string): Promise<boolean> {
     .eq('id', id)
     .eq('user_id', userId)
     .select('id');
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
   return (data as any[]).length > 0;
 }
 
