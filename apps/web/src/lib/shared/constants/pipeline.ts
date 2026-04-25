@@ -45,3 +45,10 @@ export function getLeadColumn(lead: { pipelineStage?: string | null; engagementS
   const s = lead.pipelineStage || lead.engagementStatus || lead.status || 'new';
   return getColumnIdForStatus(s) ?? 'new';
 }
+
+export const LOSS_REASON_LABELS: Record<string, string> = {
+  no_budget: 'No budget',
+  went_silent: 'Went silent',
+  went_with_competitor: 'Went with competitor',
+  unqualified: 'Unqualified',
+};

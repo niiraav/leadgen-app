@@ -112,6 +112,7 @@ export interface Lead {
   followUpSource?: string;
   dealValue?: number;
   lossReason?: string;
+  lossReasonNotes?: string;
   // Enrichment status tracking
   contact_enrichment_status?: 'pending' | 'success' | 'partial' | 'failed' | 'no_data';
   contact_enrichment_provider?: string;

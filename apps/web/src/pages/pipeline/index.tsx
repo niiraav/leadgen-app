@@ -1,22 +1,21 @@
 import { withAuth } from "@/lib/auth";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
+import { Card, KPICard } from "@/components/ui/card";
 import { api, Lead } from "@/lib/api";
-import { Plus, Search, X, Clock, AlertTriangle, PoundSterling, Eye, BarChart3, Users } from "lucide-react";
+import { Plus, Search, X, Clock, AlertTriangle, PoundSterling, Eye, BarChart3, Users, LayoutGrid, List as ListIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { followUpHealth, formatCompactDealValue, PIPELINE_COLUMNS, getColumnDef } from "@leadgen/shared";
-import { usePipelineBoard, PipelineLead } from "@/hooks/usePipelineBoard";
+import { usePipelineBoard, PipelineLead, FilterType, ViewMode } from "@/hooks/usePipelineBoard";
 import { usePipelineGates } from "@/hooks/usePipelineGates";
 import PipelineBoardDesktop from "@/components/pipeline/PipelineBoardDesktop";
 import PipelineBoardMobile from "@/components/pipeline/PipelineBoardMobile";
+import PipelineListView from "@/components/pipeline/PipelineListView";
 import SelectionToolbar from "@/components/pipeline/SelectionToolbar";
 import BulkFollowUpModal from "@/components/pipeline/BulkFollowUpModal";
 import BulkLossModal from "@/components/pipeline/BulkLossModal";
 import LeadQuickDrawer from "@/components/pipeline/LeadQuickDrawer";
-
-type FilterType = "all" | "due_today" | "overdue" | "this_week" | "stale";
 
 const filterPills: { id: FilterType; label: string }[] = [
   { id: "all", label: "All" },
@@ -27,33 +26,40 @@ const filterPills: { id: FilterType; label: string }[] = [
 ];
 
 interface HealthSummary {
-  total_pipeline_value: number;
-  avg_deal_size: number;
-  overdue_follow_ups: number;
-  committed_leads: number;
+  stale_count: number;
+  proposals_out_count: number;
+  proposals_out_value: number;
+  replies_this_week: number;
+  won_this_month: number;
+  won_this_month_value: number;
 }
 
 export default function PipelinePage() {
   const router = useRouter();
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
   const [quickDrawer, setQuickDrawer] = useState<{ open: boolean; lead: Lead | null }>({ open: false, lead: null });
+
+  // Board hook (Sprint A: now owns search, filter, viewMode)
+  const board = usePipelineBoard();
 
   // URL params
   const [urlSynced, setUrlSynced] = useState(false);
   if (router.isReady && !urlSynced) {
     const q = router.query;
-    if (q.search) setSearch(String(q.search));
+    if (q.search) board.setSearchQuery(String(q.search));
     if (q.filter && filterPills.some((f) => f.id === q.filter)) {
-      setActiveFilter(q.filter as FilterType);
+      board.setActiveFilter(q.filter as FilterType);
+    }
+    if (q.view === "list" || q.view === "board") {
+      board.setViewMode(q.view as "board" | "list");
     }
     setUrlSynced(true);
   }
 
-  const updateUrl = (opts: { search?: string; filter?: FilterType }) => {
+  const updateUrl = (opts: { search?: string; filter?: FilterType; view?: ViewMode }) => {
     const q: Record<string, string> = {};
     if (opts.search) q.search = opts.search;
     if (opts.filter && opts.filter !== "all") q.filter = opts.filter;
+    if (opts.view && opts.view !== "board") q.view = opts.view;
     router.replace({ pathname: router.pathname, query: q }, undefined, { shallow: true });
   };
 
@@ -65,98 +71,17 @@ export default function PipelinePage() {
   });
   const healthSummary: HealthSummary | null = healthData
     ? {
-        total_pipeline_value: healthData.total_pipeline_value,
-        avg_deal_size: healthData.avg_deal_size,
-        overdue_follow_ups: healthData.overdue_follow_ups,
-        committed_leads: healthData.committed_leads,
+        stale_count: healthData.stale_count ?? 0,
+        proposals_out_count: healthData.proposals_out_count ?? 0,
+        proposals_out_value: healthData.proposals_out_value ?? 0,
+        replies_this_week: healthData.replies_this_week ?? 0,
+        won_this_month: healthData.won_this_month ?? 0,
+        won_this_month_value: healthData.won_this_month_value ?? 0,
       }
     : null;
 
-  // Board hook
-  const board = usePipelineBoard();
-
   // Gate controller (Sprint B)
   const gates = usePipelineGates(board.moveMutation, board.bulkMoveMutation);
-
-  // Filter leads
-  const filteredLeads = useMemo(() => {
-    let result = board.leads;
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (l) =>
-          (l.business_name || "").toLowerCase().includes(q) ||
-          (l.email || "").toLowerCase().includes(q) ||
-          (l.category || "").toLowerCase().includes(q)
-      );
-    }
-
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const endOfWeek = new Date(today);
-    endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
-
-    switch (activeFilter) {
-      case "due_today":
-        result = result.filter((l) => {
-          if (!l.followUpDate) return false;
-          const d = new Date(l.followUpDate);
-          d.setUTCHours(0, 0, 0, 0);
-          return d.getTime() === today.getTime();
-        });
-        break;
-      case "overdue":
-        result = result.filter((l) => {
-          if (!l.followUpDate) return false;
-          const d = new Date(l.followUpDate);
-          d.setUTCHours(0, 0, 0, 0);
-          return d.getTime() < today.getTime();
-        });
-        break;
-      case "this_week":
-        result = result.filter((l) => {
-          if (!l.followUpDate) return false;
-          const d = new Date(l.followUpDate);
-          d.setUTCHours(0, 0, 0, 0);
-          return d.getTime() >= today.getTime() && d.getTime() <= endOfWeek.getTime();
-        });
-        break;
-      case "stale":
-        result = result.filter((l) => {
-          const updated = l.updated_at ? new Date(l.updated_at) : null;
-          if (!updated) return false;
-          const days = Math.round((today.getTime() - updated.getTime()) / 86400000);
-          return days > 14;
-        });
-        break;
-    }
-
-    return result;
-  }, [board.leads, search, activeFilter]);
-
-  // Group by column
-  const leadsByColumn = useMemo(() => {
-    const map: Record<string, PipelineLead[]> = {};
-    for (const col of PIPELINE_COLUMNS) {
-      map[col.id] = [];
-    }
-    for (const lead of filteredLeads) {
-      const colId = getColumnDef(lead.status)?.id ?? "new";
-      if (!map[colId]) map[colId] = [];
-      map[colId].push(lead);
-    }
-    // Sort within each column using positionMap
-    for (const colId of Object.keys(map)) {
-      const positions = board.positionMap[colId] || {};
-      map[colId].sort((a, b) => {
-        const pa = positions[a.id] ?? Infinity;
-        const pb = positions[b.id] ?? Infinity;
-        return pa - pb;
-      });
-    }
-    return map;
-  }, [filteredLeads, board.positionMap]);
 
   // Move handler → gates
   const handleMoveLead = useCallback(
@@ -198,6 +123,18 @@ export default function PipelinePage() {
     }
   }, [board]);
 
+  // Search handler
+  const onSearchChange = (value: string) => {
+    board.handleSearch(value);
+    updateUrl({ search: value, filter: board.activeFilter, view: board.viewMode });
+  };
+
+  // Filter handler
+  const onFilterChange = (filter: FilterType) => {
+    board.handleFilterChange(filter);
+    updateUrl({ search: board.searchQuery, filter, view: board.viewMode });
+  };
+
   return (
     <div className="space-y-4 md:space-y-6 h-full flex flex-col">
       {/* Header */}
@@ -223,61 +160,49 @@ export default function PipelinePage() {
         </div>
       ) : healthSummary ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <PoundSterling className="w-4 h-4 text-primary" />
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Pipeline value</span>
-            </div>
-            <p className="text-lg font-bold text-text">
-              {healthSummary.total_pipeline_value > 0 ? formatCompactDealValue(healthSummary.total_pipeline_value) : "—"}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Avg deal</span>
-            </div>
-            <p className="text-lg font-bold text-text">
-              {healthSummary.avg_deal_size > 0 ? formatCompactDealValue(healthSummary.avg_deal_size) : "—"}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-destructive" />
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Overdue</span>
-            </div>
-            <p className="text-lg font-bold text-text">{healthSummary.overdue_follow_ups}</p>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-success" />
-              <span className="text-[11px] font-medium text-text-muted uppercase tracking-wider">Committed</span>
-            </div>
-            <p className="text-lg font-bold text-text">{healthSummary.committed_leads}</p>
-          </Card>
+          <KPICard
+            title="Stale leads"
+            value={healthSummary.stale_count}
+            changeType="negative"
+            icon={<AlertTriangle className="w-5 h-5" />}
+          />
+          <KPICard
+            title="Proposals out"
+            value={healthSummary.proposals_out_count}
+            secondaryValue={healthSummary.proposals_out_value > 0 ? formatCompactDealValue(healthSummary.proposals_out_value) : undefined}
+            changeType="positive"
+            icon={<BarChart3 className="w-5 h-5" />}
+          />
+          <KPICard
+            title="Replies this week"
+            value={healthSummary.replies_this_week}
+            changeType="positive"
+            icon={<Eye className="w-5 h-5" />}
+          />
+          <KPICard
+            title="Won this month"
+            value={healthSummary.won_this_month}
+            secondaryValue={healthSummary.won_this_month_value > 0 ? formatCompactDealValue(healthSummary.won_this_month_value) : undefined}
+            changeType="positive"
+            icon={<PoundSterling className="w-5 h-5" />}
+          />
         </div>
       ) : null}
 
-      {/* Search + Filters */}
+      {/* Search + Filters + View Toggle */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
           <input
             type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              updateUrl({ search: e.target.value, filter: activeFilter });
-            }}
+            value={board.searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Search leads..."
             className="input pl-9 text-sm w-full"
           />
-          {search && (
+          {board.searchQuery && (
             <button
-              onClick={() => {
-                setSearch("");
-                updateUrl({ filter: activeFilter });
-              }}
+              onClick={() => onSearchChange("")}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text"
             >
               <X className="w-4 h-4" />
@@ -288,12 +213,9 @@ export default function PipelinePage() {
           {filterPills.map((pill) => (
             <button
               key={pill.id}
-              onClick={() => {
-                setActiveFilter(pill.id);
-                updateUrl({ search, filter: pill.id });
-              }}
+              onClick={() => onFilterChange(pill.id)}
               className={`px-3 py-1.5 rounded-full text-xs font-medium border whitespace-nowrap transition-colors ${
-                activeFilter === pill.id
+                board.activeFilter === pill.id
                   ? "bg-primary text-primary-foreground border-primary"
                   : "bg-surface-2 text-text-muted border-border hover:bg-secondary"
               }`}
@@ -302,9 +224,40 @@ export default function PipelinePage() {
             </button>
           ))}
         </div>
+        {/* View mode toggle */}
+        <div className="flex items-center gap-1 bg-surface-2 rounded-lg border border-border p-0.5 flex-shrink-0">
+          <button
+            onClick={() => {
+              board.setViewMode("board");
+              updateUrl({ search: board.searchQuery, filter: board.activeFilter, view: "board" });
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              board.viewMode === "board"
+                ? "bg-surface text-text shadow-sm"
+                : "text-text-faint hover:text-text"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            Board
+          </button>
+          <button
+            onClick={() => {
+              board.setViewMode("list");
+              updateUrl({ search: board.searchQuery, filter: board.activeFilter, view: "list" });
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              board.viewMode === "list"
+                ? "bg-surface text-text shadow-sm"
+                : "text-text-faint hover:text-text"
+            }`}
+          >
+            <ListIcon className="w-3.5 h-3.5" />
+            List
+          </button>
+        </div>
       </div>
 
-      {/* Board */}
+      {/* Board / List Area */}
       <div className="flex-1 min-h-0">
         {board.isLoading ? (
           <div className="flex gap-4 overflow-x-auto pb-4">
@@ -317,35 +270,50 @@ export default function PipelinePage() {
           </div>
         ) : (
           <>
-            {/* Desktop DnD Board */}
+            {/* Desktop */}
             <div className="hidden md:block h-full">
-              <PipelineBoardDesktop
-                columns={PIPELINE_COLUMNS}
-                leadsByColumn={leadsByColumn}
-                selection={board.selectedIds}
-                recentlyMovedIds={board.recentlyMovedIds}
-                onCardClick={handleCardClick}
-                onSelect={(leadId, modifiers) => {
-                  const columnId = getColumnDef(board.leads.find((l) => l.id === leadId)?.status || "")?.id || "new";
-                  const columnLeads = leadsByColumn[columnId] || [];
-                  board.selectLead(leadId, columnLeads, modifiers);
-                }}
-                onMoveLead={handleMoveLead}
-              />
+              {board.viewMode === "board" ? (
+                <PipelineBoardDesktop
+                  columns={PIPELINE_COLUMNS}
+                  leadsByColumn={board.boardLeadsByColumn}
+                  selection={board.selectedIds}
+                  recentlyMovedIds={board.recentlyMovedIds}
+                  onCardClick={handleCardClick}
+                  onSelect={(leadId, modifiers) => {
+                    const columnId = getColumnDef(board.leads.find((l) => l.id === leadId)?.status || "")?.id || "new";
+                    const columnLeads = board.boardLeadsByColumn[columnId] || [];
+                    board.selectLead(leadId, columnLeads, modifiers);
+                  }}
+                  onMoveLead={handleMoveLead}
+                />
+              ) : (
+                <div className="h-full overflow-y-auto pr-1">
+                  <PipelineListView
+                    leads={board.filteredLeads}
+                    selection={board.selectedIds}
+                    recentlyMovedIds={board.recentlyMovedIds}
+                    onCardClick={handleCardClick}
+                    onSelect={(leadId, modifiers) => {
+                      // In list view, use the full filtered list as the "column" for range select
+                      board.selectLead(leadId, board.filteredLeads, modifiers);
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Mobile Grouped List */}
+            {/* Mobile — always grouped, honours filters */}
             <div className="md:hidden">
               <PipelineBoardMobile
                 columns={PIPELINE_COLUMNS}
-                leadsByColumn={leadsByColumn}
+                leadsByColumn={board.boardLeadsByColumn}
                 selection={board.selectedIds}
                 recentlyMovedIds={board.recentlyMovedIds}
                 onCardClick={handleCardClick}
                 onStatusChange={handleStatusChange}
                 onSelect={(leadId, modifiers) => {
                   const columnId = getColumnDef(board.leads.find((l) => l.id === leadId)?.status || "")?.id || "new";
-                  const columnLeads = leadsByColumn[columnId] || [];
+                  const columnLeads = board.boardLeadsByColumn[columnId] || [];
                   board.selectLead(leadId, columnLeads, modifiers);
                 }}
               />

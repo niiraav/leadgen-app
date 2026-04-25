@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { api, UpgradeRequiredError } from "@/lib/api";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
+import { Portal } from "@/components/ui/portal";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -236,6 +237,7 @@ export default function MessagePicker({
   if (!open) return null;
 
   return (
+    <Portal>
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={onClose}
@@ -498,5 +500,6 @@ export default function MessagePicker({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

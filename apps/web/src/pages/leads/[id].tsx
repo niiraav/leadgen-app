@@ -16,6 +16,7 @@ import { api } from "@/lib/api";
 import { UpgradeRequiredError } from "@/lib/api";
 import { useProfile } from "@/contexts/profile-context";
 import type { Lead, ReviewSummary } from "@leadgen/shared";
+import { formatCompactDealValue } from "@leadgen/shared";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
 import ContactProfileCard from "@/components/leads/ContactProfileCard";
 import { NotesEditor } from "@/components/leads/NotesEditor";
@@ -32,6 +33,13 @@ const FIELD_LABELS: Record<string, string> = {
   lifecycle_state: "Lifecycle state changed",
   do_not_contact: "Marked do not contact",
 };
+
+const LOSS_REASON_OPTIONS = [
+  { value: "no_budget", label: "No budget" },
+  { value: "went_silent", label: "Went silent" },
+  { value: "went_with_competitor", label: "Went with competitor" },
+  { value: "unqualified", label: "Unqualified" },
+];
 
 // ─── Fallback subjects/body ─────────────────────────────────────────────────
 
@@ -77,6 +85,37 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   const [isMobile, setIsMobile] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [saving, setSaving] = useState(false);
+
+  // ── Pipeline field editing state ──
+  const [editFollowUp, setEditFollowUp] = useState(lead?.follow_up_date?.slice(0, 10) ?? "");
+  const [editDealValue, setEditDealValue] = useState<string>(lead?.deal_value ? String(lead.deal_value) : "");
+  const [editLossReason, setEditLossReason] = useState(lead?.loss_reason ?? "");
+  const [editLossNotes, setEditLossNotes] = useState(lead?.loss_reason_notes ?? "");
+
+  // Sync local state when lead changes
+  useEffect(() => {
+    if (lead) {
+      setEditFollowUp(lead.follow_up_date ? lead.follow_up_date.slice(0, 10) : "");
+      setEditDealValue(lead.deal_value ? String(lead.deal_value) : "");
+      setEditLossReason(lead.loss_reason ?? "");
+      setEditLossNotes(lead.loss_reason_notes ?? "");
+    }
+  }, [lead?.follow_up_date, lead?.deal_value, lead?.loss_reason, lead?.loss_reason_notes]);
+
+  const saveField = useCallback(async (field: string, value: unknown) => {
+    if (!lead) return;
+    setSaving(true);
+    try {
+      await api.leads.update(leadId, { [field]: value });
+      queryClient.setQueryData(["lead", leadId], (prev: Lead | undefined) =>
+        prev ? { ...prev, [field]: value } : undefined
+      );
+    } catch (e: any) {
+      toast.error(e.message || `Failed to save ${field}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [lead, leadId, queryClient]);
 
   // Sequence enrollment
   const [sequencesDropdown, setSequencesDropdown] = useState(false);
@@ -426,6 +465,27 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Deal value — editable inline */}
+          <div className="flex items-center gap-1.5">
+            <PoundSterling className="w-3.5 h-3.5 text-text-faint" />
+            <input
+              type="number"
+              min={0}
+              step={100}
+              value={editDealValue}
+              onChange={(e) => setEditDealValue(e.target.value)}
+              onBlur={() => {
+                const val = editDealValue === "" ? null : Number(editDealValue);
+                if (val !== (lead.deal_value ?? null)) {
+                  saveField("deal_value", val);
+                }
+              }}
+              placeholder="Value"
+              className="w-24 text-xs font-medium text-text bg-transparent border-b border-border/40 focus:border-primary focus:outline-none px-1 py-0.5"
+            />
+            {saving && <Loader2 className="w-3 h-3 animate-spin text-text-faint" />}
+          </div>
+
           {/* Phase 4.1: StatusDropdown + domain context */}
           <StatusDropdown
             lead={{
@@ -539,6 +599,78 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             }}
             repliesCount={repliesQuery.data?.replies?.length ?? 0}
           />
+
+          {/* ── Pipeline Details Card ── */}
+          <Card className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-text flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-primary" />
+              Pipeline Details
+            </h3>
+
+            {/* Follow-up date */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-medium text-text-muted uppercase tracking-wide">Follow-up Date</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={editFollowUp}
+                  onChange={(e) => setEditFollowUp(e.target.value)}
+                  onBlur={() => {
+                    const val = editFollowUp === "" ? null : editFollowUp;
+                    if (val !== (lead.follow_up_date?.slice(0, 10) ?? null)) {
+                      saveField("follow_up_date", val);
+                    }
+                  }}
+                  className="flex-1 text-sm bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary"
+                />
+                {lead.follow_up_date && (
+                  <span className="text-[11px] text-text-muted whitespace-nowrap">
+                    {(() => {
+                      const due = new Date(lead.follow_up_date);
+                      const today = new Date();
+                      today.setUTCHours(0, 0, 0, 0);
+                      due.setUTCHours(0, 0, 0, 0);
+                      const diff = Math.round((due.getTime() - today.getTime()) / 86400000);
+                      if (diff === 0) return "Today";
+                      return diff > 0 ? `in ${diff}d` : `${Math.abs(diff)}d ago`;
+                    })()}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Loss reason — only show if lost */}
+            {(lead.status === "lost" || lead.pipeline_stage === "lost") && (
+              <div className="space-y-2 pt-1 border-t border-border/30">
+                <label className="text-[11px] font-medium text-text-muted uppercase tracking-wide">Loss Reason</label>
+                <select
+                  value={editLossReason}
+                  onChange={(e) => {
+                    setEditLossReason(e.target.value);
+                    saveField("loss_reason", e.target.value || null);
+                  }}
+                  className="w-full text-sm bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary"
+                >
+                  <option value="">Select a reason…</option>
+                  {LOSS_REASON_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <textarea
+                  value={editLossNotes}
+                  onChange={(e) => setEditLossNotes(e.target.value)}
+                  onBlur={() => {
+                    if (editLossNotes !== (lead.loss_reason_notes ?? "")) {
+                      saveField("loss_reason_notes", editLossNotes || null);
+                    }
+                  }}
+                  placeholder="Additional notes…"
+                  rows={2}
+                  className="w-full text-xs bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+            )}
+          </Card>
 
           {/* ──────────────────────────────────────────────────────────────
               4) REVIEW INTELLIGENCE

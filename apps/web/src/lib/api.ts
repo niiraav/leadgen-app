@@ -93,6 +93,7 @@ export interface BackendLead {
   follow_up_source?: string | null;
   deal_value?: number | null;
   loss_reason?: string | null;
+  loss_reason_notes?: string | null;
   // Reply awareness (Phase 4)
   latest_reply?: any | null;
   unread_reply_count?: number;
@@ -182,6 +183,7 @@ export interface BackendLeadDetail {
   follow_up_source?: string | null;
   deal_value?: number | null;
   loss_reason?: string | null;
+  loss_reason_notes?: string | null;
   // Reply awareness (Phase 4)
   latest_reply?: any | null;
   unread_reply_count?: number;
@@ -307,6 +309,7 @@ export function mapBackendLead(raw: BackendLead): Lead {
     followUpSource: (raw as any).follow_up_source ?? undefined,
     dealValue: (raw as any).deal_value ?? undefined,
     lossReason: (raw as any).loss_reason ?? undefined,
+    lossReasonNotes: (raw as any).loss_reason_notes ?? undefined,
     // Reply awareness (Phase 4)
     latestReply: (raw as any).latest_reply ?? null,
     unreadReplyCount: (raw as any).unread_reply_count ?? 0,
@@ -486,6 +489,16 @@ export const api = {
         body: JSON.stringify(data),
       }).then(mapBackendLead),
 
+    getHealth: (id: string) =>
+      request<{
+        follow_up_health: 'red' | 'amber' | 'green' | null;
+        deal_value: number | null;
+        loss_reason: string | null;
+        loss_reason_notes: string | null;
+        days_since_activity: number | null;
+        stale: boolean;
+      }>(`/leads/${id}/health`),
+
     exportCSV: async () => {
       const token = await getAccessToken();
       const url = `${API_BASE}/leads/export/csv`;
@@ -641,8 +654,16 @@ export const api = {
 
   // Pipeline health
   pipelineHealth: async (): Promise<{
-    health_score: number; stale_count: number; uncontacted_count: number;
-    active_sequences: number; won_this_month: number; conversion_rate: number;
+    health_score: number;
+    stale_count: number;
+    uncontacted_count: number;
+    active_sequences: number;
+    won_this_month: number;
+    conversion_rate: number;
+    total_pipeline_value: number;
+    avg_deal_size: number;
+    overdue_follow_ups: number;
+    committed_leads: number;
     insights: string[];
   }> => {
     return request("/analytics/pipeline-health");

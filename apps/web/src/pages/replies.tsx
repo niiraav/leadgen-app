@@ -3,7 +3,7 @@ import { SCORE_THRESHOLDS } from "@leadgen/shared";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
 import { api } from "@/lib/api";
-import ReplyDrawer from "@/components/replies/ReplyDrawer";
+import { ReplyDrawer } from '@/components/replies/ReplyDrawer';
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   Flame,
@@ -31,7 +31,7 @@ interface ReplyEvent {
   hot_score: number;
   received_at: string;
   needs_review: boolean;
-  is_read: boolean;
+  reply_status: string;
   lead: {
     business_name: string;
     email: string | null;
@@ -168,8 +168,8 @@ export default function RepliesPage() {
     setReadIds((prev) => new Set(prev).add(id));
     try {
       await api.replies.read(id);
-    } catch (err) {
-      // Ignore — non-critical
+    } catch {
+      // Non-critical: ReplyDrawer will also attempt markRead on mount
     }
   };
 
@@ -312,7 +312,7 @@ export default function RepliesPage() {
                     : reply.key_phrase
                   : "—";
 
-                const isUnread = !reply.is_read && !readIds.has(reply.id);
+                const isUnread = reply.reply_status === 'new' && !readIds.has(reply.id);
 
                 return (
                   <div
@@ -387,7 +387,7 @@ export default function RepliesPage() {
               replies.map((reply) => {
                 const businessName = reply.lead?.business_name || "Unknown";
                 const intent = reply.user_corrected_label || reply.intent_label;
-                const isUnread = !reply.is_read && !readIds.has(reply.id);
+                const isUnread = reply.reply_status === 'new' && !readIds.has(reply.id);
 
                 return (
                   <div

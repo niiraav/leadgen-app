@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useProfile } from "@/contexts/profile-context";
 import { Loader2, Check, X, Sparkles, RotateCw } from "lucide-react";
+import { Portal } from "@/components/ui/portal";
 import {
   SERVICE_CATEGORIES,
   ROLE_OPTIONS,
@@ -114,6 +115,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
   if (done) {
     return (
+      <Portal>
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
         <div className="bg-surface border border-border/60 rounded-2xl w-full max-w-lg p-10 text-center">
           <div className="text-5xl mb-4">🎉</div>
@@ -121,10 +123,12 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
           <p className="text-text-muted">Redirecting to search...</p>
         </div>
       </div>
+      </Portal>
     );
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
       <div className="bg-surface border border-border/60 rounded-2xl w-full max-w-[560px] max-h-[90vh] overflow-y-auto">
         <div className="p-6">
@@ -421,5 +425,6 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

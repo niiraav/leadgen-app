@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, X, Check, AlertTriangle, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradeRequiredError } from "@/lib/api";
+import { Portal } from "@/components/ui/portal";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -130,6 +131,7 @@ export function VerifyEmailButton({
       )}
 
       {showConfirm && (
+        <Portal>
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
           <div
             className="bg-surface border border-border/60 rounded-xl w-full max-w-xs"
@@ -163,6 +165,7 @@ export function VerifyEmailButton({
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

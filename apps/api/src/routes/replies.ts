@@ -16,6 +16,7 @@ router.get('/', async (c) => {
 
   const intent = c.req.query('intent');
   const needsReview = c.req.query('needsReview');
+  const unread = c.req.query('unread');
   const limit = Math.min(parseInt(c.req.query('limit') || '20', 10), 100);
   const offset = parseInt(c.req.query('offset') || '0', 10);
 
@@ -37,6 +38,10 @@ router.get('/', async (c) => {
 
   if (needsReview !== undefined) {
     query = query.eq('needs_review', needsReview === 'true');
+  }
+
+  if (unread === 'true') {
+    query = query.eq('reply_status', 'new');
   }
 
   query = query.range(offset, offset + limit - 1);

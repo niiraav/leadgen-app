@@ -1,268 +1,170 @@
-import { useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
-import { api, type Lead } from "@/lib/api";
-import { X, Mail, Phone, MapPin, Globe, Star, Tag, Calendar, ArrowRight, Flame, Frown } from "lucide-react";
-import Link from "next/link";
-import { PIPELINE_COLUMNS, getColumnDef } from "@leadgen/shared";
+import { useState, useEffect } from "react";
+import { X, Save, Calendar, PoundSterling, Clock } from "lucide-react";
+import { daysFromNow, followUpHealth, formatCompactDealValue } from "@leadgen/shared";
+import { Lead } from "@/lib/api";
 
 interface LeadQuickDrawerProps {
-  leadId: string | null;
+  lead: Lead | null;
+  isOpen: boolean;
   onClose: () => void;
+  onUpdate: (id: string, data: Record<string, unknown>) => Promise<void>;
 }
 
-export function LeadQuickDrawer({ leadId, onClose }: LeadQuickDrawerProps) {
-  const drawerRef = useRef<HTMLDivElement>(null);
+export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: LeadQuickDrawerProps) {
+  const [dealValue, setDealValue] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const { data: lead, isLoading } = useQuery<Lead>({
-    queryKey: ["lead", leadId],
-    queryFn: async () => {
-      if (!leadId) throw new Error("No lead ID");
-      return api.leads.get(leadId);
-    },
-    enabled: !!leadId,
-    staleTime: 30_000,
-  });
-
-  // Close on Escape
   useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && leadId) onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [leadId, onClose]);
-
-  // Close on click outside
-  useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-    if (leadId) {
-      // Delay slightly to avoid closing immediately on the click that opened it
-      const timer = setTimeout(() => {
-        window.addEventListener("mousedown", onClick);
-      }, 100);
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener("mousedown", onClick);
-      };
+    if (lead) {
+      setDealValue(lead.dealValue ? String(lead.dealValue / 100) : "");
+      setFollowUpDate(lead.followUpDate ? lead.followUpDate.slice(0, 10) : "");
     }
-  }, [leadId, onClose]);
+  }, [lead]);
 
-  const columnDef = lead ? getColumnDef(lead.status) : undefined;
-  const columnTitle = columnDef?.title ?? lead?.status ?? "";
+  if (!isOpen || !lead) return null;
 
-  const LOSS_REASON_LABELS: Record<string, string> = {
-    no_response: "No response",
-    wrong_timing: "Wrong timing",
-    too_expensive: "Too expensive",
-    competitor: "Chose competitor",
-    not_a_fit: "Not a fit",
-    other: "Other",
+  const health = followUpHealth(lead.followUpDate || null);
+  const healthColor = health === "red" ? "text-destructive" : health === "amber" ? "text-warning" : "text-success";
+  const healthLabel = health === "red" ? "Overdue" : health === "amber" ? "Due today" : health === "green" ? "On track" : "No follow-up";
+
+  const quickOptions = [
+    { label: "Tomorrow", days: 1 },
+    { label: "3 days", days: 3 },
+    { label: "1 week", days: 7 },
+    { label: "2 weeks", days: 14 },
+  ];
+
+  const handleQuick = (days: number) => {
+    const d = daysFromNow(days);
+    setFollowUpDate(d.toISOString().slice(0, 10));
+    handleSave({ followUpDate: d.toISOString() });
   };
 
-  const isLost = lead?.status === "lost" || lead?.pipelineStage === "lost";
+  const handleSave = async (override?: Record<string, unknown>) => {
+    if (!lead) return;
+    setSaving(true);
+    try {
+      const data: Record<string, unknown> = override || {};
+      if (!override) {
+        const val = dealValue ? Math.round(parseFloat(dealValue) * 100) : null;
+        data.dealValue = val;
+        if (followUpDate) {
+          const d = new Date(followUpDate);
+          d.setUTCHours(0, 0, 0, 0);
+          data.followUpDate = d.toISOString();
+        } else {
+          data.followUpDate = null;
+        }
+      }
+      await onUpdate(lead.id, data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      console.error("Save failed", e);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <AnimatePresence>
-      {leadId && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/20 z-40"
-            onClick={onClose}
-          />
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
-          {/* Drawer */}
-          <motion.div
-            ref={drawerRef}
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 350, damping: 32 }}
-            className="fixed right-0 top-0 h-full w-full sm:w-[420px] bg-surface border-l border-border shadow-2xl z-50 flex flex-col"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
-              <h2 className="text-base font-semibold text-text truncate pr-4">
-                {isLoading ? "Loading…" : lead?.business_name ?? "Lead Details"}
-              </h2>
-              <button
-                onClick={onClose}
-                className="rounded-lg p-1.5 text-text-muted hover:text-text hover:bg-surface-2 transition-colors shrink-0"
-                aria-label="Close drawer"
-              >
-                <X className="w-5 h-5" />
-              </button>
+      {/* Drawer */}
+      <div className="relative bg-surface border-l border-border w-full max-w-md h-full overflow-y-auto animate-slide-in-right">
+        <div className="p-5 border-b border-border flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-text">{lead.business_name}</h3>
+            <p className="text-xs text-text-muted mt-0.5">{lead.email || lead.phone || "No contact"}</p>
+          </div>
+          <button onClick={onClose} className="text-text-faint hover:text-text">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-6">
+          {/* Deal Value */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-2">
+              <PoundSterling className="w-3.5 h-3.5" />
+              Deal value
+            </label>
+            <div className="relative">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-text-faint">£</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={dealValue}
+                onChange={(e) => setDealValue(e.target.value)}
+                onBlur={() => handleSave()}
+                className="input pl-6 text-sm"
+                placeholder="0.00"
+              />
             </div>
+            {lead.dealValue && lead.dealValue > 0 && (
+              <p className="text-[11px] text-text-faint mt-1">
+                Current: {formatCompactDealValue(lead.dealValue)}
+              </p>
+            )}
+          </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              {isLoading ? (
-                <div className="space-y-4 animate-pulse">
-                  <div className="h-6 bg-surface-2 rounded-lg w-3/4" />
-                  <div className="h-4 bg-surface-2 rounded-lg w-1/2" />
-                  <div className="h-20 bg-surface-2 rounded-xl" />
-                  <div className="h-32 bg-surface-2 rounded-xl" />
-                </div>
-              ) : lead ? (
-                <>
-                  {/* Status & Score */}
-                  <div className="flex items-center gap-3">
-                    {columnDef && (
-                      <span
-                        className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded-md"
-                        style={{
-                          color: columnDef.color,
-                          backgroundColor: `${columnDef.color}18`,
-                        }}
-                      >
-                        {columnTitle}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md bg-orange-500/10 text-orange-500">
-                      <Flame className="w-3 h-3" />
-                      Hot Score {lead.hot_score ?? 0}
-                    </span>
-                  </div>
+          {/* Follow-up */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-2">
+              <Calendar className="w-3.5 h-3.5" />
+              Follow-up date
+            </label>
 
-                  {/* Loss Reason (only for Lost leads) */}
-                  {isLost && lead?.lossReason && (
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md bg-red-500/10 text-red-600">
-                        <Frown className="w-3 h-3" />
-                        Lost: {LOSS_REASON_LABELS[lead.lossReason] ?? lead.lossReason}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Contact */}
-                  <div className="space-y-2.5">
-                    {lead.email && (
-                      <div className="flex items-center gap-2.5 text-sm text-text">
-                        <Mail className="w-4 h-4 text-text-muted shrink-0" />
-                        <span className="truncate">{lead.email}</span>
-                      </div>
-                    )}
-                    {lead.phone && (
-                      <div className="flex items-center gap-2.5 text-sm text-text">
-                        <Phone className="w-4 h-4 text-text-muted shrink-0" />
-                        <span>{lead.phone}</span>
-                      </div>
-                    )}
-                    {(lead.address || lead.city || lead.country) && (
-                      <div className="flex items-center gap-2.5 text-sm text-text">
-                        <MapPin className="w-4 h-4 text-text-muted shrink-0" />
-                        <span className="truncate">
-                          {[lead.address, lead.city, lead.country].filter(Boolean).join(", ")}
-                        </span>
-                      </div>
-                    )}
-                    {lead.website_url && (
-                      <a
-                        href={lead.website_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2.5 text-sm text-blue hover:underline"
-                      >
-                        <Globe className="w-4 h-4 text-text-muted shrink-0" />
-                        <span className="truncate">{lead.website_url}</span>
-                      </a>
-                    )}
-                  </div>
-
-                  {/* Rating */}
-                  {lead.rating !== undefined && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                      <span className="font-medium text-text">{lead.rating}</span>
-                      <span className="text-text-muted">
-                        {lead.review_count ? `(${lead.review_count} reviews)` : ""}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Category & Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {lead.category && (
-                      <span className="text-xs px-2 py-1 rounded-md bg-surface-2 text-text-muted border border-border flex items-center gap-1">
-                        <Tag className="w-3 h-3" />
-                        {lead.category}
-                      </span>
-                    )}
-                    {lead.tags?.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs px-2 py-1 rounded-md bg-surface-2 text-text-muted border border-border"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Created */}
-                  <div className="flex items-center gap-2 text-xs text-text-muted">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Added {lead.created_at ? new Date(lead.created_at).toLocaleDateString() : "—"}
-                  </div>
-
-                  {/* Notes */}
-                  {lead.notes && (
-                    <div className="bg-surface-2 rounded-xl p-4 border border-border">
-                      <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-                        Notes
-                      </h3>
-                      <p className="text-sm text-text whitespace-pre-line line-clamp-6">
-                        {lead.notes}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Contact Enrichment */}
-                  {lead.contact_full_name && (
-                    <div className="bg-surface-2 rounded-xl p-4 border border-border">
-                      <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
-                        Contact
-                      </h3>
-                      <div className="space-y-1.5 text-sm">
-                        <p className="text-text font-medium">{lead.contact_full_name}</p>
-                        {lead.contact_title && <p className="text-text-muted">{lead.contact_title}</p>}
-                        {lead.contact_email && <p className="text-blue">{lead.contact_email}</p>}
-                        {lead.contact_phone && <p className="text-text-muted">{lead.contact_phone}</p>}
-                      </div>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-sm text-text-muted text-center py-8">
-                  Lead not found.
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            {lead && (
-              <div className="px-5 py-4 border-t border-border shrink-0 bg-surface">
-                <Link
-                  href={`/leads/${lead.id}`}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-surface-2 border border-border text-sm font-medium text-text hover:bg-surface-3 transition-colors"
-                  onClick={onClose}
-                >
-                  Open full profile
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
+            {health && (
+              <div className={`flex items-center gap-1.5 text-[11px] font-medium mb-2 ${healthColor}`}>
+                <Clock className="w-3 h-3" />
+                {healthLabel}
               </div>
             )}
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+
+            <div className="relative mb-3">
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+              <input
+                type="date"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+                onBlur={() => handleSave()}
+                className="input pl-9 text-sm"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              {quickOptions.map((opt) => (
+                <button
+                  key={opt.days}
+                  onClick={() => handleQuick(opt.days)}
+                  className="flex-1 py-1.5 px-1 rounded-md text-[11px] font-medium bg-surface-2 border border-border text-text-muted hover:bg-secondary transition-colors"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Save indicator */}
+          {saved && (
+            <div className="flex items-center gap-1.5 text-[11px] text-success">
+              <Save className="w-3 h-3" />
+              Saved
+            </div>
+          )}
+          {saving && (
+            <div className="flex items-center gap-1.5 text-[11px] text-text-faint">
+              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              Saving...
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

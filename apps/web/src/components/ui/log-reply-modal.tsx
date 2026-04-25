@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, Loader2, Send, Check } from "lucide-react";
+import { Portal } from "@/components/ui/portal";
 
 const CLASSIFICATION_STYLE: Record<string, { emoji: string; color: string; bg: string }> = {
   INTERESTED: { emoji: "🟢", color: "text-green", bg: "bg-green/10 border-green/30" },
@@ -75,6 +76,7 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
   };
 
   return (
+    <Portal>
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-surface border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
@@ -135,5 +137,6 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

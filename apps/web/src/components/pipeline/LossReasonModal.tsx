@@ -1,76 +1,109 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { X, AlertCircle } from "lucide-react";
 
-const REASONS = [
-  { value: "no_response",       label: "No response" },
-  { value: "wrong_timing",      label: "Wrong timing" },
-  { value: "too_expensive",     label: "Too expensive" },
-  { value: "competitor",        label: "Chose a competitor" },
-  { value: "not_a_fit",         label: "Not a fit" },
-  { value: "other",             label: "Other" },
+const LOSS_REASON_OPTIONS = [
+  { value: "no_budget", label: "No budget" },
+  { value: "went_silent", label: "Went silent" },
+  { value: "went_with_competitor", label: "Went with competitor" },
+  { value: "unqualified", label: "Unqualified" },
 ];
 
-export function LossReasonModal({
-  open,
-  leadCount,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean;
-  leadCount: number;
-  onConfirm: (reason: string | null) => void;
-  onCancel: () => void;
-}) {
-  const [selected, setSelected] = useState<string | null>(null);
+interface LossReasonModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string, notes: string) => void;
+  leadName: string;
+  existingReason?: string | null;
+  existingNotes?: string | null;
+}
 
-  if (!open) return null;
+export default function LossReasonModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  leadName,
+  existingReason,
+  existingNotes,
+}: LossReasonModalProps) {
+  const [reason, setReason] = useState("");
+  const [notes, setNotes] = useState("");
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setReason(existingReason || "");
+      setNotes(existingNotes || "");
+      setTouched(false);
+    }
+  }, [isOpen, existingReason, existingNotes]);
+
+  if (!isOpen) return null;
+
+  const handleConfirm = () => {
+    setTouched(true);
+    if (!reason) return;
+    onConfirm(reason, notes);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-lg font-semibold mb-1">
-          Why was this lead lost?
-        </h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Select a loss reason or skip to continue.
+      <div className="bg-surface rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive" />
+            Lost deal
+          </h3>
+          <button onClick={onClose} className="text-text-faint hover:text-text">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <p className="text-xs text-text-muted mb-4">
+          Why did <span className="font-medium text-text">{leadName}</span> not convert?
         </p>
 
-        <div className="space-y-2 mb-6">
-          {REASONS.map((r) => (
-            <label
-              key={r.value}
-              className={`flex items-center gap-3 p-3 rounded-md border cursor-pointer transition-colors ${
-                selected === r.value
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-gray-200 hover:bg-gray-50"
+        <div className="space-y-2 mb-4">
+          {LOSS_REASON_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setReason(opt.value)}
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
+                reason === opt.value
+                  ? "bg-destructive/10 border-destructive/30 text-destructive"
+                  : "bg-surface-2 border-border text-text-muted hover:bg-secondary"
               }`}
-              onClick={() => setSelected(r.value)}
             >
-              <input
-                type="radio"
-                name="lossReason"
-                value={r.value}
-                checked={selected === r.value}
-                onChange={() => setSelected(r.value)}
-                className="accent-blue-600"
-              />
-              <span className="text-sm">{r.label}</span>
-            </label>
+              {opt.label}
+            </button>
           ))}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel}>
+        {touched && !reason && (
+          <p className="text-[11px] text-destructive mb-3">Please select a reason</p>
+        )}
+
+        <label className="block text-[11px] font-medium text-text-muted mb-1.5">
+          Additional notes (optional)
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          className="input text-xs resize-none mb-5"
+          placeholder="Add context about why this lead was lost..."
+        />
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="btn btn-secondary flex-1 text-xs">
             Cancel
-          </Button>
-          <Button variant="secondary" onClick={() => onConfirm(null)}>
-            Skip
-          </Button>
-          <Button
-            onClick={() => onConfirm(selected ?? null)}
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="btn btn-primary flex-1 text-xs bg-destructive hover:bg-destructive/90"
           >
-            Save
-          </Button>
+            Confirm lost
+          </button>
         </div>
       </div>
     </div>

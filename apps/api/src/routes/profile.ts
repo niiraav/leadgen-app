@@ -69,7 +69,7 @@ router.patch('/', async (c) => {
       'usp','tone','signoff_style','cta_preference','target_geography',
       'target_categories','working_days','working_hours_start','working_hours_end',
       'sales_cycle_days','onboarding_step','profile_complete',
-      'average_deal_value','calendly_link','linkedin_url',
+      'average_deal_value','calendly_link','linkedin_url','view_preference',
     ];
     const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const key of allowed) {

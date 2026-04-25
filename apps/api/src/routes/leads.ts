@@ -66,7 +66,8 @@ const updateLeadSchema = createLeadSchema.partial().extend({
   followUpDate: z.string().datetime().optional().nullable(),
   followUpSource: z.enum(['column_default', 'reply_received', 'manual']).optional().nullable(),
   dealValue: z.number().int().min(0).optional().nullable(),
-  lossReason: z.enum(['no_response', 'wrong_timing', 'too_expensive', 'competitor', 'not_a_fit', 'other']).optional().nullable(),
+  lossReason: z.enum(['no_budget', 'went_silent', 'went_with_competitor', 'unqualified']).optional().nullable(),
+  lossReasonNotes: z.string().max(500).optional().nullable(),
 });
 
 // ─── GET /leads - List with cursor pagination ────────────────────────────────
@@ -276,18 +277,52 @@ router.patch('/:id', async (c) => {
     if (parsed.data.followUpDate !== undefined) updateData.follow_up_date = parsed.data.followUpDate;
     if (parsed.data.followUpSource !== undefined) updateData.follow_up_source = parsed.data.followUpSource;
     if (parsed.data.lossReason !== undefined) updateData.loss_reason = parsed.data.lossReason;
+    if (parsed.data.lossReasonNotes !== undefined) updateData.loss_reason_notes = parsed.data.lossReasonNotes;
+
+    // ── Loss reason validation ──
+    const newStatus =
+      parsed.data.status ??
+      parsed.data.engagement_status ??
+      parsed.data.pipeline_stage ??
+      parsed.data.engagementStatus ??
+      parsed.data.pipelineStage ??
+      existing.status;
+    if (parsed.data.lossReason != null && newStatus !== 'lost') {
+      return c.json({ error: 'loss_reason can only be set when status is lost' }, 400);
+    }
+    // Clear loss reason when moving out of lost
+    if (newStatus !== 'lost' && existing.status === 'lost') {
+      updateData.loss_reason = null;
+      updateData.loss_reason_notes = null;
+    }
+
+    // ── Converted-at tracking ──
+    const isNowConverted = newStatus === 'converted';
+    const wasConverted = existing.status === 'converted' || existing.pipeline_stage === 'converted';
+    if (isNowConverted && !wasConverted) {
+      updateData.converted_at = now;
+    } else if (!isNowConverted && wasConverted) {
+      updateData.converted_at = null;
+    }
+
     // Phase 4: dual-write — when a domain column is written, also update legacy status
     if (parsed.data.engagementStatus !== undefined) {
       updateData.engagement_status = parsed.data.engagementStatus;
-      if (parsed.data.status === undefined) updateData.status = parsed.data.engagementStatus;
+      if (parsed.data.status === undefined && parsed.data.engagementStatus != null) {
+        updateData.status = parsed.data.engagementStatus;
+      }
     }
     if (parsed.data.pipelineStage !== undefined) {
       updateData.pipeline_stage = parsed.data.pipelineStage;
-      if (parsed.data.status === undefined) updateData.status = parsed.data.pipelineStage;
+      if (parsed.data.status === undefined && parsed.data.pipelineStage != null) {
+        updateData.status = parsed.data.pipelineStage;
+      }
     }
     if (parsed.data.lifecycleState !== undefined) {
       updateData.lifecycle_state = parsed.data.lifecycleState;
-      if (parsed.data.status === undefined) updateData.status = parsed.data.lifecycleState;
+      if (parsed.data.status === undefined && parsed.data.lifecycleState != null) {
+        updateData.status = parsed.data.lifecycleState;
+      }
     }
     if (parsed.data.doNotContact !== undefined) updateData.do_not_contact = parsed.data.doNotContact;
 
@@ -1280,6 +1315,51 @@ router.post('/:id/activity', async (c) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Leads POST /:id/activity] Error:', message);
     return c.json({ error: 'Failed to log activity', details: message }, 500);
+  }
+});
+
+// ─── GET /leads/:id/health ───────────────────────────────────────────────────
+
+router.get('/:id/health', async (c) => {
+  try {
+    const userId = getUserId(c);
+    const id = c.req.param('id');
+
+    const { data: lead, error } = await supabaseAdmin
+      .from('leads')
+      .select('follow_up_date, deal_value, loss_reason, loss_reason_notes, status, updated_at')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !lead) {
+      return c.json({ error: 'Lead not found' }, 404);
+    }
+
+    const now = new Date();
+    now.setUTCHours(0, 0, 0, 0);
+    let followUpHealth: 'red' | 'amber' | 'green' | null = null;
+    if (lead.follow_up_date) {
+      const due = new Date(lead.follow_up_date);
+      due.setUTCHours(0, 0, 0, 0);
+      const diff = Math.round((due.getTime() - now.getTime()) / 86400000);
+      followUpHealth = diff < 0 ? 'red' : diff === 0 ? 'amber' : 'green';
+    }
+
+    const updatedAt = lead.updated_at ? new Date(lead.updated_at) : null;
+    const daysSinceActivity = updatedAt ? Math.round((now.getTime() - updatedAt.getTime()) / 86400000) : null;
+    const stale = daysSinceActivity !== null && daysSinceActivity > 14;
+
+    return c.json({
+      follow_up_health: followUpHealth,
+      deal_value: lead.deal_value,
+      loss_reason: lead.loss_reason,
+      loss_reason_notes: lead.loss_reason_notes,
+      days_since_activity: daysSinceActivity,
+      stale,
+    });
+  } catch (err: any) {
+    return c.json({ error: 'Failed to fetch health', details: err.message }, 500);
   }
 });
 

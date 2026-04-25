@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, X, Check } from "lucide-react";
+import { Portal } from "@/components/ui/portal";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -51,6 +52,7 @@ export function EnrichButton({ leadId, enriched = false, onEnriched }: EnrichBut
       </button>
 
       {showConfirm && (
+        <Portal>
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
           <div
             className="bg-surface border border-border/60 rounded-xl w-full max-w-xs"
@@ -83,6 +85,7 @@ export function EnrichButton({ leadId, enriched = false, onEnriched }: EnrichBut
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   );

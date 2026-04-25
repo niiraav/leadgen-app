@@ -124,6 +124,16 @@ export const leads = pgTable('leads', {
   // Review insights (AI-extracted from Google Maps reviews)
   reviewSummary: jsonb('review_summary').$type<Record<string, unknown>>(),
   reviewsFetchedAt: timestamp('reviews_fetched_at', { withTimezone: true }),
+
+  // Sprint P2: follow-up dates, deal values, and loss reasons
+  followUpDate: text('follow_up_date'),
+  followUpSource: text('follow_up_source'),
+  dealValue: integer('deal_value'),
+  lossReason: text('loss_reason'),
+  lossReasonNotes: text('loss_reason_notes'),
+
+  // Pipeline v3: track conversion timestamp independently
+  convertedAt: timestamp('converted_at', { withTimezone: true }),
 });
 
 export const leadsRelations = relations(leads, ({ one }) => ({

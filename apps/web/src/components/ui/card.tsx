@@ -77,6 +77,7 @@ export function CardFooter({
 interface KPICardProps {
   title: string;
   value: string | number;
+  secondaryValue?: string;
   change?: string;
   changeType?: "positive" | "negative" | "neutral";
   icon?: React.ReactNode;
@@ -88,6 +89,7 @@ interface KPICardProps {
 export function KPICard({
   title,
   value,
+  secondaryValue,
   change,
   changeType = "neutral",
   icon,
@@ -107,6 +109,9 @@ export function KPICard({
         <div className="space-y-1">
           <p className="text-sm font-medium text-text-muted">{title}</p>
           <p className="text-3xl font-bold text-text tracking-tight">{value}</p>
+          {secondaryValue && (
+            <p className="text-xs text-text-faint mt-0.5">{secondaryValue}</p>
+          )}
         </div>
         {icon && (
           <div className="rounded-full bg-surface-2 p-2.5 text-text-muted">

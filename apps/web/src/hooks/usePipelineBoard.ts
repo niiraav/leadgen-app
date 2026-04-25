@@ -39,6 +39,9 @@ export interface SelectModifiers {
   ctrlKey: boolean;
 }
 
+export type ViewMode = "board" | "list";
+export type FilterType = "all" | "due_today" | "overdue" | "this_week" | "stale";
+
 // Re-export shared symbols for convenience
 export { PIPELINE_COLUMNS, getOpposingField, getColumnDef, getLeadColumn };
 export type { PipelineColumnDef };
@@ -51,6 +54,31 @@ export function usePipelineBoard() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Sprint A: View mode + Search + Filter ──────────────────────
+  const [viewMode, setViewModeState] = useState<ViewMode>("board");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
+
+  // Fetch saved view preference on mount — only if no URL override
+  const { data: profileData } = useQuery({
+    queryKey: ["profile"],
+    queryFn: api.profile.get,
+    staleTime: Infinity,
+    enabled: typeof window !== "undefined",
+  });
+
+  const profileAppliedRef = useRef(false);
+  useEffect(() => {
+    if (profileAppliedRef.current) return;
+    if (profileData !== undefined) {
+      const pref = (profileData as any)?.view_preference;
+      if (pref && !new URLSearchParams(window.location.search).has("view")) {
+        setViewModeState(pref as ViewMode);
+      }
+      profileAppliedRef.current = true;
+    }
+  }, [profileData]);
 
   const selectedCount = selectedIds.size;
   const hasSelection = selectedCount > 0;
@@ -185,6 +213,115 @@ export function usePipelineBoard() {
     }
     return map;
   }, [positionsData]);
+
+  // ── Sprint A: Filtered leads (flat list) ─────────────────────
+
+  const filteredLeads = useMemo(() => {
+    let result = leads;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (l) =>
+          (l.business_name || "").toLowerCase().includes(q) ||
+          (l.email || "").toLowerCase().includes(q) ||
+          (l.category || "").toLowerCase().includes(q)
+      );
+    }
+
+    // Date filters — UTC midnight to avoid BST off-by-one
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const endOfWeek = new Date(today);
+    endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
+
+    switch (activeFilter) {
+      case "due_today":
+        result = result.filter((l) => {
+          if (!l.followUpDate) return false;
+          const d = new Date(l.followUpDate);
+          d.setUTCHours(0, 0, 0, 0);
+          return d.getTime() === today.getTime();
+        });
+        break;
+      case "overdue":
+        result = result.filter((l) => {
+          if (!l.followUpDate) return false;
+          const d = new Date(l.followUpDate);
+          d.setUTCHours(0, 0, 0, 0);
+          return d.getTime() < today.getTime();
+        });
+        break;
+      case "this_week":
+        result = result.filter((l) => {
+          if (!l.followUpDate) return false;
+          const d = new Date(l.followUpDate);
+          d.setUTCHours(0, 0, 0, 0);
+          return d.getTime() >= today.getTime() && d.getTime() <= endOfWeek.getTime();
+        });
+        break;
+      case "stale":
+        result = result.filter((l) => {
+          const updated = l.updated_at ? new Date(l.updated_at) : null;
+          if (!updated) return false;
+          const days = Math.round((today.getTime() - updated.getTime()) / 86400000);
+          return days > 14;
+        });
+        break;
+    }
+
+    return result;
+  }, [leads, searchQuery, activeFilter]);
+
+  // ── Sprint A: Board leads grouped by column ────────────────────
+
+  const boardLeadsByColumn = useMemo(() => {
+    const map: Record<string, PipelineLead[]> = {};
+    for (const col of PIPELINE_COLUMNS) {
+      map[col.id] = [];
+    }
+    for (const lead of filteredLeads) {
+      const colId = getLeadColumn(lead);
+      const col = getColumnDef(colId);
+      if (col) {
+        map[colId].push(lead);
+      } else {
+        map["new"].push(lead);
+      }
+    }
+    for (const colId of Object.keys(map)) {
+      map[colId].sort((a, b) => {
+        const posA = positionMap[colId]?.[a.id] ?? Infinity;
+        const posB = positionMap[colId]?.[b.id] ?? Infinity;
+        if (posA !== posB) return posA - posB;
+        return b.hot_score - a.hot_score;
+      });
+    }
+    return map;
+  }, [filteredLeads, positionMap]);
+
+  // ── Sprint A: View / Search / Filter handlers ──────────────────
+
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
+
+  const handleFilterChange = useCallback((filter: FilterType) => {
+    setActiveFilter(filter);
+  }, []);
+
+  const setViewMode = useCallback(
+    (mode: ViewMode) => {
+      setViewModeState(mode);
+      clearSelection();
+      // Persist preference
+      api.profile
+        .patch({ view_preference: mode })
+        .catch(() => { /* silent fail */ });
+    },
+    [clearSelection]
+  );
 
   // ── Move mutation (cross-column) ──────────────────────────────
 
@@ -418,9 +555,22 @@ export function usePipelineBoard() {
   const isLoading = leadsLoading;
 
   return {
+    // Sprint A: View / Search / Filter
+    viewMode,
+    setViewMode,
+    searchQuery,
+    setSearchQuery,
+    activeFilter,
+    setActiveFilter,
+    filteredLeads,
+    boardLeadsByColumn,
+    handleSearch,
+    handleFilterChange,
+    // Data
     leads,
     isLoading,
     positionMap,
+    // Mutations
     moveMutation,
     bulkMoveMutation,
     reorderMutation,
