@@ -24,6 +24,7 @@ const createSequenceSchema = z.object({
 const updateSequenceSchema = z.object({
   name: z.string().optional(),
   status: z.enum(['active', 'paused', 'draft']).optional(),
+  steps: z.array(stepSchema).optional(),
 });
 
 const enrollSchema = z.object({
@@ -194,6 +195,36 @@ router.patch('/:id', async (c) => {
         .eq('user_id', userId);
     }
 
+    // ── Check for active/paused enrollments before editing steps ──
+    const steps = parsed.data.steps;
+    if (steps && steps.length > 0) {
+      const { data: activeEnrollments } = await supabaseAdmin
+        .from('sequence_enrollments')
+        .select('id')
+        .eq('sequence_id', id)
+        .in('status', ['active', 'paused'])
+        .limit(1);
+
+      if ((activeEnrollments ?? []).length > 0) {
+        return c.json(
+          { error: 'Cannot edit steps while sequence has active or paused enrollments. Pause and cancel all enrollments first, or create a new sequence.' },
+          409
+        );
+      }
+
+      // Transactional update via RPC: delete existing steps then insert new ones
+      // (enrollment guard above ensures no active/paused enrollments)
+      const { error: rpcErr } = await supabaseAdmin
+        .rpc('update_sequence_steps', {
+          p_sequence_id: id,
+          p_steps: JSON.stringify(steps),
+        });
+
+      if (rpcErr) {
+        return c.json({ error: 'Failed to update steps', details: rpcErr.message }, 500);
+      }
+    }
+
     return c.json({ message: 'Sequence updated' });
   } catch (err: any) {
     return c.json({ error: 'Failed to update sequence', details: err.message }, 500);
@@ -256,21 +287,27 @@ router.post('/:id/enroll', async (c) => {
     }
 
     let enrolled = 0;
-    for (const leadId of parsed.data.lead_ids) {
-      // Skip if already enrolled
+    const skippedIds: string[] = [];
+    const leadIds = parsed.data.lead_ids.slice(0, 500);
+
+    for (const leadId of leadIds) {
+      // Skip if already enrolled (active or paused)
       const { data: existing } = await supabaseAdmin
         .from('sequence_enrollments')
         .select('id')
         .eq('lead_id', leadId)
         .eq('sequence_id', sequenceId)
-        .in('status', ['active', 'completed'])
+        .in('status', ['active', 'paused'])
         .maybeSingle();
 
-      if (existing) continue;
+      if (existing) {
+        skippedIds.push(leadId);
+        continue;
+      }
 
       // Create enrollment
       const now = new Date().toISOString();
-      const { data: enrollment } = await supabaseAdmin
+      const { data: enrollment, error: insertErr } = await supabaseAdmin
         .from('sequence_enrollments')
         .insert({
           lead_id: leadId,
@@ -283,6 +320,14 @@ router.post('/:id/enroll', async (c) => {
         })
         .select('id')
         .single();
+
+      if (insertErr) {
+        if (insertErr.message?.includes('23505') || insertErr.code === '23505') {
+          skippedIds.push(leadId);
+          continue;
+        }
+        throw insertErr;
+      }
 
       if (enrollment && schedulerQueue) {
         // Queue first step (delay = 0, so immediate processing)
@@ -315,7 +360,12 @@ router.post('/:id/enroll', async (c) => {
       try { await incrementUsage(userId, 'leads_count', enrolled); } catch {}
     }
 
-    return c.json({ enrolled });
+    const response: any = { enrolled, skipped_ids: skippedIds };
+    if (skippedIds.length > 0) {
+      response.error = `${skippedIds.length} lead(s) were already enrolled (active or paused).`;
+    }
+
+    return c.json(response);
   } catch (err: any) {
     return c.json({ error: 'Failed to enroll leads', details: err.message }, 500);
   }
@@ -438,22 +488,14 @@ router.post('/:id/resume', async (c) => {
         .update({ status: 'active' })
         .eq('id', enrollment.id);
 
-      // Re-queue next step
+      // Re-queue next step with delay: 0 (BullMQ picks up within seconds).
+      // Actual send time is computed by the worker's calculateNextSendTime.
       if (schedulerQueue) {
         const stepOrder = enrollment.current_step;
-        // Fetch the step to get delay
-        const { data: step } = await supabaseAdmin
-          .from('sequence_steps')
-          .select('*')
-          .eq('sequence_id', sequenceId)
-          .eq('step_order', stepOrder)
-          .maybeSingle();
-
-        const delayMs = step ? step.delay_days * 86400000 : 3600000;
         await schedulerQueue.add(
           `${enrollment.id}-${stepOrder}`,
           { enrollment_id: enrollment.id, step_order: stepOrder },
-          { delay: Math.max(delayMs, 100), jobId: `${enrollment.id}-${stepOrder}` }
+          { delay: 0, jobId: `${enrollment.id}-${stepOrder}` }
         );
       }
     }

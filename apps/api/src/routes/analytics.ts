@@ -80,18 +80,22 @@ router.get('/dashboard', async (c) => {
     // Sequence stats
     const { data: enrollStats } = await supabaseAdmin
       .from('sequence_enrollments')
-      .select('status')
+      .select('status, is_failed, is_paused')
       .eq('user_id', userId);
 
     const enrollCount = new Map<string, number>();
-    for (const e of enrollStats || []) enrollCount.set(e.status, (enrollCount.get(e.status) || 0) + 1);
+    let deadLeadsPending = 0;
+    for (const e of enrollStats || []) {
+      enrollCount.set(e.status, (enrollCount.get(e.status) || 0) + 1);
+      if (e.is_failed || e.is_paused) deadLeadsPending++;
+    }
 
     return c.json({
       kpis: { total_leads: totalLeads ?? 0, contacted: contacted ?? 0, replied: replied ?? 0, active_sequences: enrollCount.get('active') ?? 0 },
       weekly_leads,
       pipeline_funnel,
       top_categories,
-      sequence_stats: { total_enrolled: enrollStats?.length ?? 0, completed: enrollCount.get('completed') ?? 0, replied: enrollCount.get('replied') ?? 0, dead_leads_pending: 0 },
+      sequence_stats: { total_enrolled: enrollStats?.length ?? 0, completed: enrollCount.get('completed') ?? 0, replied: enrollCount.get('replied') ?? 0, dead_leads_pending: deadLeadsPending },
     });
   } catch (err: any) {
     return c.json({ error: 'Failed to fetch dashboard analytics', details: err.message }, 500);

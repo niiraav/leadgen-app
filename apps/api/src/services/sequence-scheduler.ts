@@ -26,6 +26,23 @@ function getRedis() {
   return redis;
 }
 
+let schedulerHealthy = false;
+
+export function isSchedulerHealthy() { return schedulerHealthy; }
+
+function setSchedulerHealthy(v: boolean) { schedulerHealthy = v; }
+
+async function checkRedisHealth() {
+  const r = getRedis();
+  if (!r) { setSchedulerHealthy(false); return; }
+  try {
+    await r.ping();
+    setSchedulerHealthy(true);
+  } catch {
+    setSchedulerHealthy(false);
+  }
+}
+
 // ─── Queues ─────────────────────────────────────────────────────────────────
 
 export let schedulerQueue: Queue | null = null;
@@ -37,6 +54,16 @@ export function initQueues() {
     console.warn('[Sequence Scheduler] Redis not configured — queues disabled');
     return null;
   }
+
+  // Blocking startup ping
+  try {
+    conn.ping().then(() => { setSchedulerHealthy(true); }).catch(() => { setSchedulerHealthy(false); });
+  } catch {
+    setSchedulerHealthy(false);
+  }
+
+  // Background interval
+  setInterval(checkRedisHealth, 30000);
 
   schedulerQueue = new Queue('sequence-scheduler', {
     connection: conn,

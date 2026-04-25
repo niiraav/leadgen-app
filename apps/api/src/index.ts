@@ -9,7 +9,7 @@ import { cors } from 'hono/cors';
 import { getRequestListener } from '@hono/node-server';
 import { authMiddleware } from './db';
 import { getOrCreateSocketServer } from './lib/socket';
-import { initQueues, startSequenceWorker } from './services/sequence-scheduler';
+import { initQueues, startSequenceWorker, isSchedulerHealthy } from './services/sequence-scheduler';
 
 const app = new Hono();
 
@@ -32,7 +32,10 @@ app.use('*', cors({
 }));
 
 // Public routes
-app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/health', (c) => {
+  const redisOk = isSchedulerHealthy();
+  return c.json({ status: 'ok', timestamp: new Date().toISOString(), redis: redisOk });
+});
 
 // Auth routes require JWT
 app.use('/leads/*', authMiddleware);

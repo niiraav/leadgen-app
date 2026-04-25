@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Pencil, Check, X, ArrowUp, ArrowDown, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface SequenceStep {
   id: string;
@@ -85,9 +86,16 @@ export default function SequenceDetailPage() {
         setEditing(null);
         setEditForm(null);
         await fetchSequence();
+      } else if (res.status === 409) {
+        const data = await res.json();
+        toast.error(data.error || "Cannot edit steps while the sequence has active enrollments. Create a new sequence instead.");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to save step");
       }
     } catch (err) {
       console.error("Failed to save step:", err);
+      toast.error("Failed to save step");
     } finally {
       setSaving(false);
     }
