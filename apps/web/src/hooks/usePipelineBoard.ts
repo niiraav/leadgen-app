@@ -1,22 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  DndContext,
-  closestCorners,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  DragStartEvent,
-  DragOverlay,
-  defaultDropAnimationSideEffects,
-  DropAnimation,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -31,12 +14,12 @@ import {
 
 export interface PipelineLead {
   id: string;
-  businessName: string;
+  business_name: string;
   email: string;
   category: string;
   city: string;
   country: string;
-  hotScore: number;
+  hot_score: number;
   status: string;
   engagementStatus: string | null;
   pipelineStage: string | null;
@@ -45,6 +28,9 @@ export interface PipelineLead {
   latestReply?: any | null;
   unreadReplyCount?: number;
   sequencePaused?: boolean;
+  updated_at?: string;
+  lossReason?: string | null;
+  lossReasonNotes?: string | null;
 }
 
 export interface SelectModifiers {
@@ -61,16 +47,9 @@ export type { PipelineColumnDef };
 
 export function usePipelineBoard() {
   const queryClient = useQueryClient();
-  const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [recentlyMovedIds, setRecentlyMovedIds] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
-  const [isMultiDrag, setIsMultiDrag] = useState(false);
-  const [dueTodayFilter, setDueTodayFilter] = useState(false);
-  const [pendingLossMove, setPendingLossMove] = useState<{
-    leadIds: string[];
-    targetColumn: PipelineColumnDef;
-  } | null>(null);
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const selectedCount = selectedIds.size;
@@ -132,7 +111,6 @@ export function usePipelineBoard() {
     (columnId: string, columnLeads: PipelineLead[]) => {
       const ids = columnLeads.map((l) => l.id);
       setSelectedIds((prev) => {
-        // If all already selected, deselect all; otherwise select all
         const allSelected = ids.every((id) => prev.has(id));
         if (allSelected) {
           const next = new Set(prev);
@@ -157,14 +135,6 @@ export function usePipelineBoard() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [clearSelection]);
 
-  // ── DnD sensors ───────────────────────────────────────────────
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
-  );
-
   // ── Data queries ──────────────────────────────────────────────
 
   const { data: leads = [], isLoading: leadsLoading } = useQuery<PipelineLead[]>({
@@ -173,26 +143,31 @@ export function usePipelineBoard() {
       const result = await api.pipeline.list();
       return result.map((l: any) => ({
         id: l.id,
-        businessName: l.business_name || l.businessName || "",
+        business_name: l.business_name || "",
         email: l.email || "",
         category: l.category || "",
         city: l.city || "",
         country: l.country || "",
-        hotScore: l.hot_score ?? l.hotScore ?? 0,
+        hot_score: l.hot_score ?? 0,
         status: l.status || "new",
-        engagementStatus: l.engagement_status ?? l.engagementStatus ?? null,
-        pipelineStage: l.pipeline_stage ?? l.pipelineStage ?? null,
-        followUpDate: l.follow_up_date ?? l.followUpDate ?? null,
-        dealValue: l.deal_value ?? l.dealValue ?? null,
-        latestReply: l.latest_reply ?? l.latestReply ?? null,
-        unreadReplyCount: l.unread_reply_count ?? l.unreadReplyCount ?? 0,
-        sequencePaused: l.sequence_paused ?? l.sequencePaused ?? false,
+        engagementStatus: l.engagementStatus ?? l.engagement_status ?? null,
+        pipelineStage: l.pipelineStage ?? l.pipeline_stage ?? null,
+        followUpDate: l.followUpDate ?? l.follow_up_date ?? null,
+        dealValue: l.dealValue ?? l.deal_value ?? null,
+        latestReply: l.latestReply ?? l.latest_reply ?? null,
+        unreadReplyCount: l.unreadReplyCount ?? l.unread_reply_count ?? 0,
+        sequencePaused: l.sequencePaused ?? l.sequence_paused ?? false,
+        updated_at: l.updated_at ?? undefined,
+        lossReason: l.lossReason ?? l.loss_reason ?? null,
+        lossReasonNotes: l.lossReasonNotes ?? l.loss_reason_notes ?? null,
       }));
     },
     staleTime: 30_000,
   });
 
-  const { data: positionsData } = useQuery({
+  const { data: positionsData } = useQuery<{
+    positions: Record<string, { lead_id: string; position: number }[]>;
+  }>({
     queryKey: ["board", "positions"],
     queryFn: api.board.getPositions,
     staleTime: 30_000,
@@ -211,70 +186,25 @@ export function usePipelineBoard() {
     return map;
   }, [positionsData]);
 
-  // Group leads into columns and sort by position (no position => Infinity, then hot_score DESC)
-  const leadsByColumn = useMemo(() => {
-    const map: Record<string, PipelineLead[]> = {};
-    for (const col of PIPELINE_COLUMNS) {
-      map[col.id] = [];
-    }
-    for (const lead of leads) {
-      const colId = getLeadColumn(lead);
-      const col = getColumnDef(colId);
-      if (col) {
-        map[colId].push(lead);
-      } else {
-        map["new"].push(lead);
-      }
-    }
-    for (const colId of Object.keys(map)) {
-      map[colId].sort((a, b) => {
-        const posA = positionMap[colId]?.[a.id] ?? Infinity;
-        const posB = positionMap[colId]?.[b.id] ?? Infinity;
-        if (posA !== posB) return posA - posB;
-        return b.hotScore - a.hotScore;
-      });
-    }
-    return map;
-  }, [leads, positionMap]);
-
-  // Filtered view for "Due Today" pill
-  const filteredLeadsByColumn = useMemo(() => {
-    if (!dueTodayFilter) return leadsByColumn;
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const filtered: Record<string, typeof leadsByColumn[string]> = {};
-    for (const [colId, leads] of Object.entries(leadsByColumn)) {
-      filtered[colId] = leads.filter((lead) => {
-        if (!lead.followUpDate) return false;
-        const d = new Date(lead.followUpDate);
-        d.setUTCHours(0, 0, 0, 0);
-        return d <= today;
-      });
-    }
-    return filtered;
-  }, [leadsByColumn, dueTodayFilter]);
-
-  // ── Single lead move mutation ─────────────────────────────────
+  // ── Move mutation (cross-column) ──────────────────────────────
 
   const moveMutation = useMutation({
     mutationFn: async ({
       leadId,
       targetColumn,
-      lossReason,
     }: {
       leadId: string;
       targetColumn: PipelineColumnDef;
-      lossReason?: string | null;
     }) => {
-      const opposingField = getOpposingField(targetColumn.id);
       const patch: Record<string, unknown> = {
         status: targetColumn.value,
-        [targetColumn.field]: targetColumn.value,
-        [opposingField]: null,
+        ...(targetColumn.field === "engagement_status"
+          ? { engagementStatus: targetColumn.value }
+          : { pipelineStage: targetColumn.value }),
+        ...(targetColumn.field === "engagement_status"
+          ? { pipelineStage: null }
+          : { engagementStatus: null }),
       };
-      if (lossReason !== undefined) {
-        patch.loss_reason = lossReason;
-      }
       await api.leads.update(leadId, patch);
     },
     onMutate: async ({ leadId, targetColumn }) => {
@@ -285,7 +215,14 @@ export function usePipelineBoard() {
       ]);
 
       const opposingField = getOpposingField(targetColumn.id);
-      const lead = leads.find((l) => l.id === leadId);
+      const setKey =
+        targetColumn.field === "engagement_status"
+          ? "engagementStatus"
+          : "pipelineStage";
+      const clearKey =
+        opposingField === "engagement_status"
+          ? "engagementStatus"
+          : "pipelineStage";
 
       queryClient.setQueryData<PipelineLead[]>(
         ["leads", { view: "pipeline" }],
@@ -296,12 +233,8 @@ export function usePipelineBoard() {
               : {
                   ...lead,
                   status: targetColumn.value,
-                  [targetColumn.field === "engagement_status"
-                    ? "engagementStatus"
-                    : "pipelineStage"]: targetColumn.value,
-                  [opposingField === "engagement_status"
-                    ? "engagementStatus"
-                    : "pipelineStage"]: null,
+                  [setKey]: targetColumn.value,
+                  [clearKey]: null,
                 }
           ) ?? []
       );
@@ -329,28 +262,25 @@ export function usePipelineBoard() {
     },
   });
 
-  // ── Bulk move mutation (multi-select drag) ────────────────────
+  // ── Bulk move mutation ────────────────────────────────────────
 
   const bulkMoveMutation = useMutation({
     mutationFn: async ({
       leadIds,
       targetColumn,
-      lossReason,
     }: {
       leadIds: string[];
       targetColumn: PipelineColumnDef;
-      lossReason?: string | null;
     }) => {
-      const opposingField = getOpposingField(targetColumn.id);
       const patch: Record<string, unknown> = {
         status: targetColumn.value,
-        [targetColumn.field]: targetColumn.value,
-        [opposingField]: null,
+        ...(targetColumn.field === "engagement_status"
+          ? { engagementStatus: targetColumn.value }
+          : { pipelineStage: targetColumn.value }),
+        ...(targetColumn.field === "engagement_status"
+          ? { pipelineStage: null }
+          : { engagementStatus: null }),
       };
-      if (lossReason !== undefined) {
-        patch.loss_reason = lossReason;
-      }
-      // Parallel updates — backend handles each independently
       await Promise.all(leadIds.map((id) => api.leads.update(id, patch)));
     },
     onMutate: async ({ leadIds, targetColumn }) => {
@@ -411,7 +341,7 @@ export function usePipelineBoard() {
     },
   });
 
-  // ── Reorder mutation within a column ──────────────────────────
+  // ── Reorder mutation (within column) ──────────────────────────
 
   const reorderMutation = useMutation({
     mutationFn: async ({
@@ -438,14 +368,12 @@ export function usePipelineBoard() {
       }>(["board", "positions"], (old) => {
         if (!old?.positions) return old;
         const next = { ...old, positions: { ...old.positions } };
-        // Remove lead from all columns
         for (const col of Object.keys(next.positions)) {
           next.positions[col] = next.positions[col].filter(
             (p) => p.lead_id !== leadId
           );
         }
         const col = [...(next.positions[columnId] || [])];
-        // Determine insertion index from prev/next lead IDs
         let insertIndex = col.length;
         if (prevLeadId) {
           const idx = col.findIndex((p) => p.lead_id === prevLeadId);
@@ -454,7 +382,6 @@ export function usePipelineBoard() {
           const idx = col.findIndex((p) => p.lead_id === nextLeadId);
           if (idx !== -1) insertIndex = idx;
         }
-        // Assign a temporary fractional position
         let position: number;
         if (col.length === 0) {
           position = 1;
@@ -483,173 +410,28 @@ export function usePipelineBoard() {
     },
   });
 
-  // ── DnD Handlers ──────────────────────────────────────────────
-
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      const activeId = event.active.id as string;
-      setActiveLeadId(activeId);
-
-      // If dragging a non-selected card, clear multi-selection and select just this one
-      if (!selectedIds.has(activeId)) {
-        setSelectedIds(new Set([activeId]));
-        setLastSelectedId(activeId);
-        setIsMultiDrag(false);
-      } else {
-        // Dragging a selected card → multi-drag mode
-        setIsMultiDrag(selectedCount > 1);
-      }
-    },
-    [selectedIds, selectedCount]
-  );
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event;
-      setActiveLeadId(null);
-      setIsMultiDrag(false);
-
-      if (!over) return;
-
-      const activeId = active.id as string;
-      const overId = over.id as string;
-
-      const activeLead = leads.find((l) => l.id === activeId);
-      if (!activeLead) return;
-      const activeCol = getLeadColumn(activeLead);
-
-      // Check if dropped over a column (droppable ID is column ID)
-      const targetColumn = getColumnDef(overId);
-      if (targetColumn) {
-        if (activeCol === overId) return; // same column — no-op
-
-        // Intercept drops to the Lost column for loss-reason modal
-        if (targetColumn.id === 'lost') {
-          if (selectedIds.has(activeId) && selectedCount > 1) {
-            setPendingLossMove({ leadIds: Array.from(selectedIds), targetColumn });
-          } else {
-            setPendingLossMove({ leadIds: [activeId], targetColumn });
-          }
-          return;
-        }
-
-        // Multi-drag: move all selected cards to target column
-        if (selectedIds.has(activeId) && selectedCount > 1) {
-          const idsToMove = Array.from(selectedIds);
-          bulkMoveMutation.mutate({ leadIds: idsToMove, targetColumn });
-        } else {
-          // Single card move
-          moveMutation.mutate({ leadId: activeId, targetColumn });
-        }
-        return;
-      }
-
-      // Check if dropped over another card
-      const overLead = leads.find((l) => l.id === overId);
-      if (!overLead) return;
-      const overCol = getLeadColumn(overLead);
-
-      if (activeCol !== overCol) {
-        // Cross-column card drop
-        const colDef = getColumnDef(overCol);
-        if (!colDef) return;
-
-        // Intercept drops to the Lost column for loss-reason modal
-        if (colDef.id === "lost") {
-          if (selectedIds.has(activeId) && selectedCount > 1) {
-            setPendingLossMove({ leadIds: Array.from(selectedIds), targetColumn: colDef });
-          } else {
-            setPendingLossMove({ leadIds: [activeId], targetColumn: colDef });
-          }
-          return;
-        }
-
-        if (selectedIds.has(activeId) && selectedCount > 1) {
-          const idsToMove = Array.from(selectedIds);
-          bulkMoveMutation.mutate({ leadIds: idsToMove, targetColumn: colDef });
-        } else {
-          moveMutation.mutate({ leadId: activeId, targetColumn: colDef });
-        }
-        return;
-      }
-
-      // Same column reorder — only applies to the dragged card
-      const colLeads = leadsByColumn[activeCol];
-      const oldIndex = colLeads.findIndex((l) => l.id === activeId);
-      const newIndex = colLeads.findIndex((l) => l.id === overId);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-
-      const reordered = arrayMove(colLeads, oldIndex, newIndex);
-      const finalIndex = reordered.findIndex((l) => l.id === activeId);
-      const prevLeadId = finalIndex === 0 ? null : reordered[finalIndex - 1].id;
-      const nextLeadId =
-        finalIndex === reordered.length - 1 ? null : reordered[finalIndex + 1].id;
-
-      reorderMutation.mutate({
-        leadId: activeId,
-        columnId: activeCol,
-        prevLeadId,
-        nextLeadId,
-      });
-    },
-    [leads, leadsByColumn, selectedIds, selectedCount, moveMutation, bulkMoveMutation, reorderMutation]
-  );
-
-  const dropAnimation: DropAnimation = {
-    sideEffects: defaultDropAnimationSideEffects({
-      styles: { active: { opacity: "0.5" } },
-    }),
-  };
-
-  const confirmLossMove = useCallback(
-    (reason: string | null) => {
-      if (!pendingLossMove) return;
-      const { leadIds, targetColumn } = pendingLossMove;
-      if (leadIds.length === 1) {
-        moveMutation.mutate({ leadId: leadIds[0], targetColumn, lossReason: reason });
-      } else {
-        bulkMoveMutation.mutate({ leadIds, targetColumn, lossReason: reason });
-      }
-      setPendingLossMove(null);
-    },
-    [pendingLossMove, moveMutation, bulkMoveMutation]
-  );
-
-  const cancelLossMove = useCallback(() => {
-    setPendingLossMove(null);
-  }, []);
+  const refresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["leads"] });
+    queryClient.invalidateQueries({ queryKey: ["board", "positions"] });
+  }, [queryClient]);
 
   const isLoading = leadsLoading;
 
   return {
     leads,
-    leadsByColumn: filteredLeadsByColumn,
-    rawLeadsByColumn: leadsByColumn,
     isLoading,
-    sensors,
-    activeLeadId,
-    handleDragStart,
-    handleDragEnd,
-    dropAnimation,
+    positionMap,
     moveMutation,
+    bulkMoveMutation,
+    reorderMutation,
     recentlyMovedIds,
     // Selection
     selectedIds,
     selectedCount,
     hasSelection,
-    isMultiDrag,
     selectLead,
     selectAllInColumn,
     clearSelection,
-    // Bulk
-    bulkMoveMutation,
-    // Filter
-    dueTodayFilter,
-    setDueTodayFilter,
-    // Loss reason modal
-    pendingLossMove,
-    setPendingLossMove,
-    confirmLossMove,
-    cancelLossMove,
+    refresh,
   };
 }

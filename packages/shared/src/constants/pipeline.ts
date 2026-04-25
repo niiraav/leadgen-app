@@ -16,6 +16,9 @@ export interface PipelineColumn {
 
 export type PipelineColumnDef = PipelineColumn;
 
+/** Number of days before a lead is considered stale (no activity) */
+export const STALE_DAYS = 14;
+
 export const PIPELINE_COLUMNS: PipelineColumn[] = [
   { id: 'new',               label: 'New Leads',      title: 'New Leads',      value: 'new',               field: 'engagement_status', status: ['new'],               color: '#1d6fa8', defaultFollowUpDays: null },
   { id: 'contacted',         label: 'Contacted',      title: 'Contacted',      value: 'contacted',         field: 'engagement_status', status: ['contacted'],         color: '#d97706', defaultFollowUpDays: 3 },
@@ -45,3 +48,10 @@ export function getLeadColumn(lead: { pipelineStage?: string | null; engagementS
   const s = lead.pipelineStage || lead.engagementStatus || lead.status || 'new';
   return getColumnIdForStatus(s) ?? 'new';
 }
+
+export const LOSS_REASON_LABELS: Record<string, string> = {
+  no_budget: 'No budget',
+  went_silent: 'Went silent',
+  went_with_competitor: 'Went with competitor',
+  unqualified: 'Unqualified',
+};

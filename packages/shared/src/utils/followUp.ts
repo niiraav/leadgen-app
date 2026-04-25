@@ -45,3 +45,45 @@ export function getUrgencyStatus(followUpDate: string | null | undefined): 'over
   if (diffDays === 0) return 'due_today';
   return 'upcoming';
 }
+
+/**
+ * Health colour for a follow-up date.
+ * Red = overdue, amber = due today, green = upcoming, null = no date set.
+ * Uses UTC midnight for BST-safe date comparison.
+ */
+export function followUpHealth(followUpDate: string | null | undefined): "red" | "amber" | "green" | null {
+  if (!followUpDate) return null;
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const due = new Date(followUpDate);
+  due.setUTCHours(0, 0, 0, 0);
+  const diffDays = Math.round((due.getTime() - today.getTime()) / 86400000);
+  if (diffDays < 0) return "red";
+  if (diffDays === 0) return "amber";
+  return "green";
+}
+
+/**
+ * Return a UTC-midnight Date N days from now.
+ * Used for follow-up date calculations (BST-safe).
+ */
+export function daysFromNow(days: number, now = new Date()): Date {
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  d.setUTCDate(d.getUTCDate() + days);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Format deal value (pence integer) to compact GBP string.
+ * £4,250 → "£4.2k", £350 → "£350"
+ */
+export function formatCompactDealValue(pence: number | null | undefined): string | null {
+  if (pence == null) return null;
+  const pounds = Math.round(pence / 100);
+  if (pounds >= 1000) {
+    const k = (pounds / 1000).toFixed(1).replace(/\.0$/, '');
+    return `£${k}k`;
+  }
+  return `£${pounds.toLocaleString()}`;
+}

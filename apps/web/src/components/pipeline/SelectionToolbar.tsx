@@ -1,76 +1,60 @@
-import { X, MoveRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import type { PipelineColumnDef } from "@leadgen/shared";
+import { ArrowRight, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PipelineColumnDef } from "@/hooks/usePipelineBoard";
 
 interface SelectionToolbarProps {
-  selectedCount: number;
+  count: number;
   columns: PipelineColumnDef[];
   onMoveTo: (columnId: string) => void;
   onClear: () => void;
 }
 
-export function SelectionToolbar({
-  selectedCount,
-  columns,
-  onMoveTo,
-  onClear,
-}: SelectionToolbarProps) {
+export default function SelectionToolbar({ count, columns, onMoveTo, onClear }: SelectionToolbarProps) {
+  if (count === 0) return null;
+
   return (
-    <AnimatePresence>
-      {selectedCount > 0 && (
-        <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-surface border border-border shadow-2xl rounded-xl px-4 py-3"
-        >
-          <div className="flex items-center gap-2">
-            <span className="bg-primary text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">
-              {selectedCount}
-            </span>
-            <span className="text-sm font-medium text-text">
-              {selectedCount === 1 ? "lead selected" : "leads selected"}
-            </span>
-          </div>
+    <div className="sticky bottom-4 z-30 flex items-center justify-center px-4">
+      <div className="flex items-center gap-3 bg-surface border border-border shadow-lg shadow-black/10 rounded-xl px-4 py-2.5">
+        <span className="text-sm font-medium text-text tabular-nums">
+          {count} selected
+        </span>
 
-          <div className="h-6 w-px bg-border" />
+        <div className="h-4 w-px bg-border" />
 
-          {/* Move to dropdown */}
-          <div className="flex items-center gap-2">
-            <MoveRight className="w-4 h-4 text-text-muted" />
-            <select
-              onChange={(e) => {
-                if (e.target.value) {
-                  onMoveTo(e.target.value);
-                  e.target.value = "";
-                }
-              }}
-              className="text-sm bg-surface-2 border border-border rounded-md px-2 py-1 text-text focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer"
-              defaultValue=""
+        <div className="flex items-center gap-1">
+          <span className="text-[10px] font-medium text-text-faint uppercase tracking-wide mr-1">
+            Move to
+          </span>
+          {columns.map((col) => (
+            <Button
+              key={col.id}
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px] font-medium gap-1 hover:bg-primary/10"
+              onClick={() => onMoveTo(col.id)}
             >
-              <option value="" disabled>
-                Move to…
-              </option>
-              {columns.map((col) => (
-                <option key={col.id} value={col.id}>
-                  {col.title}
-                </option>
-              ))}
-            </select>
-          </div>
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: col.color }}
+              />
+              {col.title}
+              <ArrowRight className="w-3 h-3" />
+            </Button>
+          ))}
+        </div>
 
-          <div className="h-6 w-px bg-border" />
+        <div className="h-4 w-px bg-border" />
 
-          <button
-            onClick={onClear}
-            className="flex items-center gap-1 text-xs text-text-faint hover:text-text transition-colors"
-          >
-            <X className="w-4 h-4" />
-            Clear
-          </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          onClick={onClear}
+        >
+          <X className="w-3.5 h-3.5 mr-1" />
+          Clear
+        </Button>
+      </div>
+    </div>
   );
 }
