@@ -125,7 +125,7 @@ export async function getLeads(userId: string, params: {
 
   const { data, error, count } = await query;
 
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
 
   const items = (data ?? []) as any[];
   const hasMore = items.length > limit;
@@ -235,7 +235,7 @@ export async function createActivity(userId: string, values: {
   const { error } = await supabaseAdmin
     .from('lead_activities')
     .insert({ ...values, user_id: userId });
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
 }
 
 export async function getActivitiesForLead(userId: string, leadId: string) {
@@ -245,7 +245,7 @@ export async function getActivitiesForLead(userId: string, leadId: string) {
     .eq('lead_id', leadId)
     .eq('user_id', userId)
     .order('timestamp', { ascending: false, nullsFirst: false });
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
   return (data ?? []) as any[];
 }
 
@@ -259,7 +259,7 @@ export async function getActivitiesForLeads(leadIds: string[]) {
     .in('lead_id', leadIds)
     .order('timestamp', { ascending: false, nullsFirst: false });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
 
   const grouped = new Map<string, any[]>();
   for (const row of (data ?? [])) {
@@ -275,7 +275,7 @@ export async function getSequences(userId: string) {
     .from('sequences')
     .select('*')
     .eq('user_id', userId);
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
   return data ?? [];
 }
 
@@ -285,7 +285,7 @@ export async function createSequence(userId: string, values: any) {
     .insert({ ...values, user_id: userId })
     .select('id')
     .single();
-  if (error) throw error;
+  if (error) throw new Error(error.message || JSON.stringify(error));
   return { id: (data as any).id };
 }
 

@@ -439,8 +439,10 @@ router.patch('/:id', async (c) => {
 
     return c.json({ message: 'Lead updated' });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[Leads PATCH /:id] Error:', message, error);
+    const message = error instanceof Error
+      ? error.message
+      : (typeof error === 'string' ? error : JSON.stringify(error));
+    console.error('[Leads PATCH /:id] Error:', message);
     return c.json({ error: 'Failed to update lead', details: message }, 500);
   }
 });

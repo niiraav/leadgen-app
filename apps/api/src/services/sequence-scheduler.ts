@@ -4,6 +4,7 @@ import { Queue, Worker, Job, RedisConnection } from 'bullmq';
 import IORedis from 'ioredis';
 import { supabaseAdmin, createActivity } from '../db';
 import { sendOutreachEmail } from '../lib/email/send';
+import { substituteTemplate } from '../lib/email/template';
 
 // ─── Redis Connection ──────────────────────────────────────────────────────
 
@@ -118,7 +119,7 @@ export function startSequenceWorker() {
       // 4b. Send the email via Mailgun
       const { data: lead } = await supabaseAdmin
         .from('leads')
-        .select('email, business_name, reply_token')
+        .select('email, business_name, reply_token, contact_full_name, owner_name, city, phone, website_url, category')
         .eq('id', enrollment.lead_id)
         .maybeSingle();
 
@@ -132,14 +133,17 @@ export function startSequenceWorker() {
         const fromName = (profile as any)?.full_name || 'Team';
         const fromEmail = (profile as any)?.user_email || process.env.MAILGUN_FROM_EMAIL || '';
 
+        const substitutedSubject = substituteTemplate(step.subject_template, lead as any, profile as any);
+        const substitutedBody = substituteTemplate(step.body_template, lead as any, profile as any);
+
         try {
           await sendOutreachEmail({
             to: lead.email,
             fromName,
             fromEmail,
-            subject: step.subject_template,
-            html: step.body_template,
-            text: step.body_template,
+            subject: substitutedSubject,
+            html: substitutedBody,
+            text: substitutedBody,
             leadId: enrollment.lead_id,
             replyToken: (lead as any)?.reply_token || '',
             enrolmentId: enrollment_id,
@@ -152,7 +156,7 @@ export function startSequenceWorker() {
           await createActivity(enrollment.user_id, {
             lead_id: enrollment.lead_id,
             type: 'email_sent',
-            description: `Email sent: "${step.subject_template}" (step ${step_order})`,
+            description: `Email sent: "${substitutedSubject}" (step ${step_order})`,
           });
         } catch (err) {
           console.error('[Sequence Worker] Failed to send email:', err);
@@ -163,15 +167,15 @@ export function startSequenceWorker() {
               enrolment_id:   enrollment_id,
               user_id:        enrollment.user_id,
               step_number:    step_order,
-              subject:        step.subject_template,
-              body_plain:     step.body_template,
+              subject:        substitutedSubject,
+              body_plain:     substitutedBody,
               status:         'failed',
               sent_via:       'mailgun',
             });
           await createActivity(enrollment.user_id, {
             lead_id: enrollment.lead_id,
             type: 'email_failed',
-            description: `Email failed: "${step.subject_template}" (step ${step_order})`,
+            description: `Email failed: "${substitutedSubject}" (step ${step_order})`,
           });
         }
       }
