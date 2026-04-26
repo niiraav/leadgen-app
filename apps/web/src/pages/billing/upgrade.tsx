@@ -18,6 +18,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { TIERS, FREE_TIER, OUTREACH_TIER } from "@leadgen/shared";
+import { BillingErrorState } from "@/components/billing/BillingErrorState";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
 
 /* ------------------------------------------------------------------ */
 /*  Pricing / Upgrade Page                                             */
@@ -66,16 +68,28 @@ export default function BillingUpgradePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   const fetchStatus = useCallback(async () => {
+    let cancelled = false;
     try {
       const s = (await api.billing.status()) as any;
-      setPlan(s.plan);
-    } catch {
-      // not logged in or error — that's fine
+      if (!cancelled) {
+        setPlan(s.plan);
+        setHasError(false);
+      }
+    } catch (err: any) {
+      if (!cancelled) {
+        if (err?.message?.includes("Session expired") || err?.message?.includes("Unauthorized")) {
+          return;
+        }
+        setHasError(true);
+      }
     } finally {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -103,7 +117,28 @@ export default function BillingUpgradePage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 md:pb-8 space-y-8">
+    <div className="max-w-4xl mx-auto pb-8 space-y-8">
+      {/* Loading state */}
+      {loading && (
+        <div className="flex items-center justify-center min-h-[40vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-blue" />
+        </div>
+      )}
+
+      {/* Error state */}
+      {hasError && (
+        <BillingErrorState
+          onRetry={() => {
+            setIsRetrying(true);
+            setLoading(true);
+            fetchStatus().finally(() => setIsRetrying(false));
+          }}
+          isRetrying={isRetrying}
+        />
+      )}
+
+      {!loading && !hasError && (
+        <>
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -125,37 +160,22 @@ export default function BillingUpgradePage() {
 
       {/* Monthly / Annual toggle */}
       <div className="flex items-center justify-center gap-3">
-        <span
-          className={`text-sm ${
-            !annual ? "text-text font-medium" : "text-text-faint"
-          }`}
-        >
-          Monthly
-        </span>
-        <button
-          onClick={() => setAnnual(!annual)}
-          className={`relative w-11 h-6 rounded-full transition-colors ${
-            annual ? "bg-blue" : "bg-surface-2"
-          }`}
-        >
-          <span
-            className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-              annual ? "translate-x-5" : ""
-            }`}
-          />
-        </button>
-        <span
-          className={`text-sm ${
-            annual ? "text-text font-medium" : "text-text-faint"
-          }`}
-        >
-          Annual
-        </span>
-        {annual && (
-          <span className="text-xs font-medium text-green bg-green/10 px-2 py-0.5 rounded-full">
-            Save £{OUTREACH_TIER.annualSavings}
-          </span>
-        )}
+        <ToggleSwitch
+          size="md"
+          checked={annual}
+          onChange={setAnnual}
+          labelLeft="Monthly"
+          labelRight={
+            <span className="flex items-center gap-2">
+              Annual
+              {annual && (
+                <span className="text-xs font-medium text-green bg-green/10 px-2 py-0.5 rounded-full">
+                  Save £{OUTREACH_TIER.annualSavings}
+                </span>
+              )}
+            </span>
+          }
+        />
       </div>
 
       {/* Pricing Cards */}
@@ -168,7 +188,7 @@ export default function BillingUpgradePage() {
           return (
             <div
               key={plan.id}
-              className={`rounded-xl border p-6 transition-all relative ${
+              className={`rounded-xl border p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative ${
                 plan.popular
                   ? "border-blue/40 bg-blue/5"
                   : "border-border/60 bg-surface"
@@ -245,7 +265,8 @@ export default function BillingUpgradePage() {
             Feature Comparison
           </h3>
         </div>
-        <div className="overflow-x-auto">
+        {/* Desktop table */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/30">
@@ -264,6 +285,29 @@ export default function BillingUpgradePage() {
               <Row icon={<Mail className="w-3.5 h-3.5" />} label="Support" free="—" outreach="Email (48hr)" />
             </tbody>
           </table>
+        </div>
+        {/* Mobile stacked cards */}
+        <div className="md:hidden divide-y divide-border/30">
+          {[
+            { icon: <Users className="w-3.5 h-3.5" />, label: "Leads", free: FREE_FEATURES.leads, outreach: PLANS[0].featureDetails.leads },
+            { icon: <Search className="w-3.5 h-3.5" />, label: "Lead searches", free: FREE_FEATURES.searches, outreach: PLANS[0].featureDetails.searches },
+            { icon: <Mail className="w-3.5 h-3.5" />, label: "Email verifications", free: FREE_FEATURES.verifications, outreach: PLANS[0].featureDetails.verifications },
+            { icon: <Sparkles className="w-3.5 h-3.5" />, label: "AI emails", free: FREE_FEATURES.aiEmails, outreach: PLANS[0].featureDetails.aiEmails },
+            { icon: <GitBranch className="w-3.5 h-3.5" />, label: "Active sequences", free: FREE_FEATURES.sequences, outreach: PLANS[0].featureDetails.sequences },
+            { icon: <Zap className="w-3.5 h-3.5" />, label: "Pipeline stages", free: "—", outreach: "Basic" },
+            { icon: <Mail className="w-3.5 h-3.5" />, label: "Support", free: "—", outreach: "Email (48hr)" },
+          ].map((row) => (
+            <div key={row.label} className="px-5 py-3 flex items-center justify-between gap-3">
+              <span className="flex items-center gap-2 text-xs text-text">
+                <span className="text-text-muted">{row.icon}</span>
+                {row.label}
+              </span>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-text-muted">{row.free}</span>
+                <span className="text-text font-medium">{row.outreach}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -289,6 +333,8 @@ export default function BillingUpgradePage() {
           </li>
         </ul>
       </div>
+      </>
+      )}
     </div>
   );
 }
@@ -307,7 +353,7 @@ function Row({
   return (
     <tr className="border-b border-border/20 last:border-0">
       <td className="px-5 py-3 text-text flex items-center gap-2">
-        <span className="text-text-faint">{icon}</span>
+        <span className="text-text-muted">{icon}</span>
         {label}
       </td>
       <td className="text-center px-4 py-3 text-text-muted">{free}</td>

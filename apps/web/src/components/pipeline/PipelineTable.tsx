@@ -235,6 +235,7 @@ export const PipelineTable = memo(function PipelineTable({
   onSortChange,
 }: PipelineTableProps) {
   const [pickerLead, setPickerLead] = useState<PipelineLead | null>(null);
+  const [pickerChannel, setPickerChannel] = useState<"whatsapp" | "sms" | undefined>(undefined);
   const allSelected = leads.length > 0 && leads.every((l) => selected.has(l.id));
   const someSelected = leads.some((l) => selected.has(l.id));
 
@@ -392,13 +393,11 @@ export const PipelineTable = memo(function PipelineTable({
                               <Ban className="w-4 h-4" />
                             </span>
                           )}
-                          <Link
-                            href={`/leads/${lead.id}`}
-                            className="text-text text-sm hover:text-blue transition-colors hover:underline underline-offset-2 truncate max-w-[220px]"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {lead.business_name}
-                          </Link>
+                        <span
+                          className="text-text text-sm hover:text-blue transition-colors hover:underline underline-offset-2 truncate max-w-[220px] cursor-pointer"
+                        >
+                          {lead.business_name}
+                        </span>
                         </div>
                       </td>
 
@@ -465,7 +464,10 @@ export const PipelineTable = memo(function PipelineTable({
                           )}
                           {lead.phone ? (
                             <button
-                              onClick={() => setPickerLead(lead)}
+                              onClick={() => {
+                                setPickerLead(lead);
+                                setPickerChannel("whatsapp");
+                              }}
                               className="p-1.5 rounded-md text-text-muted hover:text-green-600 hover:bg-green-50 transition-colors"
                               title="WhatsApp templates"
                             >
@@ -477,7 +479,10 @@ export const PipelineTable = memo(function PipelineTable({
                             </span>
                           )}
                           <button
-                            onClick={() => setPickerLead(lead)}
+                            onClick={() => {
+                              setPickerLead(lead);
+                              setPickerChannel("sms");
+                            }}
                             className="p-1.5 rounded-md text-text-muted hover:text-blue hover:bg-blue/10 transition-colors"
                             title="SMS templates"
                           >
@@ -512,7 +517,11 @@ export const PipelineTable = memo(function PipelineTable({
             contact_phone: pickerLead.contact_phone ?? undefined,
           }}
           open={!!pickerLead}
-          onClose={() => setPickerLead(null)}
+          onClose={() => {
+            setPickerLead(null);
+            setPickerChannel(undefined);
+          }}
+          channel={pickerChannel}
         />
       )}
     </>

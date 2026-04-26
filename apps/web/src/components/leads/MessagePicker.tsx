@@ -28,6 +28,7 @@ interface MessagePickerProps {
   };
   open: boolean;
   onClose: () => void;
+  channel?: "whatsapp" | "sms";
 }
 
 interface Template {
@@ -64,6 +65,7 @@ export default function MessagePicker({
   lead,
   open,
   onClose,
+  channel,
 }: MessagePickerProps) {
   const [loading, setLoading] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -250,7 +252,11 @@ export default function MessagePicker({
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <div>
             <h2 className="text-base font-semibold text-text">
-              Send Message
+              {channel === "whatsapp"
+                ? "Send WhatsApp"
+                : channel === "sms"
+                ? "Send SMS"
+                : "Send Message"}
             </h2>
             <p className="text-xs text-text-muted mt-0.5">
               {lead.business_name}
@@ -428,51 +434,55 @@ export default function MessagePicker({
           {!loading && (
             <div className="space-y-2">
               <div className="flex gap-2">
-                {/* WhatsApp */}
-                <button
-                  onClick={() => handleSend("whatsapp")}
-                  disabled={
-                    quotaExceeded ||
-                    sending ||
-                    (!selectedId && !showCustom) ||
-                    (showCustom &&
-                      (!customMessage.trim() || !customHasPersonalization))
-                  }
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-green/10 text-green hover:bg-green/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
-                >
-                  {sending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <span>&#10024;</span>
-                      Send WhatsApp
-                      <span>&#128241;</span>
-                    </>
-                  )}
-                </button>
+                {/* WhatsApp — only if no channel filter or whatsapp */}
+                {(!channel || channel === "whatsapp") && (
+                  <button
+                    onClick={() => handleSend("whatsapp")}
+                    disabled={
+                      quotaExceeded ||
+                      sending ||
+                      (!selectedId && !showCustom) ||
+                      (showCustom &&
+                        (!customMessage.trim() || !customHasPersonalization))
+                    }
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-green/10 text-green hover:bg-green/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                  >
+                    {sending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <span>&#10024;</span>
+                        Send WhatsApp
+                        <span>&#128241;</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
-                {/* SMS */}
-                <button
-                  onClick={() => handleSend("sms")}
-                  disabled={
-                    quotaExceeded ||
-                    sending ||
-                    (!selectedId && !showCustom) ||
-                    (showCustom &&
-                      (!customMessage.trim() || !customHasPersonalization)) ||
-                    !hasPhone
-                  }
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-blue/10 text-blue hover:bg-blue/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
-                >
-                  {sending ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <span>&#128241;</span>
-                      Send SMS
-                    </>
-                  )}
-                </button>
+                {/* SMS — only if no channel filter or sms */}
+                {(!channel || channel === "sms") && (
+                  <button
+                    onClick={() => handleSend("sms")}
+                    disabled={
+                      quotaExceeded ||
+                      sending ||
+                      (!selectedId && !showCustom) ||
+                      (showCustom &&
+                        (!customMessage.trim() || !customHasPersonalization)) ||
+                      !hasPhone
+                    }
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-blue/10 text-blue hover:bg-blue/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                  >
+                    {sending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <span>&#128241;</span>
+                        Send SMS
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Custom toggle + Cancel */}

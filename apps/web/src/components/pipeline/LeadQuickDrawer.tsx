@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   X,
@@ -20,7 +21,6 @@ import {
   FileText,
   Sparkles,
   Loader2,
-  Send,
   CheckCircle2,
   MailOpen,
   Quote,
@@ -34,6 +34,7 @@ import { daysFromNow, formatCompactDealValue, LOSS_REASON_LABELS } from "@leadge
 import { api } from "@/lib/api";
 import type { PipelineLead } from "@/hooks/usePipelineBoard";
 import { getDrawerVisibility } from "./drawer-visibility";
+import { ChannelButtons } from "@/components/leads/ChannelButtons";
 
 interface LeadQuickDrawerProps {
   lead: PipelineLead | null;
@@ -113,6 +114,7 @@ function BioSummary({ text }: { text: string }) {
 
 export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: LeadQuickDrawerProps) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const [dealValue, setDealValue] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
@@ -489,17 +491,28 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           </div>
           )}
 
-          {/* Composer / "Compose" button */}
+          {/* Channel action buttons (email, WhatsApp, SMS, LinkedIn, Call) */}
           {v?.showComposer && (
             <div>
-              <Link
-                href={`/leads/${lead.id}?action=compose`}
-                onClick={onClose}
-                className="inline-flex items-center gap-1.5 rounded-md text-xs font-medium transition-colors px-2 py-1.5 bg-surface-2 border border-border text-text-muted hover:bg-secondary"
-              >
-                <Send className="w-3.5 h-3.5" />
-                Compose
-              </Link>
+              <ChannelButtons
+                contactEmail={lead.contact_email || lead.email || undefined}
+                contactLinkedin={lead.contact_linkedin || lead.linkedin_url || undefined}
+                phone={lead.contact_phone || lead.phone || undefined}
+                lead={{
+                  id: lead.id,
+                  business_name: lead.business_name,
+                  category: lead.category || undefined,
+                  rating: lead.rating ?? undefined,
+                  phone: lead.phone || undefined,
+                  contact_phone: lead.contact_phone || undefined,
+                }}
+                onEmailCompose={() => {
+                  router.push(`/leads/${lead.id}?action=compose`);
+                  onClose();
+                }}
+                doNotContact={!!lead.doNotContact}
+                compact
+              />
             </div>
           )}
 

@@ -18,6 +18,7 @@ import {
   Settings,
   Shield,
 } from "lucide-react";
+import { BillingErrorState } from "@/components/billing/BillingErrorState";
 
 /* ------------------------------------------------------------------ */
 /*  Subscription Management Page                                       */
@@ -53,17 +54,26 @@ export default function BillingManagePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const fetchStatus = useCallback(async () => {
+    let cancelled = false;
     try {
       await api.billing.sync().catch(() => {});
       const s = (await api.billing.status()) as unknown as BillingStatus;
-      setStatus(s);
+      if (!cancelled) {
+        setStatus(s);
+        setHasError(false);
+      }
     } catch (err: any) {
-      console.error("[BillingManage] Load failed:", err.message);
+      if (!cancelled) {
+        console.error("[BillingManage] Load failed:", err.message);
+        setHasError(true);
+      }
     } finally {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -124,17 +134,18 @@ export default function BillingManagePage() {
     );
   }
 
-  if (!status) {
+  if (hasError || !status) {
     return (
-      <div className="max-w-2xl mx-auto py-20 text-center">
-        <p className="text-text-muted">Unable to load billing information.</p>
-        <button
-          onClick={() => router.push("/billing")}
-          className="mt-4 text-xs text-blue hover:underline"
-        >
-          Back to Billing
-        </button>
-      </div>
+      <BillingErrorState
+        onRetry={() => {
+          setHasError(false);
+          setLoading(true);
+          fetchStatus();
+        }}
+        isRetrying={loading}
+        showBack
+        onBack={() => router.push("/billing")}
+      />
     );
   }
 
@@ -158,7 +169,7 @@ export default function BillingManagePage() {
     : 0;
 
   return (
-    <div className="max-w-2xl mx-auto pb-20 md:pb-8 space-y-6">
+    <div className="max-w-2xl mx-auto pb-8 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -179,10 +190,10 @@ export default function BillingManagePage() {
       </div>
 
       {/* --- Current Plan Card --- */}
-      <div className="rounded-xl border border-border bg-surface p-5 space-y-4">
+      <div className="rounded-xl border border-border bg-surface p-5 space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-text-faint uppercase tracking-wide">
+            <p className="text-xs text-text-muted uppercase tracking-wide">
               Current plan
             </p>
             <div className="flex items-baseline gap-2 mt-1">
@@ -380,8 +391,8 @@ export default function BillingManagePage() {
 
       {/* --- Security note --- */}
       <div className="rounded-xl border border-border/40 bg-surface/50 p-4 flex items-start gap-2.5">
-        <Shield className="w-4 h-4 text-text-faint shrink-0 mt-0.5" />
-        <div className="text-xs text-text-faint">
+        <Shield className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
+        <div className="text-xs text-text-muted">
           All payments are securely processed through Stripe. We never store your
           card details. Cancelled subscriptions remain active until the end of
           the billing period — no immediate access revocation.

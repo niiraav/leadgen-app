@@ -20,6 +20,9 @@ import {
   X,
 } from "lucide-react";
 import { TIERS, FREE_TIER, OUTREACH_TIER } from "@leadgen/shared";
+import { BillingErrorState } from "@/components/billing/BillingErrorState";
+import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
+import { ProgressBar } from "@/components/billing/ProgressBar";
 
 /* ------------------------------------------------------------------ */
 /*  Billing & Plan Page                                                */
@@ -111,49 +114,6 @@ function CancelNotice({ endsAt }: { endsAt: string }) {
   );
 }
 
-function ProgressBar({
-  used,
-  limit,
-  label,
-  icon,
-}: {
-  used: number;
-  limit: number;
-  label: string;
-  icon: React.ReactNode;
-}) {
-  const isUnlimited = limit < 0;
-  const pct = isUnlimited
-    ? 0
-    : limit > 0
-    ? Math.min(100, (used / limit) * 100)
-    : 0;
-  const over = !isUnlimited && used > limit;
-  const color = over ? "bg-red" : pct > 80 ? "bg-amber" : "bg-blue";
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1.5 text-text-muted">
-          {icon}
-          {label}
-        </span>
-        <span className={over ? "text-red font-medium" : "text-text-muted"}>
-          {isUnlimited
-            ? `${used} / ∞`
-            : `${used.toLocaleString()} / ${limit.toLocaleString()}`}
-        </span>
-      </div>
-      <div className="h-2 bg-surface-2 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-300 ${color}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function BillingPage() {
   const router = useRouter();
   const [status, setStatus] = useState<BillingStatus | null>(null);
@@ -162,6 +122,7 @@ export default function BillingPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
   const [showFirstLoginBanner, setShowFirstLoginBanner] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const dismissed = localStorage.getItem("billing_first_login_banner_dismissed");
@@ -174,19 +135,27 @@ export default function BillingPage() {
   };
 
   const fetchAll = useCallback(async () => {
+    let cancelled = false;
     try {
       await api.billing.sync().catch(() => {});
       const [s, u] = await Promise.all([
         api.billing.status() as unknown as Promise<BillingStatus>,
         api.billing.usage() as unknown as Promise<UsageData>,
       ]);
-      setStatus(s);
-      setUsage(u);
+      if (!cancelled) {
+        setStatus(s);
+        setUsage(u);
+        setHasError(false);
+      }
     } catch (err: any) {
-      console.error("[Billing] Load failed:", err.message);
+      if (!cancelled) {
+        console.error("[Billing] Load failed:", err.message);
+        setHasError(true);
+      }
     } finally {
-      setLoading(false);
+      if (!cancelled) setLoading(false);
     }
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -240,9 +209,60 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue" />
+      <div className="max-w-5xl mx-auto pb-8 space-y-8">
+        <div className="space-y-2">
+          <div className="h-7 w-48 bg-surface-2 rounded animate-pulse" />
+          <div className="h-4 w-72 bg-surface-2 rounded animate-pulse" />
+        </div>
+        <div className="rounded-xl border border-border/40 bg-surface/50 p-5 space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <div className="h-3 w-24 bg-surface-2 rounded animate-pulse" />
+              <div className="h-7 w-32 bg-surface-2 rounded animate-pulse" />
+            </div>
+            <div className="h-3 w-16 bg-surface-2 rounded animate-pulse" />
+          </div>
+          <div className="space-y-3 pt-3 border-t border-border/30">
+            <div className="h-6 bg-surface-2 rounded animate-pulse" />
+            <div className="h-6 bg-surface-2 rounded animate-pulse" />
+            <div className="h-6 bg-surface-2 rounded animate-pulse" />
+            <div className="h-6 bg-surface-2 rounded animate-pulse" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-xl border border-border/40 bg-surface/50 p-5 space-y-3 animate-pulse">
+            <div className="h-5 w-24 bg-surface-2 rounded" />
+            <div className="h-8 w-16 bg-surface-2 rounded" />
+            <div className="space-y-2">
+              <div className="h-3 w-full bg-surface-2 rounded" />
+              <div className="h-3 w-full bg-surface-2 rounded" />
+              <div className="h-3 w-full bg-surface-2 rounded" />
+            </div>
+          </div>
+          <div className="rounded-xl border border-border/40 bg-surface/50 p-5 space-y-3 animate-pulse">
+            <div className="h-5 w-24 bg-surface-2 rounded" />
+            <div className="h-8 w-16 bg-surface-2 rounded" />
+            <div className="space-y-2">
+              <div className="h-3 w-full bg-surface-2 rounded" />
+              <div className="h-3 w-full bg-surface-2 rounded" />
+              <div className="h-3 w-full bg-surface-2 rounded" />
+            </div>
+          </div>
+        </div>
       </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <BillingErrorState
+        onRetry={() => {
+          setHasError(false);
+          setLoading(true);
+          fetchAll();
+        }}
+        isRetrying={loading}
+      />
     );
   }
 
@@ -257,7 +277,7 @@ export default function BillingPage() {
   /*  Render                                                           */
   /* ================================================================ */
   return (
-    <div className="max-w-5xl mx-auto pb-20 md:pb-8 space-y-8">
+      <div className="max-w-5xl mx-auto pb-8 space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-text flex items-center gap-2">
@@ -300,10 +320,10 @@ export default function BillingPage() {
 
       {/* --- Current Plan Summary --- */}
       {status && (
-        <div className="rounded-xl border border-border bg-surface p-5 space-y-5">
+        <div className="rounded-xl border border-border bg-surface p-5 space-y-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-text-faint uppercase tracking-wide">
+              <p className="text-xs text-text-muted uppercase tracking-wide">
                 Current plan
               </p>
               <div className="flex items-baseline gap-2 mt-1">
@@ -408,34 +428,20 @@ export default function BillingPage() {
             {isFree ? "Choose a plan" : "Compare plans"}
           </h2>
           {/* Monthly / Annual toggle */}
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs ${
-                !annual ? "text-text" : "text-text-faint"
-              }`}
-            >
-              Monthly
-            </span>
-            <button
-              onClick={() => setAnnual(!annual)}
-              className={`relative w-10 h-5 rounded-full transition-colors ${
-                annual ? "bg-blue" : "bg-surface-2"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                  annual ? "translate-x-5" : ""
-                }`}
-              />
-            </button>
-            <span
-              className={`text-xs ${
-                annual ? "text-text" : "text-text-faint"
-              }`}
-            >
-              Annual <span className="text-green font-medium">Save £{OUTREACH_TIER.annualSavings}/yr</span>
-            </span>
-          </div>
+          <ToggleSwitch
+            size="sm"
+            checked={annual}
+            onChange={setAnnual}
+            labelLeft="Monthly"
+            labelRight={
+              <span>
+                Annual{" "}
+                <span className="text-green font-medium">
+                  Save £{OUTREACH_TIER.annualSavings}/yr
+                </span>
+              </span>
+            }
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -447,7 +453,7 @@ export default function BillingPage() {
             return (
               <div
                 key={plan.id}
-                className={`rounded-xl border p-5 transition-all relative ${
+                className={`rounded-xl border p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative ${
                   plan.popular
                     ? "border-blue/40 bg-blue/5"
                     : "border-border/60 bg-surface"
@@ -524,7 +530,7 @@ export default function BillingPage() {
 
       {/* --- Free plan --- */}
       {isFree && (
-        <div className="rounded-xl border border-border/60 bg-surface p-5">
+        <div className="rounded-xl border border-border/60 bg-surface p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-medium text-text">Free</h3>
@@ -532,14 +538,14 @@ export default function BillingPage() {
                 {FREE_PLAN_NOTE}
               </p>
             </div>
-            <span className="text-xs text-text-faint">Current</span>
+            <span className="text-xs text-text-muted">Current</span>
           </div>
         </div>
       )}
 
       {/* --- Coming Soon --- */}
       <div className="rounded-xl border border-border/40 bg-surface/50 p-5">
-        <h3 className="text-sm font-medium text-text-faint mb-2">
+        <h3 className="text-sm font-medium text-text-muted mb-2">
           Coming soon on Gapr Pro
         </h3>
         <ul className="space-y-1.5">
@@ -549,8 +555,8 @@ export default function BillingPage() {
             "API access",
             "CRM integrations",
           ].map((f) => (
-            <li key={f} className="text-xs text-text-faint flex items-center gap-2">
-              <Settings className="w-3 h-3 opacity-40" />
+            <li key={f} className="text-xs text-text-muted flex items-center gap-2">
+              <Settings className="w-3 h-3 opacity-50" />
               {f}
             </li>
           ))}

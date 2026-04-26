@@ -231,7 +231,7 @@ export default function PipelinePage() {
               className={`rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-all min-h-[32px] ${
                 board.activeFilter === pill.id
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border/60 bg-surface text-text-muted hover:text-text"
+                  : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
               }`}
             >
               {pill.label}

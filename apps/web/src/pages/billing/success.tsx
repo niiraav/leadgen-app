@@ -1,9 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { withAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { CheckCircle, Loader2, ArrowRight, Clock, Sparkles } from "lucide-react";
+import { BillingErrorState } from "@/components/billing/BillingErrorState";
 
 /* ------------------------------------------------------------------ */
 /*  Checkout Success Page                                              */
@@ -22,27 +23,53 @@ export default function BillingSuccessPage() {
   const router = useRouter();
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  const loadStatus = useCallback(async () => {
+    let cancelled = false;
+    try {
+      setLoading(true);
+      setHasError(false);
+      await api.billing.sync().catch(() => {});
+      const s = (await api.billing.status()) as unknown as BillingStatus;
+      if (!cancelled) setStatus(s);
+    } catch (err: any) {
+      if (!cancelled) {
+        console.error("[BillingSuccess] Load failed:", err.message);
+        setHasError(true);
+      }
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        // Sync from Stripe first (webhook may not have arrived yet)
-        await api.billing.sync().catch(() => {});
-        const s = (await api.billing.status()) as unknown as BillingStatus;
-        setStatus(s);
-      } catch (err: any) {
-        console.error("[BillingSuccess] Load failed:", err.message);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, []);
+    const cleanup = loadStatus();
+    return () => { cleanup.then((fn) => fn?.()); };
+  }, [loadStatus]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-blue" />
       </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <BillingErrorState
+        title="Unable to confirm your subscription"
+        message="We couldn't verify your plan details. Please try again or contact support if the issue persists."
+        onRetry={() => {
+          setHasError(false);
+          setLoading(true);
+          loadStatus();
+        }}
+        showBack
+        onBack={() => router.push("/billing")}
+      />
     );
   }
 

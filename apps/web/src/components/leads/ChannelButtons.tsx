@@ -36,6 +36,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
   doNotContact = false,
 }: ChannelButtonsProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerChannel, setPickerChannel] = useState<"whatsapp" | "sms" | undefined>(undefined);
   const cleanPhone = phone?.replace(/\D/g, "") ?? "";
   const waPhone = cleanPhone.startsWith("44") ? cleanPhone : `44${cleanPhone}`;
   const iconSize = compact ? 0.7 : 1;
@@ -84,6 +85,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
                 if (doNotContact) return;
                 e.stopPropagation();
                 if (lead) {
+                  setPickerChannel("whatsapp");
                   setPickerOpen(true);
                 } else {
                   window.open(
@@ -106,6 +108,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
                 if (doNotContact) return;
                 e.stopPropagation();
                 if (lead) {
+                  setPickerChannel("sms");
                   setPickerOpen(true);
                 } else {
                   window.location.href = `sms:${phone}`;
@@ -138,7 +141,11 @@ export const ChannelButtons = React.memo(function ChannelButtons({
         <MessagePicker
           lead={lead}
           open={pickerOpen}
-          onClose={() => setPickerOpen(false)}
+          onClose={() => {
+            setPickerOpen(false);
+            setPickerChannel(undefined);
+          }}
+          channel={pickerChannel}
         />
       )}
     </>

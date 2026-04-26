@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { leadStatusSchema } from '@leadgen/shared';
-import { getUserId, getLeadById, updateLead, createActivity, getActivitiesForLead, supabaseAdmin } from '../db';
+import { getUserId, getLeadById, updateLead, createActivity, getActivitiesForLead, getActivitiesForLeads, supabaseAdmin } from '../db';
+import { resolveLastActivity } from '../lib/resolve-last-activity';
 
 const router = new Hono();
 
@@ -128,7 +129,24 @@ router.get('/leads', async (c) => {
       sequence_paused: row.sequence_paused,
     }));
 
-    return c.json({ data: leads });
+    // Batch-fetch activities for all pipeline leads (same pattern as /leads GET)
+    const leadIds = leads.map((l: any) => l.id);
+    let activityMap = new Map<string, any[]>();
+    try {
+      activityMap = await getActivitiesForLeads(leadIds);
+    } catch (actErr) {
+      console.warn('[Pipeline GET /leads] Failed to fetch activities:', actErr);
+    }
+
+    const leadsWithActivity = leads.map((lead: any) => {
+      const activities = activityMap.get(lead.id) ?? [];
+      const lastActivity = activities.length > 0
+        ? resolveLastActivity(activities as any[])
+        : null;
+      return { ...lead, lastActivity };
+    });
+
+    return c.json({ data: leadsWithActivity });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('[Pipeline GET /leads] Error:', message);

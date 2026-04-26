@@ -47,6 +47,8 @@ export interface PipelineLead {
   contact_title: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  contact_linkedin: string | null;
+  linkedin_url: string | null;
   last_contacted: string | null;
   lastActivity?: {
     label: string;
@@ -231,6 +233,8 @@ export function usePipelineBoard() {
         contact_title: l.contact_title || null,
         contact_email: l.contact_email || null,
         contact_phone: l.contact_phone || null,
+        contact_linkedin: l.contact_linkedin || null,
+        linkedin_url: l.linkedin_url || null,
         last_contacted: l.last_contacted || null,
         lastActivity: l.lastActivity ?? null,
       }));
