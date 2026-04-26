@@ -76,106 +76,33 @@ else
 fi
 echo ""
 
-# ── 5. Verify activation guard: empty steps should fail ──────────────────────
+# ── 5. Verify validation rejects empty steps at creation ──────────────────────
 echo "5. Activation guard test (empty steps)"
 EMPTY_SEQ=$(curl -s --max-time 20 -X POST "${API}/sequences" \
   -H "${AUTH}" -H "Content-Type: application/json" \
   -d '{"name":"Empty Sequence","steps":[]}')
-EMPTY_ID=$(echo "${EMPTY_SEQ}" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)
-if [ -n "${EMPTY_ID}" ]; then
-  GUARD=$(curl -s --max-time 20 -X PATCH "${API}/sequences/${EMPTY_ID}" \
-    -H "${AUTH}" -H "Content-Type: application/json" \
-    -d '{"status":"active"}')
-  if echo "${GUARD}" | grep -q 'must have at least one step'; then
-    PASS "Activation guard correctly blocks empty sequence"
+if echo "${EMPTY_SEQ}" | grep -qi 'validation failed\|at least one step\|400'; then
+  PASS "Empty step sequence correctly rejected at creation"
+else
+  # If it somehow created, test activation guard
+  EMPTY_ID=$(echo "${EMPTY_SEQ}" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4 || true)
+  if [ -n "${EMPTY_ID}" ]; then
+    GUARD=$(curl -s --max-time 20 -X PATCH "${API}/sequences/${EMPTY_ID}" \
+      -H "${AUTH}" -H "Content-Type: application/json" \
+      -d '{"status":"active"}')
+    if echo "${GUARD}" | grep -q 'must have at least one step'; then
+      PASS "Activation guard correctly blocks empty sequence"
+    else
+      FAIL "Activation guard did NOT block empty sequence: ${GUARD}"
+    fi
   else
-    FAIL "Activation guard did NOT block empty sequence: ${GUARD}"
+    WARN "Unexpected empty sequence response: ${EMPTY_SEQ}"
   fi
-else
-  WARN "Could not create empty sequence for guard test (validation may reject empty steps)"
 fi
 echo ""
 
-# ── 6. Enroll a lead ─────────────────────────────────────────────────────────
-echo "6. Enroll a test lead"
-# First create a lead
-LEAD=$(curl -s --max-time 20 -X POST "${API}/leads" \
-  -H "${AUTH}" -H "Content-Type: application/json" \
-  -d '{"name":"E2E Test Lead","email":"e2e-smoke@example.com","company":"TestCorp","status":"new"}')
-LEAD_ID=$(echo "${LEAD}" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)
-if [ -z "${LEAD_ID}" ]; then
-  # Try fetching existing leads
-  LEADS=$(curl -s --max-time 10 "${API}/leads?limit=1" -H "${AUTH}")
-  LEAD_ID=$(echo "${LEADS}" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4)
-fi
-if [ -z "${LEAD_ID}" ]; then
-  FAIL "Could not get a lead ID for enrollment"
-fi
-ENROLL=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/enroll" \
-  -H "${AUTH}" -H "Content-Type: application/json" \
-  -d "{\"lead_ids\":[\"${LEAD_ID}\"]}")
-echo "   Response: ${ENROLL}"
-if echo "${ENROLL}" | grep -q '"enrolled":1'; then
-  PASS "Lead enrolled"
-else
-  FAIL "Enrollment failed: ${ENROLL}"
-fi
-echo ""
-
-# ── 7. Duplicate enrollment guard ────────────────────────────────────────────
-echo "7. Duplicate enrollment guard"
-DUP=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/enroll" \
-  -H "${AUTH}" -H "Content-Type: application/json" \
-  -d "{\"lead_ids\":[\"${LEAD_ID}\"]}")
-echo "   Response: ${DUP}"
-if echo "${DUP}" | grep -q '"enrolled":0' && echo "${DUP}" | grep -q '"skipped_ids"'; then
-  PASS "Duplicate enrollment correctly skipped"
-else
-  WARN "Duplicate guard response unexpected: ${DUP}"
-fi
-echo ""
-
-# ── 8. Verify dashboard analytics include dead_leads_pending ────────────────
-echo "8. Dashboard analytics (dead_leads_pending)"
-ANALYTICS=$(curl -s --max-time 10 "${API}/analytics" -H "${AUTH}")
-echo "   Response: ${ANALYTICS}"
-if echo "${ANALYTICS}" | grep -q 'dead_leads_pending'; then
-  PASS "Dashboard includes dead_leads_pending field"
-else
-  FAIL "Dashboard missing dead_leads_pending"
-fi
-echo ""
-
-# ── 9. Pause and resume sequence ─────────────────────────────────────────────
-echo "9. Pause and resume sequence"
-PAUSE=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/pause" -H "${AUTH}")
-if echo "${PAUSE}" | grep -q '"message":"Sequence paused"'; then
-  PASS "Sequence paused"
-else
-  FAIL "Pause failed: ${PAUSE}"
-fi
-
-RESUME=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/resume" -H "${AUTH}")
-if echo "${RESUME}" | grep -q '"message":"Sequence resumed"'; then
-  PASS "Sequence resumed"
-else
-  FAIL "Resume failed: ${RESUME}"
-fi
-echo ""
-
-# ── 10. Template preview endpoint ─────────────────────────────────────────────
-echo "10. Template preview"
-PREVIEW=$(curl -s --max-time 10 "${API}/sequences/${SEQ_ID}/preview?lead_id=${LEAD_ID}" -H "${AUTH}")
-echo "   Response: ${PREVIEW}"
-if echo "${PREVIEW}" | grep -q 'TestCorp' || echo "${PREVIEW}" | grep -q 'e2e-smoke@example.com'; then
-  PASS "Template preview shows substituted variables"
-else
-  WARN "Preview may not show substitutions (lead data may differ)"
-fi
-echo ""
-
-# ── 11. Step editing persistence ─────────────────────────────────────────────
-echo "11. Step editing persistence"
+# ── 6. Step editing persistence ─────────────────────────────────────────────
+echo "6. Step editing persistence (before enrollment)"
 EDIT=$(curl -s --max-time 20 -X PATCH "${API}/sequences/${SEQ_ID}" \
   -H "${AUTH}" -H "Content-Type: application/json" \
   -d '{"steps":[{"step_order":1,"subject_template":"Updated Subject","body_template":"Updated body for {{name}}.","delay_days":0}]}')
@@ -191,6 +118,84 @@ if echo "${SEQ_GET2}" | grep -q 'Updated Subject'; then
   PASS "Edited step persisted in DB"
 else
   FAIL "Edited step did NOT persist"
+fi
+echo ""
+
+# ── 7. Enroll a lead ─────────────────────────────────────────────────────────
+echo "7. Enroll a test lead"
+# First create a lead
+LEAD=$(curl -s --max-time 20 -X POST "${API}/leads" \
+  -H "${AUTH}" -H "Content-Type: application/json" \
+  -d '{"business_name":"E2E Test Lead","email":"e2e-smoke@example.com","status":"new","source":"test"}')
+LEAD_ID=$(echo "${LEAD}" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4 || true)
+if [ -z "${LEAD_ID}" ]; then
+  # Try fetching existing leads
+  LEADS=$(curl -s --max-time 10 "${API}/leads?limit=1" -H "${AUTH}")
+  LEAD_ID=$(echo "${LEADS}" | grep -o '"id":"[^"]*"' | head -n1 | cut -d'"' -f4 || true)
+fi
+if [ -z "${LEAD_ID}" ]; then
+  FAIL "Could not get a lead ID for enrollment"
+fi
+ENROLL=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/enroll" \
+  -H "${AUTH}" -H "Content-Type: application/json" \
+  -d "{\"lead_ids\":[\"${LEAD_ID}\"]}")
+echo "   Response: ${ENROLL}"
+if echo "${ENROLL}" | grep -q '"enrolled":1'; then
+  PASS "Lead enrolled"
+else
+  FAIL "Enrollment failed: ${ENROLL}"
+fi
+echo ""
+
+# ── 8. Duplicate enrollment guard ────────────────────────────────────────────
+echo "8. Duplicate enrollment guard"
+DUP=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/enroll" \
+  -H "${AUTH}" -H "Content-Type: application/json" \
+  -d "{\"lead_ids\":[\"${LEAD_ID}\"]}")
+echo "   Response: ${DUP}"
+if echo "${DUP}" | grep -q '"enrolled":0' && echo "${DUP}" | grep -q '"skipped_ids"'; then
+  PASS "Duplicate enrollment correctly skipped"
+else
+  WARN "Duplicate guard response unexpected: ${DUP}"
+fi
+echo ""
+
+# ── 9. Verify dashboard analytics include dead_leads_pending ────────────────
+echo "9. Dashboard analytics (dead_leads_pending)"
+ANALYTICS=$(curl -s --max-time 10 "${API}/analytics/dashboard" -H "${AUTH}")
+echo "   Response: ${ANALYTICS}"
+if echo "${ANALYTICS}" | grep -q 'dead_leads_pending'; then
+  PASS "Dashboard includes dead_leads_pending field"
+else
+  FAIL "Dashboard missing dead_leads_pending"
+fi
+echo ""
+
+# ── 10. Pause and resume sequence ─────────────────────────────────────────────
+echo "10. Pause and resume sequence"
+PAUSE=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/pause" -H "${AUTH}")
+if echo "${PAUSE}" | grep -q '"message":"Sequence paused"'; then
+  PASS "Sequence paused"
+else
+  FAIL "Pause failed: ${PAUSE}"
+fi
+
+RESUME=$(curl -s --max-time 20 -X POST "${API}/sequences/${SEQ_ID}/resume" -H "${AUTH}")
+if echo "${RESUME}" | grep -q '"message":"Sequence resumed"'; then
+  PASS "Sequence resumed"
+else
+  FAIL "Resume failed: ${RESUME}"
+fi
+echo ""
+
+# ── 11. Template preview endpoint ─────────────────────────────────────────────
+echo "11. Template preview endpoint"
+PREVIEW=$(curl -s --max-time 10 "${API}/sequences/${SEQ_ID}/preview?lead_id=${LEAD_ID}" -H "${AUTH}")
+echo "   Response: ${PREVIEW}"
+if echo "${PREVIEW}" | grep -q 'E2E Test Lead' || echo "${PREVIEW}" | grep -q 'e2e-smoke@example.com'; then
+  PASS "Template preview shows substituted variables"
+else
+  WARN "Preview may not show substitutions (lead data may differ)"
 fi
 echo ""
 

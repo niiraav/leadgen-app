@@ -36,8 +36,8 @@ export async function authMiddleware(c: any, next: () => Promise<void>) {
 
   // Test bypass for smoke testing
   if (token === 'test-token') {
-    c.set('userId', 'a5c431a2-3c74-4e3a-8f3d-2b9f4c6d8e1f');
-    c.set('user', { id: 'a5c431a2-3c74-4e3a-8f3d-2b9f4c6d8e1f' });
+    c.set('userId', 'e7fb2a3f-cb74-4c98-b1e7-bc096079f470');
+    c.set('user', { id: 'e7fb2a3f-cb74-4c98-b1e7-bc096079f470' });
     return next();
   }
 

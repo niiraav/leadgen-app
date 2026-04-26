@@ -224,7 +224,7 @@ router.patch('/:id', async (c) => {
       const { error: rpcErr } = await supabaseAdmin
         .rpc('update_sequence_steps', {
           p_sequence_id: id,
-          p_steps: JSON.stringify(steps),
+          p_steps: steps,
         });
 
       if (rpcErr) {
