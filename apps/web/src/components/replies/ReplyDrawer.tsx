@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Portal } from '@/components/ui/portal';
+import FocusTrap from 'focus-trap-react';
+import { useScrollLock } from '@/hooks/useScrollLock';
+import { useEscapeKey } from '@/hooks/useEscapeKey';
 import {
   X,
   ArrowLeft,
@@ -179,14 +182,8 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
   const [copied, setCopied] = useState(false);
   const [toastNotification, setToastNotification] = useState<ReplyNotification | null>(null);
 
-  // Body scroll lock when open
-  useEffect(() => {
-    if (isOpen) {
-      const original = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = original; };
-    }
-  }, [isOpen]);
+  useScrollLock(isOpen);
+  useEscapeKey(isOpen, onClose);
 
   const { data: reply, isLoading } = useQuery<any>({
     queryKey: ['reply', replyId],
@@ -332,12 +329,16 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
             />
 
             {/* Drawer */}
+            <FocusTrap active={isOpen} focusTrapOptions={{ returnFocusOnDeactivate: true, escapeDeactivates: true, onDeactivate: onClose }}>
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
               className={`fixed right-0 top-0 h-[100dvh] w-full ${drawerWidth} bg-card border-l border-border shadow-2xl z-[60] flex flex-col transition-[width] duration-300 ease-in-out`}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Reply details"
             >
             {/* Toast Notification */}
             {toastNotification && (
@@ -656,6 +657,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
               )}
             </div>
           </motion.div>
+          </FocusTrap>
         </>
       )}
     </AnimatePresence>

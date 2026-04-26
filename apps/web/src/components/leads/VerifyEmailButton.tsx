@@ -5,6 +5,9 @@ import { Loader2, X, Check, AlertTriangle, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UpgradeRequiredError } from "@/lib/api";
 import { Portal } from "@/components/ui/portal";
+import FocusTrap from "focus-trap-react";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -37,6 +40,9 @@ export function VerifyEmailButton({
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [upgradeError, setUpgradeError] = useState<Error | string | null>(null);
+
+  useScrollLock(showConfirm);
+  useEscapeKey(showConfirm, () => setShowConfirm(false));
 
   // Already verified — show badge
   if (emailStatus && emailStatus !== "unverified" && emailStatus !== "enriching") {
@@ -133,9 +139,13 @@ export function VerifyEmailButton({
       {showConfirm && (
         <Portal>
         <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
+          <FocusTrap active={showConfirm} focusTrapOptions={{ returnFocusOnDeactivate: true, escapeDeactivates: true, onDeactivate: () => setShowConfirm(false) }}>
           <div
             className="bg-card border border-border/60 rounded-xl w-full max-w-xs"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Confirm email verification"
           >
             <div className="p-4 text-center">
               <p className="text-sm text-foreground font-medium">Use 1 verification credit?</p>
@@ -164,6 +174,7 @@ export function VerifyEmailButton({
               </div>
             </div>
           </div>
+          </FocusTrap>
         </div>
         </Portal>
       )}

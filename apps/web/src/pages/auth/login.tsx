@@ -59,11 +59,11 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
   };
 
   return (
-      <div className="min-h-dvh flex items-center justify-center bg-background p-6">
+      <main className="min-h-dvh flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <Zap className="w-8 h-8 text-primary" />
+          <Zap className="w-8 h-8 text-primary" aria-hidden="true" />
           <span className="font-bold text-xl text-foreground tracking-tight">LeadGen</span>
         </div>
 
@@ -72,7 +72,7 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
           <p className="text-sm text-muted-foreground mb-6">Sign in to your account</p>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
+            <div role="alert" aria-live="assertive" className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           )}
@@ -85,9 +85,9 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
             disabled={googleLoading}
           >
             {googleLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             ) : (
-              <svg className="w-4 h-4" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -97,7 +97,7 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
             Continue with Google
           </Button>
 
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-6" aria-hidden="true">
             <div className="flex-1 h-px bg-border" />
             <span className="text-xs text-muted-foreground">or</span>
             <div className="flex-1 h-px bg-border" />
@@ -138,7 +138,7 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
             >
               {loading ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   Signing in...
                 </>
               ) : (
@@ -155,7 +155,7 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

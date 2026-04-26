@@ -149,7 +149,8 @@ export default function SequenceDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading sequence details...</span>
         <div className="h-8 w-64 bg-secondary rounded animate-pulse" />
         <div className="space-y-4">
           {[1, 2].map((i) => (
@@ -165,7 +166,7 @@ export default function SequenceDetailPage() {
       <div className="text-center py-12">
         <p className="text-muted-foreground">Sequence not found</p>
         <Link href="/sequences" className="text-sm text-primary hover:underline">
-          ← Back to sequences
+          <span aria-hidden="true">←</span> Back to sequences
         </Link>
       </div>
     );
@@ -177,7 +178,7 @@ export default function SequenceDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Link href="/sequences" className="p-2 hover:bg-secondary rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </Link>
         <div className="flex-1 flex items-center justify-between">
           <div>
@@ -209,16 +210,16 @@ export default function SequenceDetailPage() {
               <h3 className="text-sm font-semibold text-foreground">Step {step.step_order}</h3>
               {editing === step.id ? (
                 <div className="flex items-center gap-1">
-                  <button onClick={saveStep} disabled={saving} className="rounded-full p-1 text-success hover:bg-success/5">
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  <button onClick={saveStep} disabled={saving} aria-label="Save step" className="rounded-full p-1 text-success hover:bg-success/5">
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Check className="w-4 h-4" aria-hidden="true" />}
                   </button>
-                  <button onClick={cancelEdit} className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5">
-                    <X className="w-4 h-4" />
+                  <button onClick={cancelEdit} aria-label="Cancel edit" className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5">
+                    <X className="w-4 h-4" aria-hidden="true" />
                   </button>
                 </div>
               ) : (
-                <button onClick={() => startEdit(step)} className="rounded-full p-1 text-muted-foreground hover:text-primary hover:bg-primary/5">
-                  <Pencil className="w-4 h-4" />
+                <button onClick={() => startEdit(step)} aria-label="Edit step" className="rounded-full p-1 text-muted-foreground hover:text-primary hover:bg-primary/5">
+                  <Pencil className="w-4 h-4" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -276,16 +277,16 @@ export default function SequenceDetailPage() {
             className="btn btn-primary"
           >
             {activating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Check className="w-4 h-4" />
+              <Check className="w-4 h-4" aria-hidden="true" />
             )}
             Activate
           </button>
         )}
         {sequence.status === "active" && (
           <Link href={`/sequences/${seqId}/enroll`} className="btn btn-primary">
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
             Enroll Leads
           </Link>
         )}
@@ -296,9 +297,9 @@ export default function SequenceDetailPage() {
             className="btn btn-primary"
           >
             {resuming ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             ) : (
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             )}
             Resume
           </button>

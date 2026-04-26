@@ -100,7 +100,8 @@ export default function EnrollPage() {
   };
 
   if (loading) {
-    return <div className="space-y-4">
+    return <div className="space-y-4" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading leads...</span>
       {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-secondary rounded-xl animate-pulse" />)}
     </div>;
   }
@@ -110,11 +111,11 @@ export default function EnrollPage() {
       <div className="space-y-6">
         <div className="card text-center py-16">
           <div className="mx-auto w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-4">
-            <Check className="w-6 h-6 text-success" />
+            <Check className="w-6 h-6 text-success" aria-hidden="true" />
           </div>
-          <h2 className="text-lg font-bold text-foreground mb-2">
+          <h1 className="text-lg font-bold text-foreground mb-2">
             {selected.length} lead{selected.length > 1 ? "s" : ""} enrolled!
-          </h2>
+          </h1>
           <p className="text-sm text-muted-foreground mb-6">
             Lead{selected.length > 1 ? "s have" : " has"} been added to &quot;{seqName}&quot;
           </p>
@@ -135,7 +136,7 @@ export default function EnrollPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-3">
         <Link href={`/sequences/${seqId}`} className="p-2 hover:bg-secondary rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Enroll Leads</h1>
@@ -145,7 +146,7 @@ export default function EnrollPage() {
 
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <input
             type="text"
             value={search}
@@ -178,7 +179,7 @@ export default function EnrollPage() {
                     : "border-border"
                 }`}
               >
-                {selected.includes(lead.id) && <Check className="w-3 h-3 text-primary-foreground" />}
+                {selected.includes(lead.id) && <Check className="w-3 h-3 text-primary-foreground" aria-hidden="true" />}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{lead.business_name}</p>
@@ -213,12 +214,12 @@ export default function EnrollPage() {
         >
           {enrolling ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               Enrolling...
             </>
           ) : (
             <>
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-4 h-4" aria-hidden="true" />
               Enroll {selected.length} lead{selected.length !== 1 ? "s" : ""}
             </>
           )}

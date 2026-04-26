@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useProfile } from "@/contexts/profile-context";
 import { Loader2, Check, X, Sparkles, RotateCw } from "lucide-react";
+import FocusTrap from "focus-trap-react";
 import { Portal } from "@/components/ui/portal";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +57,9 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
   const [uspGenerated, setUspGenerated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+
+  useScrollLock(true);
+  useEscapeKey(true, onSkip);
 
   const handleNextStep1 = async () => {
     if (!fullName.trim() || !companyName.trim() || !role) return;
@@ -119,26 +125,29 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
   if (done) {
     return (
       <Portal>
-      <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
-        <div className="bg-card border border-border/60 rounded-lg w-full max-w-lg p-10 text-center">
-          <div className="text-5xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">You&apos;re all set!</h2>
-          <p className="text-muted-foreground">Redirecting to search...</p>
+        <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-label="Setup complete">
+          <FocusTrap focusTrapOptions={{ returnFocusOnDeactivate: true }}>
+            <div className="bg-card border border-border/60 rounded-lg w-full max-w-lg p-10 text-center">
+              <div className="text-5xl mb-4" aria-hidden="true">🎉</div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">You&apos;re all set!</h2>
+              <p className="text-muted-foreground">Redirecting to search...</p>
+            </div>
+          </FocusTrap>
         </div>
-      </div>
       </Portal>
     );
   }
 
   return (
     <Portal>
-    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-[100] p-4">
-      <div className="bg-card border border-border/60 rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
+      <div className="fixed inset-0 bg-overlay flex items-center justify-center z-[100] p-4">
+        <FocusTrap focusTrapOptions={{ returnFocusOnDeactivate: true }}>
+          <div className="bg-card border border-border/60 rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-label="Onboarding" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
           {/* Progress */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 className="text-lg font-bold text-foreground" aria-live="polite" aria-atomic="true">
                 {step === 1 && "Welcome to LeadFinder 👋"}
                 {step === 2 && "What do you offer?"}
                 {step === 3 && "How do you like to write?"}
@@ -149,11 +158,12 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                 {step === 3 && "Choose your tone, pitch, and sign-off style."}
               </p>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5" aria-label={`Step ${step} of 3`}>
               {[1, 2, 3].map((s) => (
                 <div
                   key={s}
                   className={`w-2.5 h-2.5 rounded-full transition-colors ${s <= step ? "bg-primary" : "bg-secondary"}`}
+                  aria-hidden="true"
                 />
               ))}
             </div>
@@ -163,35 +173,39 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Your name</label>
+                <label htmlFor="onboarding-name" className="block text-sm font-medium text-foreground mb-1.5">Your name</label>
                 <Input
+                  id="onboarding-name"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="e.g. Sarah Johnson"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Company name</label>
+                <label htmlFor="onboarding-company" className="block text-sm font-medium text-foreground mb-1.5">Company name</label>
                 <Input
+                  id="onboarding-company"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="e.g. Bright Digital Agency"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Your role</label>
-                <div className="grid grid-cols-2 gap-2">
+                <span className="block text-sm font-medium text-foreground mb-2">Your role</span>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Your role">
                   {ROLE_OPTIONS.map((r) => (
                     <button
                       key={r.key}
                       onClick={() => setRole(r.key)}
+                      role="radio"
+                      aria-checked={role === r.key}
                       className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] ${
                         role === r.key
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span className="text-base">{r.emoji}</span>
+                      <span className="text-base" aria-hidden="true">{r.emoji}</span>
                       <span>{r.label}</span>
                     </button>
                   ))}
@@ -202,7 +216,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                   Skip for now
                 </Button>
                 <Button size="lg" onClick={handleNextStep1} disabled={!fullName.trim() || !companyName.trim() || !role || submitting}>
-                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Next →"}
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <span aria-label="Next step">Next <span aria-hidden="true">→</span></span>}
                 </Button>
               </div>
             </div>
@@ -211,31 +225,34 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
           {/* STEP 2 */}
           {step === 2 && (
             <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Select your services">
                 {SERVICE_CATEGORIES.map((s) => {
                   const selected = selectedServices.includes(s.key);
                   return (
                     <button
                       key={s.key}
                       onClick={() => toggleService(s.key)}
+                      role="checkbox"
+                      aria-checked={selected}
                       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] ${
                         selected
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <span className="text-base">{s.emoji}</span>
+                      <span className="text-base" aria-hidden="true">{s.emoji}</span>
                       <span className="truncate">{s.label}</span>
-                      {selected && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
+                      {selected && <Check className="w-3.5 h-3.5 ml-auto shrink-0" aria-hidden="true" />}
                     </button>
                   );
                 })}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">+ Add your own service</label>
+                <label htmlFor="onboarding-custom-service" className="block text-sm font-medium text-foreground mb-1.5">+ Add your own service</label>
                 <div className="flex gap-2">
                   <Input
+                    id="onboarding-custom-service"
                     className="flex-1"
                     value={customInput}
                     onChange={(e) => setCustomInput(e.target.value)}
@@ -253,10 +270,10 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                         {cs}
                         <button
                           onClick={() => setCustomServices((p) => p.filter((_, j) => j !== i))}
-                          aria-label="Remove service"
+                          aria-label={`Remove ${cs}`}
                           className="hover:text-destructive/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                         >
-                          <X className="w-3 h-3" />
+                          <X className="w-3 h-3" aria-hidden="true" />
                         </button>
                       </span>
                     ))}
@@ -266,14 +283,14 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
               <div className="flex items-center justify-between pt-4">
                 <Button variant="link" size="sm" noMotion className="underline" onClick={() => setStep(1)}>
-                  ← Back
+                  <span aria-label="Previous step"><span aria-hidden="true">←</span> Back</span>
                 </Button>
                 <Button
                   size="lg"
                   onClick={handleNextStep2}
                   disabled={submitting || (selectedServices.length === 0 && customServices.length === 0)}
                 >
-                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Next →"}
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <span aria-label="Next step">Next <span aria-hidden="true">→</span></span>}
                 </Button>
               </div>
             </div>
@@ -284,12 +301,14 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
             <div className="space-y-5">
               {/* Tone */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Email tone</label>
-                <div className="space-y-1.5">
+                <span className="block text-sm font-medium text-foreground mb-2">Email tone</span>
+                <div className="space-y-1.5" role="radiogroup" aria-label="Email tone">
                   {TONE_OPTIONS.map((t) => (
                     <button
                       key={t.key}
                       onClick={() => setTone(t.key)}
+                      role="radio"
+                      aria-checked={tone === t.key}
                       className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] ${
                         tone === t.key
                           ? "border-primary bg-primary/10"
@@ -297,7 +316,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                       }`}
                     >
                       <span className={`text-sm font-semibold ${tone === t.key ? "text-primary" : "text-foreground"}`}>
-                        {tone === t.key ? "●" : "○"} {t.label}
+                        <span aria-hidden="true">{tone === t.key ? "●" : "○"}</span> {t.label}
                       </span>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {t.preview}
@@ -309,8 +328,9 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
               {/* USP */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Your one-liner pitch</label>
+                <label htmlFor="onboarding-usp" className="block text-sm font-medium text-foreground mb-1.5">Your one-liner pitch</label>
                 <Textarea
+                  id="onboarding-usp"
                   className="h-24 resize-none"
                   value={usp}
                   onChange={(e) => setUsp(e.target.value)}
@@ -330,9 +350,9 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                       disabled={uspGenerating}
                     >
                       {uspGenerating ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                       ) : (
-                        <Sparkles className="w-3.5 h-3.5" />
+                        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
                       )}
                       Generate with AI
                     </Button>
@@ -344,7 +364,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
                       className="text-xs gap-1"
                       onClick={handleGenerateUsp}
                     >
-                      <RotateCw className="w-3.5 h-3.5" />
+                      <RotateCw className="w-3.5 h-3.5" aria-hidden="true" />
                       Regenerate
                     </Button>
                   )}
@@ -379,12 +399,14 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
               {/* Sign-off */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Sign off emails with:</label>
-                <div className="flex flex-wrap gap-2">
+                <span className="block text-sm font-medium text-foreground mb-2">Sign off emails with:</span>
+                <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Sign off emails with">
                   {SIGNOFF_OPTIONS.map((s) => (
                     <button
                       key={s}
                       onClick={() => setSignoffStyle(s)}
+                      role="radio"
+                      aria-checked={signoffStyle === s}
                       className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] ${
                         signoffStyle === s
                           ? "border-primary bg-primary/10 text-primary"
@@ -399,19 +421,21 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
               {/* CTA */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Preferred call to action:</label>
-                <div className="space-y-1">
+                <span className="block text-sm font-medium text-foreground mb-2">Preferred call to action:</span>
+                <div className="space-y-1" role="radiogroup" aria-label="Preferred call to action">
                   {CTA_OPTIONS.map((c) => (
                     <button
                       key={c.key}
                       onClick={() => setCtaPreference(c.key)}
+                      role="radio"
+                      aria-checked={ctaPreference === c.key}
                       className={`w-full text-left rounded-lg border px-3 py-2.5 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] ${
                         ctaPreference === c.key
                           ? "border-primary bg-primary/10 text-primary"
                           : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      {ctaPreference === c.key ? "●" : "○"} {c.label}
+                      <span aria-hidden="true">{ctaPreference === c.key ? "●" : "○"}</span> {c.label}
                     </button>
                   ))}
                 </div>
@@ -419,21 +443,22 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
               <div className="flex items-center justify-between pt-4">
                 <Button variant="link" size="sm" noMotion className="underline" onClick={() => setStep(2)}>
-                  ← Back
+                  <span aria-label="Previous step"><span aria-hidden="true">←</span> Back</span>
                 </Button>
                 <Button
                   size="lg"
                   onClick={handleComplete}
                   disabled={submitting || !usp.trim()}
                 >
-                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Complete Setup ✓"}
+                  {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /> : <span aria-label="Complete setup">Complete Setup <span aria-hidden="true">✓</span></span>}
                 </Button>
               </div>
             </div>
           )}
         </div>
       </div>
-    </div>
+        </FocusTrap>
+      </div>
     </Portal>
   );
 }

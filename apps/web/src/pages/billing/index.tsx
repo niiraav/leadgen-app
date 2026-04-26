@@ -79,7 +79,7 @@ interface UsageData {
 function TrialBadge() {
   return (
     <span className="inline-flex items-center gap-1 text-micro font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
-      <Clock className="w-3 h-3" />
+      <Clock className="w-3 h-3" aria-hidden="true" />
       14-day free trial
     </span>
   );
@@ -99,7 +99,7 @@ function TrialCountdown({ trialEndsAt }: { trialEndsAt: string }) {
 
   return (
     <div className={`flex items-center gap-1.5 text-xs ${urgent ? "text-destructive font-medium" : "text-warning"}`}>
-      <Clock className="w-3.5 h-3.5" />
+      <Clock className="w-3.5 h-3.5" aria-hidden="true" />
       Trial: {daysLeft} day{daysLeft !== 1 ? "s" : ""} remaining
     </div>
   );
@@ -108,7 +108,7 @@ function TrialCountdown({ trialEndsAt }: { trialEndsAt: string }) {
 function CancelNotice({ endsAt }: { endsAt: string }) {
   return (
     <div className="flex items-center gap-1.5 text-xs text-warning">
-      <AlertTriangle className="w-3.5 h-3.5" />
+      <AlertTriangle className="w-3.5 h-3.5" aria-hidden="true" />
       Cancels on {new Date(endsAt).toLocaleDateString()}
     </div>
   );
@@ -209,7 +209,8 @@ export default function BillingPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto pb-8 space-y-8">
+      <div className="max-w-5xl mx-auto pb-8 space-y-8" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading billing…</span>
         <div className="space-y-2">
           <div className="h-7 w-48 bg-secondary rounded animate-pulse" />
           <div className="h-4 w-72 bg-secondary rounded animate-pulse" />
@@ -281,7 +282,7 @@ export default function BillingPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-primary" />
+          <CreditCard className="w-5 h-5 text-primary" aria-hidden="true" />
           Billing & Plan
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
@@ -290,9 +291,9 @@ export default function BillingPage() {
       </div>
 
       {/* --- First-login dismissible trial banner --- */}
-      {isFree && showFirstLoginBanner && (
+        {isFree && showFirstLoginBanner && (
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
-          <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+          <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">
               Start your free 14-day trial
@@ -313,7 +314,7 @@ export default function BillingPage() {
             onClick={dismissFirstLoginBanner}
             className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground shrink-0"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -368,7 +369,7 @@ export default function BillingPage() {
                   onClick={() => router.push("/billing/manage")}
                   className="flex items-center gap-1.5 text-xs text-primary hover:underline"
                 >
-                  <Settings className="w-3 h-3" />
+                  <Settings className="w-3 h-3" aria-hidden="true" />
                   Manage
                 </button>
               )}
@@ -379,9 +380,9 @@ export default function BillingPage() {
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                 >
                   {busy === "manage" ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
                   ) : (
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-3 h-3" aria-hidden="true" />
                   )}
                   Stripe Portal
                 </button>
@@ -394,25 +395,25 @@ export default function BillingPage() {
             <div className="space-y-3">
               <ProgressBar
                 label="Leads"
-                icon={<Users className="w-3.5 h-3.5" />}
+                icon={<Users className="w-3.5 h-3.5" aria-hidden="true" />}
                 used={usage.leads_count}
                 limit={status.limit}
               />
               <ProgressBar
                 label="Searches"
-                icon={<Search className="w-3.5 h-3.5" />}
+                icon={<Search className="w-3.5 h-3.5" aria-hidden="true" />}
                 used={usage.searches_count}
                 limit={status.searches_per_month}
               />
               <ProgressBar
                 label="Email verifications"
-                icon={<Check className="w-3.5 h-3.5" />}
+                icon={<Check className="w-3.5 h-3.5" aria-hidden="true" />}
                 used={usage.email_verifications_count}
                 limit={status.email_verifications}
               />
               <ProgressBar
                 label="AI emails"
-                icon={<Mail className="w-3.5 h-3.5" />}
+                icon={<Mail className="w-3.5 h-3.5" aria-hidden="true" />}
                 used={usage.ai_emails_count}
                 limit={status.ai_emails_per_month}
               />
@@ -484,7 +485,7 @@ export default function BillingPage() {
                       key={f}
                       className="flex items-start gap-2 text-xs text-muted-foreground"
                     >
-                      <Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
+                      <Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" aria-hidden="true" />
                       {f}
                     </li>
                   ))}
@@ -492,7 +493,7 @@ export default function BillingPage() {
 
                 {isCurrentPlan ? (
                   <div className="w-full rounded-lg bg-success/10 text-success text-xs font-medium py-2.5 text-center flex items-center justify-center gap-1.5">
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5" aria-hidden="true" />
                     Current plan
                   </div>
                 ) : isFree ? (
@@ -502,9 +503,9 @@ export default function BillingPage() {
                     className="w-full rounded-lg bg-primary text-primary-foreground text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-primary/90 transition-colors"
                   >
                     {busy === "subscribe" ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                     ) : (
-                      <ArrowUpRight className="w-3.5 h-3.5" />
+                      <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
                     )}
                     Start Free Trial
                   </button>
@@ -515,9 +516,9 @@ export default function BillingPage() {
                     className="w-full rounded-lg border border-primary text-primary text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-primary/5 transition-colors"
                   >
                     {busy === "subscribe" ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                     ) : (
-                      <TrendingUp className="w-3.5 h-3.5" />
+                      <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />
                     )}
                     Switch to {plan.name}
                   </button>
@@ -556,7 +557,7 @@ export default function BillingPage() {
             "CRM integrations",
           ].map((f) => (
             <li key={f} className="text-xs text-muted-foreground flex items-center gap-2">
-              <Settings className="w-3 h-3 opacity-50" />
+              <Settings className="w-3 h-3 opacity-50" aria-hidden="true" />
               {f}
             </li>
           ))}

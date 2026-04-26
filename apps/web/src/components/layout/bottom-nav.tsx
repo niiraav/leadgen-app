@@ -85,20 +85,20 @@ export function BottomNav() {
                 {moreItems.map((item) => {
                   const Icon = item.icon;
                   return (
-                    <button
-                      key={item.href}
-                      onClick={() => {
-                        if (item.action) handleSignOut();
-                        else {
-                          setMoreOpen(false);
-                          router.push(item.href);
-                        }
-                      }}
-                      className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors min-h-11 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                    >
-                      <Icon className="w-5 h-5 text-muted-foreground" />
-                      {item.label}
-                    </button>
+              <button
+                key={item.href}
+                onClick={() => {
+                  if (item.action) handleSignOut();
+                  else {
+                    setMoreOpen(false);
+                    router.push(item.href);
+                  }
+                }}
+                className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors min-h-11 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <Icon className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+                {item.label}
+              </button>
                   );
                 })}
               </div>
@@ -124,8 +124,9 @@ export function BottomNav() {
                   else router.push(tab.href);
                 }}
                 className={`flex flex-col items-center justify-center min-w-16 h-full transition-colors active:scale-90 duration-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg ${active ? "text-primary" : "text-muted-foreground"}`}
+                aria-current={active && !isMore ? "page" : undefined}
               >
-                <Icon className={`w-6 h-6 ${active ? "stroke-[2.5px]" : "stroke-2"}`} />
+                <Icon className={`w-6 h-6 ${active ? "stroke-[2.5px]" : "stroke-2"}`} aria-hidden="true" />
                 <span className="text-micro font-medium mt-0.5">{tab.label}</span>
               </button>
             );

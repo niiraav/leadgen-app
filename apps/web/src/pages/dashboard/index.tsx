@@ -194,7 +194,7 @@ function SimpleBarChart({ data }: { data: { status: string; count: number }[] })
   return (
     <div className="space-y-2">
       {data.map((item) => (
-        <div key={item.status} className="flex items-center gap-3">
+        <div key={item.status} className="flex items-center gap-3" aria-label={`${STATUS_LABELS[item.status] || item.status}: ${item.count}`}>
           <span className="text-xs text-muted-foreground w-24 text-right capitalize shrink-0">
             {STATUS_LABELS[item.status] || item.status}
           </span>
@@ -248,7 +248,7 @@ function WeeklyLeadsChart({ data }: { data: { date: string; count: number }[] })
   const areaPath = `${linePath} L ${points[points.length - 1].x} ${padding.top + chartH} L ${points[0].x} ${padding.top + chartH} Z`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48" preserveAspectRatio="xMidYMid meet">
+    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Weekly leads chart">
       {/* Grid lines */}
       {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
         <line
@@ -310,13 +310,13 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
   if (showDeleteConfirm) {
     return (
       <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" aria-hidden="true" />
         <div className="flex-1">
           <p className="text-sm font-medium text-foreground">Delete &quot;{lead.business_name}&quot;?</p>
           <p className="text-xs text-muted-foreground mt-0.5">This cannot be undone.</p>
           <div className="flex gap-2 mt-3">
             <Button variant="destructive" size="sm" onClick={() => onAction(lead.id, "delete")}>
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
               Delete
             </Button>
             <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
@@ -331,7 +331,7 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <h4 className="text-sm font-medium text-foreground truncate">{lead.business_name}</h4>
@@ -342,15 +342,15 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
           </p>
           <div className="flex gap-2 mt-2">
             <Button variant="ghost" size="sm" onClick={() => onAction(lead.id, "archive")}>
-              <Archive className="w-3.5 h-3.5" />
+              <Archive className="w-3.5 h-3.5" aria-hidden="true" />
               Archive
             </Button>
             <Button variant="ghost" size="sm" className="text-primary" onClick={() => onAction(lead.id, "recontact")}>
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
               Re-contact
             </Button>
             <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setShowDeleteConfirm(true)} aria-label="Delete lead">
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -444,9 +444,9 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-sm text-destructive mb-3">{error}</p>
+          <p className="text-sm text-destructive mb-3" role="alert" aria-live="assertive">{error}</p>
           <Button variant="secondary" size="sm" onClick={fetchData}>
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
             Retry
           </Button>
         </div>
@@ -456,6 +456,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
 
   return (
     <div className="space-y-4 md:space-y-6">
+      <h1 className="sr-only">Dashboard</h1>
       {/* KPI Cards */}
       <motion.div
         className="grid grid-cols-2 md:grid-cols-4 gap-3"
@@ -475,7 +476,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             <KPICardMotion
               title="Total Leads"
               end={data?.kpis.total_leads ?? 0}
-              icon={<Users className="w-5 h-5" />}
+              icon={<Users className="w-5 h-5" aria-hidden="true" />}
               subtitle="All time"
               color="blue"
               delay={0}
@@ -483,7 +484,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             <KPICardMotion
               title="Contacted"
               end={data?.kpis.contacted ?? 0}
-              icon={<Mail className="w-5 h-5" />}
+              icon={<Mail className="w-5 h-5" aria-hidden="true" />}
               subtitle="This month"
               color="amber"
               delay={50}
@@ -491,7 +492,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             <KPICardMotion
               title="Replied"
               end={data?.kpis.replied ?? 0}
-              icon={<MessageSquare className="w-5 h-5" />}
+              icon={<MessageSquare className="w-5 h-5" aria-hidden="true" />}
               subtitle="Positive responses"
               color="green"
               delay={100}
@@ -499,7 +500,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             <KPICardMotion
               title="Active Sequences"
               end={data?.kpis.active_sequences ?? 0}
-              icon={<TrendingUp className="w-5 h-5" />}
+              icon={<TrendingUp className="w-5 h-5" aria-hidden="true" />}
               subtitle="Currently running"
               color="blue"
               delay={150}
@@ -609,6 +610,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="rounded-lg bg-warning/5 border border-warning/10 p-3 text-left hover:bg-warning/10 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Jump to dead leads section"
               >
                 <p className="text-xs text-muted-foreground mb-1">Dead Leads Pending</p>
                 <p className="text-lg font-bold text-warning">{data?.sequence_stats.dead_leads_pending ?? 0}</p>
@@ -636,7 +638,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
               <>
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-warning" />
+                    <AlertTriangle className="w-4 h-4 text-warning" aria-hidden="true" />
                     Actions Required
                   </h3>
                   <Badge variant="secondary">{deadLeads.length} pending</Badge>

@@ -160,9 +160,9 @@ export function TopBar({ userEmail }: TopBarProps) {
           href="/search/google-maps"
           className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground bg-secondary border border-border rounded-lg hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <Search className="w-3.5 h-3.5" />
+          <Search className="w-3.5 h-3.5" aria-hidden="true" />
           Search
-          <kbd className="text-micro text-muted-foreground ml-1">⌘K</kbd>
+          <kbd className="text-micro text-muted-foreground ml-1" aria-hidden="true">⌘K</kbd>
         </Link>
       </div>
 
@@ -173,8 +173,9 @@ export function TopBar({ userEmail }: TopBarProps) {
           onClick={toggleTheme}
           className="hidden md:flex rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           title="Toggle theme"
+          aria-label="Toggle theme"
         >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {isDark ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
         </button>
 
         {/* Bell + Notification Dropdown */}
@@ -186,14 +187,15 @@ export function TopBar({ userEmail }: TopBarProps) {
             }}
             className="hidden md:flex rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             title="Notifications"
+            aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ""}`}
             aria-expanded={notifOpen}
-            aria-haspopup="menu"
+            aria-haspopup="dialog"
           >
             <motion.div key={bellKey} animate={unreadCount > 0 ? bellShake : {}}>
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4" aria-hidden="true" />
             </motion.div>
             {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-primary rounded-full text-micro font-bold text-primary-foreground flex items-center justify-center px-1">
+              <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-primary rounded-full text-micro font-bold text-primary-foreground flex items-center justify-center px-1" aria-hidden="true">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -217,7 +219,7 @@ export function TopBar({ userEmail }: TopBarProps) {
                       onClick={handleMarkAllRead}
                       className="text-micro-sm text-primary hover:underline flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                     >
-                      <CheckCheck className="w-3 h-3" />
+                      <CheckCheck className="w-3 h-3" aria-hidden="true" />
                       Mark all read
                     </button>
                   )}
@@ -234,10 +236,11 @@ export function TopBar({ userEmail }: TopBarProps) {
                       <button
                         key={n.id}
                         onClick={() => handleNotifClick(n)}
+                        aria-label={`${n.title}${!n.read ? ", unread" : ""}`}
                         className={`w-full text-left px-4 py-3 border-b border-border hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${!n.read ? "bg-primary/5" : ""}`}
                       >
                         <div className="flex items-start gap-2">
-                          {!n.read && <span className="mt-1.5 w-2 h-2 bg-primary rounded-full shrink-0" />}
+                          {!n.read && <span className="mt-1.5 w-2 h-2 bg-primary rounded-full shrink-0" aria-hidden="true" />}
                           <div className="flex-1 min-w-0">
                             <p className={`text-sm ${!n.read ? "font-medium text-foreground" : "text-muted-foreground"}`}>{n.title}</p>
                             {n.body && <p className="text-xs text-muted-foreground mt-0.5 truncate">{n.body}</p>}
@@ -260,12 +263,12 @@ export function TopBar({ userEmail }: TopBarProps) {
             className="flex items-center gap-2 hover:bg-secondary rounded-full px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             aria-label={userEmail ? `User menu for ${userEmail}` : "User menu"}
             aria-expanded={dropdownOpen}
-            aria-haspopup="menu"
+            aria-haspopup="dialog"
           >
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-xs font-semibold text-primary">{userInitial}</span>
             </div>
-            <ChevronDown className={`hidden md:block w-3.5 h-3.5 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`hidden md:block w-3.5 h-3.5 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} aria-hidden="true" />
           </button>
 
           <AnimatePresence>
@@ -286,14 +289,14 @@ export function TopBar({ userEmail }: TopBarProps) {
                   onClick={() => setDropdownOpen(false)}
                   className="w-full px-4 py-2.5 text-sm text-foreground hover:bg-secondary transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <User className="w-4 h-4" />
+                  <User className="w-4 h-4" aria-hidden="true" />
                   Account
                 </Link>
                 <button
                   onClick={handleSignOut}
                   className="w-full px-4 py-2.5 text-sm text-destructive hover:bg-destructive/5 transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4" aria-hidden="true" />
                   Sign out
                 </button>
               </motion.div>

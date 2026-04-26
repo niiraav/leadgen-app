@@ -196,7 +196,7 @@ export default function RepliesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
+            <MessageSquare className="w-5 h-5 text-primary" aria-hidden="true" />
             Replies
           </h1>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -209,11 +209,12 @@ export default function RepliesPage() {
       <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
         {/* Intent tabs */}
         <div className="flex items-center gap-1 flex-wrap">
-          <Filter className="w-3.5 h-3.5 text-muted-foreground mr-1" />
+          <Filter className="w-3.5 h-3.5 text-muted-foreground mr-1" aria-hidden="true" />
           {INTENT_FILTERS.map((f) => (
             <button
               key={f.value}
               onClick={() => { setIntentFilter(f.value); setPage(0); }}
+              aria-pressed={intentFilter === f.value}
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                 intentFilter === f.value
                   ? "bg-primary text-primary-foreground"
@@ -230,24 +231,26 @@ export default function RepliesPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => { setNeedsReviewOnly(!needsReviewOnly); setPage(0); }}
+              aria-pressed={needsReviewOnly}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                 needsReviewOnly
                   ? "bg-warning/10 text-warning border border-amber/20"
                   : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}
             >
-              {needsReviewOnly && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
+              {needsReviewOnly && <span className="w-1.5 h-1.5 rounded-full bg-warning" aria-hidden="true" />}
               Needs Review only
             </button>
             <button
               onClick={() => { setUnreadOnly(!unreadOnly); setPage(0); }}
+              aria-pressed={unreadOnly}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                 unreadOnly
                   ? "bg-destructive/10 text-destructive border border-destructive/20"
                   : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}
             >
-              {unreadOnly && <span className="w-1.5 h-1.5 rounded-full bg-destructive" />}
+              {unreadOnly && <span className="w-1.5 h-1.5 rounded-full bg-destructive" aria-hidden="true" />}
               Unread only
             </button>
           </div>
@@ -256,7 +259,7 @@ export default function RepliesPage() {
             onClick={() => setSortBy(sortBy === "hot_score" ? "recent" : "hot_score")}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-secondary text-muted-foreground hover:bg-secondary/80 transition-colors"
           >
-            <ArrowUpDown className="w-3 h-3" />
+            <ArrowUpDown className="w-3 h-3" aria-hidden="true" />
             {sortBy === "hot_score" ? "Hot Score" : "Most Recent"}
           </button>
         </div>
@@ -298,7 +301,7 @@ export default function RepliesPage() {
             {loading ? (
               <div className="p-8">
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   <span className="text-sm">Loading replies...</span>
                 </div>
               </div>
@@ -333,7 +336,7 @@ export default function RepliesPage() {
                     {/* Business */}
                     <div className="col-span-3 text-sm font-medium text-foreground truncate flex items-center gap-1.5">
                       {businessName}
-                      {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" title="Unread" />}
+                      {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" aria-label="Unread" />}
                     </div>
 
                     {/* Intent */}
@@ -341,7 +344,7 @@ export default function RepliesPage() {
                       <span
                         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-semibold ${intentColor(intent)}`}
                       >
-                        {intentEmoji(intent)}
+                        <span aria-hidden="true">{intentEmoji(intent)}</span>
                       </span>
                     </div>
 
@@ -350,7 +353,7 @@ export default function RepliesPage() {
 
                     {/* Time */}
                     <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
+                      <Clock className="w-3 h-3" aria-hidden="true" />
                       {relativeTime(reply.received_at)}
                     </div>
 
@@ -359,9 +362,9 @@ export default function RepliesPage() {
                       <button
                         onClick={() => openDrawer(reply.id)}
                         className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
-                        title="View details"
+                        aria-label="View details"
                       >
-                        <Eye className="w-4 h-4" />
+                        <Eye className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
 
@@ -381,7 +384,7 @@ export default function RepliesPage() {
           <div className="md:hidden">
             {loading ? (
               <div className="p-8 flex justify-center">
-                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" aria-hidden="true" />
               </div>
             ) : (
               replies.map((reply) => {
@@ -397,13 +400,13 @@ export default function RepliesPage() {
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-sm ${intentColor(intent)} border border-current/10`}
                     >
-                      {intentEmoji(intent)}
+                      <span aria-hidden="true">{intentEmoji(intent)}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
                           {businessName}
-                          {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" title="Unread" />}
+                          {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" aria-label="Unread" />}
                         </span>
                         <span className="text-micro font-bold text-muted-foreground">{reply.hot_score}</span>
                       </div>
@@ -418,7 +421,7 @@ export default function RepliesPage() {
                       onClick={() => openDrawer(reply.id)}
                       className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 );
@@ -438,9 +441,10 @@ export default function RepliesPage() {
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
+              aria-label="Previous page"
               className="p-2 rounded-lg hover:bg-secondary text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4" aria-hidden="true" />
             </button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               // Show a window of 5 pages
@@ -471,9 +475,10 @@ export default function RepliesPage() {
             <button
               onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
+              aria-label="Next page"
               className="p-2 rounded-lg hover:bg-secondary text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>

@@ -120,8 +120,9 @@ export default function BillingUpgradePage() {
     <div className="max-w-4xl mx-auto pb-8 space-y-8">
       {/* Loading state */}
       {loading && (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="flex items-center justify-center min-h-[40vh]" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading pricing…</span>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
         </div>
       )}
 
@@ -245,9 +246,9 @@ export default function BillingUpgradePage() {
                   }`}
                 >
                   {busy === "subscribe" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                   ) : (
-                    <ArrowUpRight className="w-4 h-4" />
+                    <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
                   )}
                   {status === "free" ? "Start Free Trial" : `Switch to ${plan.name}`}
                 </button>
@@ -261,7 +262,7 @@ export default function BillingUpgradePage() {
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-5 py-3 border-b border-border/40">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-primary" />
+            <Sparkles className="w-4 h-4 text-primary" aria-hidden="true" />
             Feature Comparison
           </h3>
         </div>
@@ -276,11 +277,11 @@ export default function BillingUpgradePage() {
               </tr>
             </thead>
             <tbody>
-              <Row icon={<Users className="w-3.5 h-3.5" />} label="Leads" free={FREE_FEATURES.leads} outreach={PLANS[0].featureDetails.leads} />
-              <Row icon={<Search className="w-3.5 h-3.5" />} label="Lead searches" free={FREE_FEATURES.searches} outreach={PLANS[0].featureDetails.searches} />
-              <Row icon={<Mail className="w-3.5 h-3.5" />} label="Email verifications" free={FREE_FEATURES.verifications} outreach={PLANS[0].featureDetails.verifications} />
-              <Row icon={<Sparkles className="w-3.5 h-3.5" />} label="AI emails" free={FREE_FEATURES.aiEmails} outreach={PLANS[0].featureDetails.aiEmails} />
-              <Row icon={<GitBranch className="w-3.5 h-3.5" />} label="Active sequences" free={FREE_FEATURES.sequences} outreach={PLANS[0].featureDetails.sequences} />
+              <Row icon={<Users className="w-3.5 h-3.5" aria-hidden="true" />} label="Leads" free={FREE_FEATURES.leads} outreach={PLANS[0].featureDetails.leads} />
+              <Row icon={<Search className="w-3.5 h-3.5" aria-hidden="true" />} label="Lead searches" free={FREE_FEATURES.searches} outreach={PLANS[0].featureDetails.searches} />
+              <Row icon={<Mail className="w-3.5 h-3.5" aria-hidden="true" />} label="Email verifications" free={FREE_FEATURES.verifications} outreach={PLANS[0].featureDetails.verifications} />
+              <Row icon={<Sparkles className="w-3.5 h-3.5" aria-hidden="true" />} label="AI emails" free={FREE_FEATURES.aiEmails} outreach={PLANS[0].featureDetails.aiEmails} />
+              <Row icon={<GitBranch className="w-3.5 h-3.5" aria-hidden="true" />} label="Active sequences" free={FREE_FEATURES.sequences} outreach={PLANS[0].featureDetails.sequences} />
               <Row icon={<Zap className="w-3.5 h-3.5" />} label="Pipeline stages" free="—" outreach="Basic" />
               <Row icon={<Mail className="w-3.5 h-3.5" />} label="Support" free="—" outreach="Email (48hr)" />
             </tbody>
@@ -289,11 +290,11 @@ export default function BillingUpgradePage() {
         {/* Mobile stacked cards */}
         <div className="md:hidden divide-y divide-border/30">
           {[
-            { icon: <Users className="w-3.5 h-3.5" />, label: "Leads", free: FREE_FEATURES.leads, outreach: PLANS[0].featureDetails.leads },
-            { icon: <Search className="w-3.5 h-3.5" />, label: "Lead searches", free: FREE_FEATURES.searches, outreach: PLANS[0].featureDetails.searches },
-            { icon: <Mail className="w-3.5 h-3.5" />, label: "Email verifications", free: FREE_FEATURES.verifications, outreach: PLANS[0].featureDetails.verifications },
-            { icon: <Sparkles className="w-3.5 h-3.5" />, label: "AI emails", free: FREE_FEATURES.aiEmails, outreach: PLANS[0].featureDetails.aiEmails },
-            { icon: <GitBranch className="w-3.5 h-3.5" />, label: "Active sequences", free: FREE_FEATURES.sequences, outreach: PLANS[0].featureDetails.sequences },
+            { icon: <Users className="w-3.5 h-3.5" aria-hidden="true" />, label: "Leads", free: FREE_FEATURES.leads, outreach: PLANS[0].featureDetails.leads },
+            { icon: <Search className="w-3.5 h-3.5" aria-hidden="true" />, label: "Lead searches", free: FREE_FEATURES.searches, outreach: PLANS[0].featureDetails.searches },
+            { icon: <Mail className="w-3.5 h-3.5" aria-hidden="true" />, label: "Email verifications", free: FREE_FEATURES.verifications, outreach: PLANS[0].featureDetails.verifications },
+            { icon: <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />, label: "AI emails", free: FREE_FEATURES.aiEmails, outreach: PLANS[0].featureDetails.aiEmails },
+            { icon: <GitBranch className="w-3.5 h-3.5" aria-hidden="true" />, label: "Active sequences", free: FREE_FEATURES.sequences, outreach: PLANS[0].featureDetails.sequences },
             { icon: <Zap className="w-3.5 h-3.5" />, label: "Pipeline stages", free: "—", outreach: "Basic" },
             { icon: <Mail className="w-3.5 h-3.5" />, label: "Support", free: "—", outreach: "Email (48hr)" },
           ].map((row) => (

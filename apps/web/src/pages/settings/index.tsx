@@ -141,7 +141,8 @@ function SettingsProfilePage() {
 
   if (loading) {
     return (
-      <div className="animate-pulse space-y-4">
+      <div className="animate-pulse space-y-4" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading settings…</span>
         <div className="h-8 bg-secondary rounded w-48" />
         <div className="h-40 bg-secondary rounded" />
         <div className="h-40 bg-secondary rounded" />
@@ -161,13 +162,13 @@ function SettingsProfilePage() {
       <Section title="Identity" saving={savingSection === "identity"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Full name</label>
-            <input value={fullName} onChange={(e) => setFullName(e.target.value)}
+            <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-1.5">Full name</label>
+            <input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)}
               className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-11" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Company name</label>
-            <input value={companyName} onChange={(e) => setCompanyName(e.target.value)}
+            <label htmlFor="companyName" className="block text-sm font-medium text-foreground mb-1.5">Company name</label>
+            <input id="companyName" value={companyName} onChange={(e) => setCompanyName(e.target.value)}
               className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-11" />
           </div>
           <div>
@@ -178,9 +179,9 @@ function SettingsProfilePage() {
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all min-h-11 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     role === r.key ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>
-                  <span className="text-base">{r.emoji}</span>
+                  <span className="text-base" aria-hidden="true">{r.emoji}</span>
                   <span>{r.label}</span>
-                  {role === r.key && <Check className="w-3.5 h-3.5 ml-auto" />}
+                  {role === r.key && <Check className="w-3.5 h-3.5 ml-auto" aria-hidden="true" />}
                 </button>
               ))}
             </div>
@@ -202,15 +203,16 @@ function SettingsProfilePage() {
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all min-h-11 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     selected ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>
-                  <span className="text-base">{s.emoji}</span>
+                  <span className="text-base" aria-hidden="true">{s.emoji}</span>
                   <span className="truncate">{s.label}</span>
-                  {selected && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
+                  {selected && <Check className="w-3.5 h-3.5 ml-auto shrink-0" aria-hidden="true" />}
                 </button>
               );
             })}
           </div>
           <div className="flex gap-2">
-            <input value={customInput} onChange={(e) => setCustomInput(e.target.value)}
+            <label htmlFor="customService" className="sr-only">Add custom service</label>
+            <input id="customService" value={customInput} onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustomService()}
               placeholder="Add custom service..."
               className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-11" />
@@ -221,7 +223,7 @@ function SettingsProfilePage() {
               {customServices.map((cs, i) => (
                 <span key={i} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs">
                   {cs}
-                  <button onClick={() => { const next = customServices.filter((_, j) => j !== i); setCustomServices(next); autoSave("custom_services", next); }} className="hover:text-destructive/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full" aria-label="Remove custom service"><X className="w-3 h-3" /></button>
+                  <button onClick={() => { const next = customServices.filter((_, j) => j !== i); setCustomServices(next); autoSave("custom_services", next); }} className="hover:text-destructive/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-full" aria-label="Remove custom service"><X className="w-3 h-3" aria-hidden="true" /></button>
                 </span>
               ))}
             </div>
@@ -244,7 +246,7 @@ function SettingsProfilePage() {
               {usp.length}/150
             </span>
             <button onClick={handleGenerateUsp} disabled={uspGenerating} className="text-xs text-primary hover:underline flex items-center gap-1 min-h-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded">
-              {uspGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              {uspGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> : <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />}
               {uspGenerating ? "Generating..." : "Generate with AI"}
             </button>
           </div>
@@ -271,9 +273,10 @@ function SettingsProfilePage() {
             <div className="space-y-1.5">
               {TONE_OPTIONS.map((t) => (
                 <button key={t.key} onClick={() => { setTone(t.key); autoSave("tone", t.key); }}
+                  aria-pressed={tone === t.key}
                   className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all min-h-11 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${tone === t.key ? "border-primary bg-primary/10" : "border-border/60 bg-secondary hover:border-border"}`}>
                   <span className={`text-sm font-semibold ${tone === t.key ? "text-primary" : "text-foreground"}`}>
-                    {tone === t.key ? "●" : "○"} {t.label}
+                    <span aria-hidden="true">{tone === t.key ? "●" : "○"}</span> {t.label}
                   </span>
                   <p className="text-xs text-muted-foreground mt-0.5">{t.preview}</p>
                 </button>
@@ -285,6 +288,7 @@ function SettingsProfilePage() {
             <div className="flex flex-wrap gap-2">
               {SIGNOFF_OPTIONS.map((s) => (
                 <button key={s} onClick={() => { setSignoffStyle(s); autoSave("signoff_style", s); }}
+                  aria-pressed={signoffStyle === s}
                   className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     signoffStyle === s ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>{s}</button>
@@ -296,10 +300,11 @@ function SettingsProfilePage() {
             <div className="space-y-1">
               {CTA_OPTIONS.map((c) => (
                 <button key={c.key} onClick={() => { setCtaPreference(c.key); autoSave("cta_preference", c.key); }}
+                  aria-pressed={ctaPreference === c.key}
                   className={`w-full text-left rounded-lg border px-3 py-2.5 text-sm transition-all min-h-11 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     ctaPreference === c.key ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>
-                  {ctaPreference === c.key ? "●" : "○"} {c.label}
+                  <span aria-hidden="true">{ctaPreference === c.key ? "●" : "○"}</span> {c.label}
                 </button>
               ))}
             </div>
@@ -333,7 +338,7 @@ function SettingsProfilePage() {
                     className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-9 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                       selected ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                     }`}>
-                    <span>{s.emoji}</span>
+                    <span aria-hidden="true">{s.emoji}</span>
                     <span>{s.label}</span>
                   </button>
                 );
@@ -352,23 +357,24 @@ function SettingsProfilePage() {
               {DAYS_OF_WEEK.map((d) => {
                 const active = workingDays.includes(d.key);
                 return (
-                  <button key={d.key} onClick={() => toggleDay(d.key)}
-                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                      active ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-                    }`}>{d.label}</button>
+                <button key={d.key} onClick={() => toggleDay(d.key)}
+                  aria-pressed={active}
+                  className={`w-10 h-10 rounded-lg text-sm font-medium transition-all active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    active ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                  }`}>{d.label}</button>
                 );
               })}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">Start time</label>
-              <input type="time" value={workingStart} onChange={(e) => { setWorkingStart(e.target.value); autoSave("working_hours_start", e.target.value); }}
+              <label htmlFor="workingStart" className="block text-sm font-medium text-foreground mb-1.5">Start time</label>
+              <input id="workingStart" type="time" value={workingStart} onChange={(e) => { setWorkingStart(e.target.value); autoSave("working_hours_start", e.target.value); }}
                 className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground min-h-11" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">End time</label>
-              <input type="time" value={workingEnd} onChange={(e) => { setWorkingEnd(e.target.value); autoSave("working_hours_end", e.target.value); }}
+              <label htmlFor="workingEnd" className="block text-sm font-medium text-foreground mb-1.5">End time</label>
+              <input id="workingEnd" type="time" value={workingEnd} onChange={(e) => { setWorkingEnd(e.target.value); autoSave("working_hours_end", e.target.value); }}
                 className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground min-h-11" />
             </div>
           </div>
@@ -377,6 +383,7 @@ function SettingsProfilePage() {
             <div className="flex gap-2">
               {[7, 14, 30, 60].map((d) => (
                 <button key={d} onClick={() => { setSalesCycle(d); autoSave("sales_cycle_days", d); }}
+                  aria-pressed={salesCycle === d}
                   className={`flex-1 h-10 rounded-lg text-sm font-medium transition-all active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                     salesCycle === d ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                   }`}>{d}d</button>
@@ -390,15 +397,15 @@ function SettingsProfilePage() {
       <Section title="Optional Links" saving={savingSection === "calendly" || savingSection === "linkedin"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Calendly link</label>
-            <input type="url" value={calendlyLink} onChange={(e) => setCalendlyLink(e.target.value)}
+            <label htmlFor="calendlyLink" className="block text-sm font-medium text-foreground mb-1.5">Calendly link</label>
+            <input id="calendlyLink" type="url" value={calendlyLink} onChange={(e) => setCalendlyLink(e.target.value)}
               onBlur={() => autoSave("calendly_link", calendlyLink)}
               placeholder="https://calendly.com/your-link"
               className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-11" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">LinkedIn URL</label>
-            <input type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)}
+            <label htmlFor="linkedinUrl" className="block text-sm font-medium text-foreground mb-1.5">LinkedIn URL</label>
+            <input id="linkedinUrl" type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)}
               onBlur={() => autoSave("linkedin_url", linkedinUrl)}
               placeholder="https://linkedin.com/in/your-profile"
               className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-h-11" />
@@ -416,7 +423,7 @@ function Section({ title, saving, children }: { title: string; saving?: boolean;
         <h3 className="text-base font-semibold text-foreground">{title}</h3>
         {saving && (
           <span className="text-xs text-success flex items-center gap-1">
-            <Check className="w-3 h-3" /> Saved
+            <Check className="w-3 h-3" aria-hidden="true" /> Saved
           </span>
         )}
       </div>

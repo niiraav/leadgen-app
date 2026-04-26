@@ -3,9 +3,12 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Play, Pause, Eye, ArrowRight, Loader2, Trash2 } from "lucide-react";
+import { Plus, Play, Pause, Eye, ArrowRight, Loader2, Trash2, X } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import Link from "next/link";
+import FocusTrap from "focus-trap-react";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface Sequence {
   id: string;
@@ -21,6 +24,9 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  useScrollLock(!!deleteId);
+  useEscapeKey(!!deleteId, () => setDeleteId(null));
 
   const fetchSequences = useCallback(async () => {
     setLoading(true);
@@ -73,7 +79,8 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading sequences…</span>
         <div className="h-8 w-40 bg-secondary rounded animate-pulse" />
         <div className="grid gap-3">
           {[1, 2, 3].map((i) => (
@@ -94,7 +101,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
           </p>
         </div>
         <Link href="/sequences/new" className="btn btn-primary text-sm">
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
           New Sequence
         </Link>
       </div>
@@ -135,7 +142,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                     href={`/sequences/${seq.id}`}
                     className="btn btn-ghost text-xs py-1 h-7"
                   >
-                    <Eye className="w-3 h-3" />
+                    <Eye className="w-3 h-3" aria-hidden="true" />
                     View Details
                   </Link>
                   {seq.status !== "active" && (
@@ -145,9 +152,9 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                       className="btn btn-ghost text-xs py-1 h-7 text-success"
                     >
                       {actionLoading === seq.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
                       ) : (
-                        <Play className="w-3 h-3" />
+                        <Play className="w-3 h-3" aria-hidden="true" />
                       )}
                       Resume
                     </button>
@@ -159,9 +166,9 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                       className="btn btn-ghost text-xs py-1 h-7 text-warning"
                     >
                       {actionLoading === seq.id ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
                       ) : (
-                        <Pause className="w-3 h-3" />
+                        <Pause className="w-3 h-3" aria-hidden="true" />
                       )}
                       Pause
                     </button>
@@ -174,15 +181,15 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                   href={`/sequences/${seq.id}/enroll`}
                   className="btn btn-secondary text-xs py-1.5 h-8 self-center"
                 >
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                   Enroll Leads
                 </Link>
                 <button
                   onClick={() => setDeleteId(seq.id)}
                   className="rounded-full p-2 text-destructive/60 hover:text-destructive hover:bg-destructive/5 transition-colors"
-                  title="Delete sequence"
+                  aria-label="Delete sequence"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -193,31 +200,38 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
       {/* Delete Confirmation Modal */}
       {deleteId && (
         <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50">
-          <div className="bg-card rounded-xl border border-border/60 p-6 w-full max-w-sm mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                <Trash2 className="w-5 h-5 text-destructive" />
+          <FocusTrap>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Delete sequence"
+              className="bg-card rounded-xl border border-border/60 p-6 w-full max-w-sm mx-4"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <Trash2 className="w-5 h-5 text-destructive" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Delete sequence?</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">This will also delete all steps and enrollments.</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-foreground">Delete sequence?</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">This will also delete all steps and enrollments.</p>
+              <div className="flex gap-2 justify-end mt-6">
+                <button
+                  onClick={() => setDeleteId(null)}
+                  className="btn btn-secondary text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="btn bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm"
+                >
+                  Delete
+                </button>
               </div>
             </div>
-            <div className="flex gap-2 justify-end mt-6">
-              <button
-                onClick={() => setDeleteId(null)}
-                className="btn btn-secondary text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="btn bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
+          </FocusTrap>
         </div>
       )}
     </div>

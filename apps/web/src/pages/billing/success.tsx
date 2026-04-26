@@ -51,8 +51,9 @@ export default function BillingSuccessPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[60vh]" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Processing payment...</span>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     );
   }
@@ -81,11 +82,11 @@ export default function BillingSuccessPage() {
       {/* Animated checkmark */}
       <div className="relative">
         <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center">
-          <CheckCircle className="w-10 h-10 text-success" />
+          <CheckCircle className="w-10 h-10 text-success" aria-hidden="true" />
         </div>
         {/* Decorative sparkles */}
-        <Sparkles className="w-4 h-4 text-warning absolute -top-1 -right-1 animate-pulse" />
-        <Sparkles className="w-3 h-3 text-primary absolute -bottom-1 -left-1 animate-pulse delay-500" />
+        <Sparkles className="w-4 h-4 text-warning absolute -top-1 -right-1 animate-pulse" aria-hidden="true" />
+        <Sparkles className="w-3 h-3 text-primary absolute -bottom-1 -left-1 animate-pulse delay-500" aria-hidden="true" />
       </div>
 
       {/* Success message */}
@@ -101,7 +102,7 @@ export default function BillingSuccessPage() {
       {/* Trial notice */}
       {isTrialing && (
         <div className="w-full rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-2.5">
-          <Clock className="w-4 h-4 text-primary shrink-0" />
+          <Clock className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
           <div className="text-left">
             <p className="text-xs font-medium text-foreground">
               Your 14-day free trial starts now
@@ -119,7 +120,7 @@ export default function BillingSuccessPage() {
         className="w-full rounded-lg bg-primary text-primary-foreground text-sm font-medium py-3 flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
       >
         Go to Dashboard
-        <ArrowRight className="w-4 h-4" />
+        <ArrowRight className="w-4 h-4" aria-hidden="true" />
       </button>
 
       {/* Subtle link to manage subscription */}

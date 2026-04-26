@@ -42,7 +42,7 @@ export function EmptyState({
       <div
         className={`w-14 h-14 rounded-lg bg-secondary border border-border flex items-center justify-center mb-4 ${iconClassName}`}
       >
-        <Icon className="w-7 h-7 text-muted-foreground" strokeWidth={1.5} />
+        <Icon className="w-7 h-7 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
       </div>
       <p className="text-sm font-medium text-foreground">{title}</p>
       {description && (

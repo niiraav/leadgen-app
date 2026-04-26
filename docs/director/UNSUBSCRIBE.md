@@ -1,86 +1,46 @@
-# Unsubscribe / Opt-Out Mechanism — Implementation Instructions
+# Unsubscribe / Opt-Out Mechanism — Corrected Implementation Instructions
 
 ## Context
+
 - `do_not_contact` already exists on `leads` (boolean, default false) — migration 024.
-- Sequence scheduler (`apps/api/src/services/sequence-scheduler.ts`) currently does NOT check `do_not_contact` before sending.
+- Sequence scheduler (`apps/api/src/services/sequence-scheduler.ts`) does NOT check `do_not_contact` before sending.
 - `sendOutreachEmail()` is only called from the sequence scheduler — safe to append footer unconditionally.
 - `FRONTEND_URL` env var is already used in `billing.ts` — reuse it for unsubscribe link generation.
-- No JWT library installed yet — install `jose` (ESM-native, no `jsonwebtoken` issues).
+- **No new dependency needed.** We use an opaque random token (same pattern as `reply_token`) instead of JWT. Simpler, no key rotation, matches existing codebase conventions.
+- `sequence_enrollments` already has `paused_reason` (TEXT, nullable) from migration 009.
+- `engagement_status` enum does NOT include `'unsubscribed'` — do not attempt to set it. `do_not_contact` is the single source of truth.
+
+---
 
 ## Files to create / modify
 
 | # | Action | File |
 |---|--------|------|
-| 1 | Install dependency | `apps/api/package.json` |
-| 2 | Create utility | `apps/api/src/lib/email/unsubscribe.ts` |
-| 3 | Create migration SQL | `apps/api/migrations/035_unsubscribes.sql` |
-| 4 | Modify email sender | `apps/api/src/lib/email/send.ts` |
-| 5 | Modify scheduler | `apps/api/src/services/sequence-scheduler.ts` |
-| 6 | Create endpoint | `apps/api/src/routes/unsubscribe.ts` |
-| 7 | Mount route | `apps/api/src/index.ts` |
-| 8 | Create page | `apps/web/src/pages/unsubscribe.tsx` |
+| 1 | Create utility | `apps/api/src/lib/email/unsubscribe.ts` |
+| 2 | Create migration SQL | `apps/api/migrations/035_unsubscribes.sql` |
+| 3 | Modify email sender | `apps/api/src/lib/email/send.ts` |
+| 4 | Modify scheduler | `apps/api/src/services/sequence-scheduler.ts` |
+| 5 | Create endpoint | `apps/api/src/routes/unsubscribe.ts` |
+| 6 | Mount route | `apps/api/src/index.ts` |
+| 7 | Create page | `apps/web/src/pages/unsubscribe.tsx` |
+| 8 | Gate enrollment | `apps/api/src/routes/sequences.ts` |
 
 ---
 
-## 1. Install `jose`
-
-Run from repo root:
-
-```bash
-npm install jose --workspace=@leadgen/api
-```
-
-No other dependency changes needed.
-
----
-
-## 2. Create `apps/api/src/lib/email/unsubscribe.ts`
+## 1. Create `apps/api/src/lib/email/unsubscribe.ts`
 
 ```typescript
-import { SignJWT, jwtVerify } from 'jose';
-
-const SECRET = new TextEncoder().encode(
-  process.env.UNSUBSCRIBE_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
-if (SECRET.length === 0) {
-  console.warn('[Unsubscribe] No UNSUBSCRIBE_JWT_SECRET or SUPABASE_SERVICE_ROLE_KEY set. Unsubscribe tokens will fail.');
-}
+import { createHash, randomBytes } from 'crypto';
 
 const APP_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-export interface UnsubscribeTokenPayload {
-  lead_id: string;
-  sequence_id: string;
+export function generateUnsubscribeToken(): string {
+  // 32 bytes hex = 64 chars — same length class as reply_token
+  return randomBytes(32).toString('hex');
 }
 
-export async function generateUnsubscribeToken(
-  leadId: string,
-  sequenceId: string
-): Promise<string> {
-  return new SignJWT({ lead_id: leadId, sequence_id: sequenceId })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('90d')
-    .sign(SECRET);
-}
-
-export async function verifyUnsubscribeToken(
-  token: string
-): Promise<UnsubscribeTokenPayload | null> {
-  try {
-    const { payload } = await jwtVerify(token, SECRET, {
-      clockTolerance: 60,
-      maxTokenAge: '90d',
-    });
-    if (!payload.lead_id || !payload.sequence_id) return null;
-    return {
-      lead_id: payload.lead_id as string,
-      sequence_id: payload.sequence_id as string,
-    };
-  } catch {
-    return null;
-  }
+export function hashUnsubscribeToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }
 
 export function buildUnsubscribeLink(token: string): string {
@@ -88,18 +48,25 @@ export function buildUnsubscribeLink(token: string): string {
 }
 ```
 
+**Why opaque token instead of JWT?**
+- No library to install (no `jose`, no `jsonwebtoken`).
+- No key rotation complexity.
+- Matches existing `reply_token` pattern in `db.ts` (`generateReplyToken()`).
+- Token stored hashed in `unsubscribes` table for verification (same security model as password hashes).
+
 ---
 
-## 3. Create `apps/api/migrations/035_unsubscribes.sql`
+## 2. Create `apps/api/migrations/035_unsubscribes.sql`
 
 Apply via Supabase SQL Editor only (no local postgres access).
 
 ```sql
--- Audit table for unsubscribe events
+-- Audit table for unsubscribe events (GDPR / CAN-SPAM trail)
 CREATE TABLE IF NOT EXISTS unsubscribes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
   email_domain TEXT,
+  token_hash TEXT NOT NULL,           -- sha256 of the opaque token, for verification
   unsubscribed_at TIMESTAMPTZ DEFAULT NOW(),
   source TEXT NOT NULL DEFAULT 'link'
     CHECK (source IN ('link', 'reply', 'manual')),
@@ -108,14 +75,20 @@ CREATE TABLE IF NOT EXISTS unsubscribes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_unsubscribes_lead_id ON unsubscribes(lead_id);
+CREATE INDEX IF NOT EXISTS idx_unsubscribes_token_hash ON unsubscribes(token_hash);
 CREATE INDEX IF NOT EXISTS idx_unsubscribes_unsubscribed_at ON unsubscribes(unsubscribed_at);
 ```
 
+**Why both `leads.do_not_contact` AND `unsubscribes` table?**
+- `leads.do_not_contact` = single source of truth for the scheduler guard (fast boolean lookup).
+- `unsubscribes` = audit trail for GDPR data-subject requests and unsubscribe-rate analytics.
+- Both are written on every unsubscribe event.
+
 ---
 
-## 4. Modify `apps/api/src/lib/email/send.ts`
+## 3. Modify `apps/api/src/lib/email/send.ts`
 
-Add `unsubscribeLink` to `SendEmailParams` and append footer to both html and text.
+Add `unsubscribeLink` to `SendEmailParams` and append footer to both html and text **after** the body is built (not as a template variable — users never type `{{unsubscribe_link}}`).
 
 ```typescript
 export interface SendEmailParams {
@@ -157,53 +130,59 @@ export async function sendOutreachEmail(
 
 ---
 
-## 5. Modify `apps/api/src/services/sequence-scheduler.ts`
+## 4. Modify `apps/api/src/services/sequence-scheduler.ts`
 
-### 5a. Add imports at top
+### 4a. Add imports at top
+
 ```typescript
 import {
   generateUnsubscribeToken,
+  hashUnsubscribeToken,
   buildUnsubscribeLink,
 } from '../lib/email/unsubscribe';
 ```
 
-### 5b. In the worker callback, after step 2 (skip if not active), add a `do_not_contact` guard BEFORE creating the `email_due` activity.
+### 4b. Reorder the worker callback
 
-Refactor to this exact order inside the worker callback:
+Current order in the file (lines ~95–227):
+1. Fetch enrollment
+2. Skip if not active
+3. Fetch step
+4. If no step → sequence complete
+5. Create activity "email_due"
+6. Fetch lead
+7. Send email
+8. Update enrollment
+9. Queue next step
 
+**New order:**
 1. Fetch enrollment
 2. Skip if not active
 3. Fetch step
 4. If no step → sequence complete (unchanged)
-5. **Move lead fetch here** (add `do_not_contact` to select) — this is currently at line ~147; move it to BEFORE the `email_due` activity
-6. If `do_not_contact` → pause enrollment, log skipped, return
-7. Create activity "email_due" — move this to AFTER the lead fetch / guard
-8. Generate unsubscribe token, build link
-9. Send email (pass unsubscribeLink)
+5. **Fetch lead** — MOVE this from line ~147 to here. **Add `do_not_contact` to the select list.**
+6. **Guard: if `lead.do_not_contact` → pause enrollment, log skipped, return**
+7. Create activity "email_due" — MOVE this to after the guard
+8. Generate unsubscribe token + build link
+9. Send email (pass `unsubscribeLink`)
 10. Update enrollment
 11. Queue next step
 
-Exact diff logic:
+Exact code changes:
 
-- Move the lead `.select(...)` block (currently around line 147) to right after step 3 (the step fetch / no-step completion block). Add `do_not_contact` to the select list.
-- Insert the guard block immediately after the lead fetch, before the `email_due` activity.
-- Move the `email_due` activity creation to AFTER the guard, right before the `if (lead?.email)` send block.
-- Before calling `sendOutreachEmail`, generate the token and link:
-
+**Step 5 — Move lead fetch here, add `do_not_contact`:**
 ```typescript
-        const unsubscribeToken = await generateUnsubscribeToken(
-          enrollment.lead_id,
-          enrollment.sequence_id
-        );
-        const unsubscribeLink = buildUnsubscribeLink(unsubscribeToken);
+      // 5. Fetch lead (moved from below; added do_not_contact)
+      const { data: lead } = await supabaseAdmin
+        .from('leads')
+        .select('email, business_name, reply_token, contact_full_name, owner_name, city, phone, website_url, category, do_not_contact')
+        .eq('id', enrollment.lead_id)
+        .maybeSingle();
 ```
 
-- Pass `unsubscribeLink` to `sendOutreachEmail` call.
-
-The rest of the worker logic (update enrollment, queue next step, dead-lead worker) stays unchanged.
-
+**Step 6 — DNC guard:**
 ```typescript
-      // Guard: lead has opted out
+      // 6. Guard: lead has opted out
       if (lead?.do_not_contact) {
         await supabaseAdmin
           .from('sequence_enrollments')
@@ -233,35 +212,102 @@ The rest of the worker logic (update enrollment, queue next step, dead-lead work
       }
 ```
 
+**Step 7 — Move `email_due` activity here:**
+```typescript
+      // 7. Create activity (moved to after DNC guard)
+      await createActivity(enrollment.user_id, {
+        lead_id: enrollment.lead_id,
+        type: 'email_due',
+        description: `Email due: "${step.subject_template}" (step ${step_order})`,
+      });
+```
+
+**Step 8 — Generate token and link (before send block):**
+```typescript
+      // 8. Generate unsubscribe token + link
+      let unsubscribeLink: string | undefined;
+      if (lead?.email) {
+        const rawToken = generateUnsubscribeToken();
+        const tokenHash = hashUnsubscribeToken(rawToken);
+
+        // Pre-register the token in unsubscribes table (so the link works even if the email
+        // client pre-fetches it). The unsubscribes row is created now; unsubscribed_at stays
+        // NULL until the user actually clicks.
+        await supabaseAdmin
+          .from('unsubscribes')
+          .insert({
+            lead_id: enrollment.lead_id,
+            token_hash: tokenHash,
+            source: 'link',
+            enrollment_id,
+            sequence_id: enrollment.sequence_id,
+          })
+          .select('id')
+          .single();
+
+        unsubscribeLink = buildUnsubscribeLink(rawToken);
+      }
+```
+
+**Step 9 — Pass `unsubscribeLink` to `sendOutreachEmail`:**
+```typescript
+        await sendOutreachEmail({
+          to: lead.email,
+          fromName,
+          fromEmail,
+          subject: substitutedSubject,
+          html: substitutedBody,
+          text: substitutedBody,
+          leadId: enrollment.lead_id,
+          replyToken: (lead as any)?.reply_token || '',
+          enrolmentId: enrollment_id,
+          sequenceStepId: (step as any).id,
+          sequenceId: enrollment.sequence_id,
+          userId: enrollment.user_id,
+          stepNumber: step_order,
+          unsubscribeLink,   // NEW
+        });
+```
+
+**Steps 10–11 (update enrollment + queue next) remain unchanged.**
+
 ---
 
-## 6. Create `apps/api/src/routes/unsubscribe.ts`
+## 5. Create `apps/api/src/routes/unsubscribe.ts`
 
 ```typescript
 import { Hono } from 'hono';
-import { verifyUnsubscribeToken } from '../lib/email/unsubscribe';
+import { hashUnsubscribeToken } from '../lib/email/unsubscribe';
 import { supabaseAdmin } from '../db';
 
 const app = new Hono();
 
 app.get('/', async (c) => {
   const token = c.req.query('t');
-  if (!token) {
+  if (!token || typeof token !== 'string') {
     return c.json({ error: 'Missing token' }, 400);
   }
 
-  const payload = await verifyUnsubscribeToken(token);
-  if (!payload) {
+  const tokenHash = hashUnsubscribeToken(token);
+
+  // Look up the pre-registered unsubscribe row
+  const { data: unsubRow, error: unsubErr } = await supabaseAdmin
+    .from('unsubscribes')
+    .select('id, lead_id, unsubscribed_at')
+    .eq('token_hash', tokenHash)
+    .maybeSingle();
+
+  if (unsubErr || !unsubRow) {
     return c.json({ error: 'Invalid or expired token' }, 400);
   }
 
-  const { lead_id } = payload;
+  const leadId = unsubRow.lead_id;
 
   // Fetch lead
   const { data: lead } = await supabaseAdmin
     .from('leads')
     .select('id, email, do_not_contact')
-    .eq('id', lead_id)
+    .eq('id', leadId)
     .maybeSingle();
 
   if (!lead) {
@@ -274,53 +320,73 @@ app.get('/', async (c) => {
       .from('leads')
       .update({
         do_not_contact: true,
-        unsubscribed: true,
-        engagement_status: 'unsubscribed',
-        pipeline_stage: 'lost',
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', lead_id);
+      .eq('id', leadId);
   }
 
-  // Audit log
-  await supabaseAdmin
-    .from('unsubscribes')
-    .insert({
-      lead_id,
-      email_domain: lead.email?.split('@')[1] ?? null,
-      source: 'link',
-      sequence_id: payload.sequence_id,
-    });
+  // Record the actual unsubscribe timestamp (if not already set)
+  if (!unsubRow.unsubscribed_at) {
+    await supabaseAdmin
+      .from('unsubscribes')
+      .update({ unsubscribed_at: new Date().toISOString() })
+      .eq('id', unsubRow.id);
+  }
 
   // Pause any active sequences for this lead
   await supabaseAdmin
     .from('sequence_enrollments')
     .update({ status: 'paused', paused_reason: 'unsubscribed' })
-    .eq('lead_id', lead_id)
+    .eq('lead_id', leadId)
     .eq('status', 'active');
 
-  return c.json({ success: true, lead_id });
+  // Log activity
+  await supabaseAdmin
+    .from('lead_activities')
+    .insert({
+      user_id: null,   // system action — no specific user
+      lead_id: leadId,
+      type: 'unsubscribed',
+      description: 'Lead unsubscribed via email link',
+    });
+
+  return c.json({ success: true, lead_id: leadId });
 });
 
 export default app;
 ```
 
+**Why we pre-register the token in the scheduler instead of creating it on click:**
+- Some email clients (Gmail, Outlook) pre-fetch URLs for link preview / safety scanning.
+- If we only created the `unsubscribes` row on click, a pre-fetch would 404 and the real click would too.
+- Pre-registering with `unsubscribed_at = NULL` means the link is valid immediately, but the actual unsubscribe timestamp is only set on the first real human click.
+
 ---
 
-## 7. Mount route in `apps/api/src/index.ts`
+## 6. Mount route in `apps/api/src/index.ts`
 
-Add after the health endpoint and BEFORE auth routes (so it is public):
+Add **before** the `app.use('/leads/*', authMiddleware)` lines and **after** the health endpoint:
 
 ```typescript
-// Public unsubscribe endpoint — no auth
+// Public unsubscribe endpoint — NO auth middleware
 import unsubscribeRouter from './routes/unsubscribe';
 app.route('/unsubscribe', unsubscribeRouter);
 ```
 
-Place this immediately after the `app.get('/health', ...)` block and before the `app.use('/leads/*', authMiddleware)` lines.
+If your `index.ts` has a global `app.use('*', authMiddleware)` or similar, you must exclude `/unsubscribe` from it. Use a conditional:
+
+```typescript
+app.use('*', async (c, next) => {
+  if (c.req.path === '/unsubscribe' || c.req.path.startsWith('/unsubscribe/')) {
+    return next();
+  }
+  return authMiddleware(c, next);
+});
+```
 
 ---
 
-## 8. Create `apps/web/src/pages/unsubscribe.tsx`
+## 7. Create `apps/web/src/pages/unsubscribe.tsx`
 
 ```tsx
 import { useEffect, useState } from "react";
@@ -385,6 +451,40 @@ No auth gate, no layout wrapper needed. Keep it minimal.
 
 ---
 
+## 8. Gate sequence enrollment for DNC leads
+
+In `apps/api/src/routes/sequences.ts`, find the enrollment endpoint (usually `POST /:id/enroll`). Before creating enrollments, filter out leads where `do_not_contact = true`:
+
+```typescript
+  // After fetching lead IDs, check DNC status
+  const { data: leadsCheck } = await supabaseAdmin
+    .from('leads')
+    .select('id, do_not_contact, business_name')
+    .in('id', leadIds)
+    .eq('user_id', userId);
+
+  const dncIds = (leadsCheck ?? []).filter((l: any) => l.do_not_contact).map((l: any) => l.id);
+  const enrollableIds = leadIds.filter((id) => !dncIds.includes(id));
+
+  if (dncIds.length > 0) {
+    console.warn(`[Enroll] Skipped ${dncIds.length} DNC leads`);
+  }
+
+  // Use enrollableIds instead of leadIds for the rest of the enrollment logic
+```
+
+Return the skipped count in the response so the frontend can show a toast:
+
+```typescript
+  return c.json({
+    enrolled: enrollableIds.length,
+    skipped_dnc: dncIds.length,
+    skipped_ids: dncIds,
+  });
+```
+
+---
+
 ## 9. Type-check & test locally
 
 After all edits, run from repo root:
@@ -412,20 +512,26 @@ Ensure the following are set on Render (backend) and Vercel (frontend):
 | `FRONTEND_URL` | Render | `https://leadgen-app-web.vercel.app` |
 | `NEXT_PUBLIC_API_URL` | Vercel | `https://leadgen-app-uz2o.onrender.com` |
 
-`SUPABASE_SERVICE_ROLE_KEY` is already set on Render and is reused as the JWT signing secret. If you want a dedicated secret, add `UNSUBSCRIBE_JWT_SECRET` on Render.
+`FRONTEND_URL` is already used in `billing.ts` for Stripe redirects. Reuse it — do NOT hardcode `app.gapr.io` anywhere.
 
 ---
 
 ## 11. Post-deploy verification
 
 1. Enroll a test lead in a sequence with a step that sends immediately (or force-run via BullMQ).
-2. Inspect the sent email in Mailgun logs — verify the footer contains the unsubscribe link.
+2. Inspect the sent email in Mailgun logs — verify the footer contains the unsubscribe link with the correct domain (`leadgen-app-web.vercel.app/unsubscribe?t=...`).
 3. Click the link — land on `/unsubscribe?t=TOKEN` and see the success message.
-4. Check backend: lead `do_not_contact` = true, `engagement_status` = 'unsubscribed'.
-5. Re-trigger the sequence step for that enrollment — verify the worker skips it with `skipped_unsubscribed` status in `sequence_step_executions` and the enrollment is `paused`.
+4. Check backend: `leads.do_not_contact` = true; `unsubscribes` row has `unsubscribed_at` set.
+5. Re-trigger the sequence step for that enrollment — verify the worker skips it with `skipped_unsubscribed` status in `sequence_step_executions` and the enrollment is `paused` with `paused_reason = 'unsubscribed'`.
+6. Try enrolling the same lead in a new sequence — verify the enrollment API returns `skipped_dnc: 1` and does not create an enrollment.
 
 ---
 
-## Parallel safety note
+## 12. Parallel safety note
 
-This track touches ONLY backend files (`apps/api/src/`) and one new frontend page (`apps/web/src/pages/unsubscribe.tsx`). It does NOT overlap with the accessibility audit files (components, existing pages, CSS). Zero collision risk with Hermes' frontend audit work.
+This track touches ONLY:
+- Backend: `apps/api/src/lib/email/*`, `apps/api/src/services/sequence-scheduler.ts`, `apps/api/src/routes/unsubscribe.ts`, `apps/api/src/routes/sequences.ts`, `apps/api/src/index.ts`
+- Frontend: `apps/web/src/pages/unsubscribe.tsx` (one new page)
+- Migration: `apps/api/migrations/035_unsubscribes.sql`
+
+It does NOT overlap with the accessibility audit files (components, existing pages, CSS). Zero collision risk with Hermes' frontend audit work.

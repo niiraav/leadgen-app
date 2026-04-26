@@ -35,6 +35,10 @@ import { api } from "@/lib/api";
 import type { PipelineLead } from "@/hooks/usePipelineBoard";
 import { getDrawerVisibility } from "./drawer-visibility";
 import { ChannelButtons } from "@/components/leads/ChannelButtons";
+import FocusTrap from "focus-trap-react";
+import { Portal } from "@/components/ui/portal";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface LeadQuickDrawerProps {
   lead: PipelineLead | null;
@@ -171,7 +175,9 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
     refetchOnWindowFocus: false,
   });
 
-  // ── Phase 4: Reply mutations with optimistic UI ──
+  useScrollLock(isOpen);
+  useEscapeKey(isOpen, onClose);
+
   const markHandledMutation = useMutation({
     mutationFn: (id: string) => api.replies.handled(id, "archive"),
     onMutate: async () => {
@@ -348,7 +354,8 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
   const activeReplyId = replyIdFrom(localLatestReply);
 
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end">
+    <Portal>
+      <div className="fixed inset-0 z-[100] flex justify-end">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-overlay"
@@ -365,7 +372,8 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
       />
 
       {/* Drawer */}
-      <div className="relative bg-card border-l border-border w-full max-w-md h-full overflow-y-auto animate-slide-in-right">
+      <FocusTrap active={isOpen} focusTrapOptions={{ returnFocusOnDeactivate: true, escapeDeactivates: true, onDeactivate: onClose }}>
+      <div className="relative bg-card border-l border-border w-full max-w-md h-full overflow-y-auto animate-slide-in-right" role="dialog" aria-modal="true" aria-label="Lead details">
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div>
             <h3 className="text-sm font-semibold text-foreground">{lead.business_name}</h3>
@@ -900,6 +908,8 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           )}
         </div>
       </div>
-    </div>
+      </FocusTrap>
+      </div>
+    </Portal>
   );
 }

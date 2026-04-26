@@ -128,8 +128,9 @@ export default function BillingManagePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="flex items-center justify-center min-h-[60vh]" aria-busy="true" aria-live="polite">
+        <span className="sr-only">Loading billing management…</span>
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
       </div>
     );
   }
@@ -307,7 +308,7 @@ export default function BillingManagePage() {
                 className="rounded-lg bg-success/10 text-success text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-success/20 transition-colors disabled:opacity-50"
               >
                 {busy === "reactivate" ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                 ) : (
                   <CheckCircle className="w-3.5 h-3.5" />
                 )}
@@ -336,7 +337,7 @@ export default function BillingManagePage() {
                       className="rounded-lg bg-destructive/10 text-destructive text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-destructive/20 transition-colors disabled:opacity-50"
                     >
                       {busy === "cancel" ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
                       ) : (
                         <AlertTriangle className="w-3.5 h-3.5" />
                       )}
@@ -380,7 +381,7 @@ export default function BillingManagePage() {
             className="rounded-lg border border-border text-muted-foreground text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-50"
           >
             {busy === "portal" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
             ) : (
               <ExternalLink className="w-3.5 h-3.5" />
             )}

@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { X, AlertCircle, Users } from "lucide-react";
 import { LOSS_REASON_LABELS } from "@leadgen/shared";
 import type { PipelineLead } from "@/hooks/usePipelineBoard";
+import FocusTrap from "focus-trap-react";
+import { Portal } from "@/components/ui/portal";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface BulkLossModalProps {
   isOpen: boolean;
@@ -24,6 +28,9 @@ export default function BulkLossModal({
 
   const count = leads.length;
 
+  useScrollLock(isOpen);
+  useEscapeKey(isOpen, onCancel);
+
   useEffect(() => {
     if (isOpen) {
       setReason("");
@@ -41,76 +48,80 @@ export default function BulkLossModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay">
-      <div className="bg-card rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-destructive" />
-            Mark as lost
-          </h3>
-          <button onClick={onCancel} aria-label="Close modal" className="text-muted-foreground hover:text-foreground">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <Portal>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay" onClick={onCancel}>
+        <FocusTrap active={isOpen} focusTrapOptions={{ returnFocusOnDeactivate: true, escapeDeactivates: true, onDeactivate: onCancel }}>
+          <div className="bg-card rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5" role="dialog" aria-modal="true" aria-labelledby="bulk-loss-title" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 id="bulk-loss-title" className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-destructive" />
+                Mark as lost
+              </h3>
+              <button onClick={onCancel} aria-label="Close modal" className="text-muted-foreground hover:text-foreground">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-        <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-destructive/5 border border-destructive/10">
-          <Users className="w-3.5 h-3.5 text-destructive/60 shrink-0" />
-          <p className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{count}</span> lead{count > 1 ? "s" : ""}{" "}
-            will be marked as lost
-          </p>
-        </div>
+            <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-destructive/5 border border-destructive/10">
+              <Users className="w-3.5 h-3.5 text-destructive/60 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{count}</span> lead{count > 1 ? "s" : ""}{" "}
+                will be marked as lost
+              </p>
+            </div>
 
-        <p className="text-xs text-muted-foreground mb-4">
-          Why are these {count > 1 ? "leads" : "lead"} lost?
-        </p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Why are these {count > 1 ? "leads" : "lead"} lost?
+            </p>
 
-        <div className="space-y-2 mb-4">
-          {Object.entries(LOSS_REASON_LABELS).map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => setReason(value)}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors focus-ring ${
-                reason === value
-                  ? "bg-destructive/10 border-destructive/30 text-destructive"
-                  : "bg-secondary border-border text-muted-foreground hover:bg-secondary"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+            <div className="space-y-2 mb-4">
+              {Object.entries(LOSS_REASON_LABELS).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setReason(value)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors focus-ring ${
+                    reason === value
+                      ? "bg-destructive/10 border-destructive/30 text-destructive"
+                      : "bg-secondary border-border text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
 
-        {touched && !reason && (
-          <p className="text-micro-sm text-destructive mb-3">Please select a reason</p>
-        )}
+            {touched && !reason && (
+              <p className="text-micro-sm text-destructive mb-3">Please select a reason</p>
+            )}
 
-        <label className="block text-micro-sm font-medium text-muted-foreground mb-1.5">
-          Additional notes (optional, applies to all)
-        </label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          rows={3}
-          className="input text-xs resize-none mb-5"
-          placeholder="Add context about why these leads were lost..."
-        />
+            <label className="block text-micro-sm font-medium text-muted-foreground mb-1.5">
+              Additional notes (optional, applies to all)
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="input text-xs resize-none mb-5"
+              placeholder="Add context about why these leads were lost..."
+            />
 
-        <div className="flex gap-2">
-          <button onClick={onCancel} className="btn btn-secondary flex-1 text-xs">
-            Cancel
-          </button>
-          <button onClick={onSkip} className="btn btn-secondary flex-1 text-xs">
-            Skip
-          </button>
-          <button
-            onClick={handleConfirm}
-            className="btn btn-primary flex-1 text-xs bg-destructive hover:bg-destructive/90"
-          >
-            Mark as lost
-          </button>
-        </div>
+            <div className="flex gap-2">
+              <button onClick={onCancel} className="btn btn-secondary flex-1 text-xs">
+                Cancel
+              </button>
+              <button onClick={onSkip} className="btn btn-secondary flex-1 text-xs">
+                Skip
+              </button>
+              <button
+                onClick={handleConfirm}
+                className="btn btn-primary flex-1 text-xs bg-destructive hover:bg-destructive/90"
+              >
+                Mark as lost
+              </button>
+            </div>
+          </div>
+        </FocusTrap>
       </div>
-    </div>
+    </Portal>
   );
 }

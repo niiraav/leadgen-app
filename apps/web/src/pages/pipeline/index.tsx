@@ -1,5 +1,5 @@
 import { withAuth } from "@/lib/auth";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, KPICard } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -128,6 +128,20 @@ export default function PipelinePage() {
     setQuickDrawer({ open: true, leadId: lead.id });
   }, []);
 
+  // Viewport-aware aria-hidden for responsive board/list containers
+  const desktopRef = useRef<HTMLDivElement>(null);
+  const mobileRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const sync = () => {
+      if (desktopRef.current) desktopRef.current.setAttribute("aria-hidden", String(!mql.matches));
+      if (mobileRef.current) mobileRef.current.setAttribute("aria-hidden", String(mql.matches));
+    };
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, []);
+
   const handleUpdateLead = useCallback(async (id: string, data: Record<string, unknown>) => {
     try {
       await api.leads.update(id, data);
@@ -160,14 +174,15 @@ export default function PipelinePage() {
           </p>
         </div>
         <Link href="/leads" className="btn btn-primary text-sm">
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4" aria-hidden="true" />
           Add Lead
         </Link>
       </div>
 
       {/* Health Summary Strip */}
       {healthLoading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-busy="true" aria-live="polite">
+          <span className="sr-only">Loading health summary…</span>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-24 rounded-xl border border-border/40 bg-card animate-pulse" />
           ))}
@@ -178,27 +193,27 @@ export default function PipelinePage() {
             title="Stale leads"
             value={healthSummary.stale_count}
             changeType="negative"
-            icon={<AlertTriangle className="w-5 h-5" />}
+            icon={<AlertTriangle className="w-5 h-5" aria-hidden="true" />}
           />
           <KPICard
             title="Proposals out"
             value={healthSummary.proposals_out_count}
             secondaryValue={healthSummary.proposals_out_value > 0 ? (formatCompactDealValue(healthSummary.proposals_out_value) ?? undefined) : undefined}
             changeType="positive"
-            icon={<BarChart3 className="w-5 h-5" />}
+            icon={<BarChart3 className="w-5 h-5" aria-hidden="true" />}
           />
           <KPICard
             title="Replies this week"
             value={healthSummary.replies_this_week}
             changeType="positive"
-            icon={<Eye className="w-5 h-5" />}
+            icon={<Eye className="w-5 h-5" aria-hidden="true" />}
           />
           <KPICard
             title="Won this month"
             value={healthSummary.won_this_month}
             secondaryValue={healthSummary.won_this_month_value > 0 ? (formatCompactDealValue(healthSummary.won_this_month_value) ?? undefined) : undefined}
             changeType="positive"
-            icon={<PoundSterling className="w-5 h-5" />}
+            icon={<PoundSterling className="w-5 h-5" aria-hidden="true" />}
           />
         </div>
       ) : null}
@@ -206,8 +221,10 @@ export default function PipelinePage() {
       {/* Search + Filters + View Toggle */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <label htmlFor="pipeline-search" className="sr-only">Search leads</label>
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
           <input
+            id="pipeline-search"
             type="text"
             value={board.searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -220,7 +237,7 @@ export default function PipelinePage() {
               aria-label="Clear search"
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -229,6 +246,7 @@ export default function PipelinePage() {
             <button
               key={pill.id}
               onClick={() => onFilterChange(pill.id)}
+              aria-pressed={board.activeFilter === pill.id}
               className={`rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-all min-h-8 focus-ring ${
                 board.activeFilter === pill.id
                   ? "border-primary bg-primary/10 text-primary"
@@ -251,8 +269,9 @@ export default function PipelinePage() {
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
+            aria-pressed={board.viewMode === "board"}
           >
-            <LayoutGrid className="w-3.5 h-3.5" />
+            <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
             Board
           </button>
           <button
@@ -265,8 +284,9 @@ export default function PipelinePage() {
                 ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
+            aria-pressed={board.viewMode === "list"}
           >
-            <ListIcon className="w-3.5 h-3.5" />
+            <ListIcon className="w-3.5 h-3.5" aria-hidden="true" />
             List
           </button>
         </div>
@@ -275,7 +295,8 @@ export default function PipelinePage() {
       {/* Board / List Area */}
       <div className="flex-1 min-h-0">
         {board.isLoading ? (
-          <div className="flex gap-4 overflow-x-auto pb-4">
+          <div className="flex gap-4 overflow-x-auto pb-4" aria-busy="true" aria-live="polite">
+            <span className="sr-only">Loading pipeline board…</span>
             {PIPELINE_COLUMNS.map((col) => (
               <div key={col.id} className="min-w-72 w-72 flex-shrink-0">
                 <div className="h-6 rounded bg-secondary animate-pulse mb-2" />
@@ -286,7 +307,7 @@ export default function PipelinePage() {
         ) : (
           <>
             {/* Desktop */}
-            <div className="hidden md:block h-full">
+            <div ref={desktopRef} className="hidden md:block h-full">
               {board.viewMode === "board" ? (
                 <PipelineBoardDesktop
                   columns={PIPELINE_COLUMNS}
@@ -327,7 +348,7 @@ export default function PipelinePage() {
             </div>
 
             {/* Mobile — always grouped, honours filters */}
-            <div className="md:hidden">
+            <div ref={mobileRef} className="md:hidden">
               <PipelineBoardMobile
                 columns={PIPELINE_COLUMNS}
                 leadsByColumn={board.boardLeadsByColumn}

@@ -114,7 +114,7 @@ export function KPICard({
           )}
         </div>
         {icon && (
-          <div className="rounded-full bg-secondary p-2.5 text-muted-foreground">
+          <div className="rounded-full bg-secondary p-2.5 text-muted-foreground" aria-hidden="true">
             {icon}
           </div>
         )}

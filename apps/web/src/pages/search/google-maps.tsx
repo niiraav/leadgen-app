@@ -297,7 +297,8 @@ export default function SearchGoogleMaps() {
         toast.success(`Saved ${result.name}`);
         setUserLeadsCount((c) => c + 1);
 
-        // Stay on search page — button will flip to "Saved" via duplicate state
+        // Navigate to lead detail page
+        router.push(`/leads/${lead.id}`);
       } catch (err: any) {
         if (err instanceof UpgradeRequiredError) {
           setUpgradeError(err);
@@ -429,6 +430,9 @@ export default function SearchGoogleMaps() {
 
         toast.success(`${imported} leads were saved`);
         setUserLeadsCount((c) => c + imported);
+
+        // Navigate to leads list page
+        router.push("/leads");
       } catch (err: any) {
         if (err instanceof UpgradeRequiredError) {
           setUpgradeError(err);
@@ -510,7 +514,7 @@ export default function SearchGoogleMaps() {
           {loading && results.length === 0 && (
             <div className="mt-6 space-y-3">
               <div className="flex items-center gap-2 mb-2">
-                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" aria-hidden="true" />
                 <span className="text-sm text-muted-foreground">Searching...</span>
               </div>
               {Array.from({ length: 6 }).map((_, i) => (

@@ -15,7 +15,7 @@ import { resolveStatusPatch, type LeadDomainFields } from "@/lib/lead-domains";
 // ── Inline WhatsApp icon (same paths as Frame.svg) ────────────────────────────
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
       <path
         d="M2.99169 16.3417C3.13873 16.7126 3.17147 17.119 3.08569 17.5087L2.02069 20.7987C1.98638 20.9655 1.99525 21.1384 2.04647 21.3008C2.09769 21.4633 2.18955 21.61 2.31336 21.727C2.43716 21.844 2.5888 21.9274 2.75389 21.9693C2.91898 22.0113 3.09205 22.0104 3.25669 21.9667L6.66969 20.9687C7.03741 20.8958 7.41822 20.9276 7.76869 21.0607C9.90408 22.0579 12.3231 22.2689 14.5988 21.6564C16.8746 21.0439 18.861 19.6473 20.2074 17.7131C21.5538 15.7788 22.1738 13.4311 21.958 11.0842C21.7422 8.73738 20.7044 6.54216 19.0278 4.88589C17.3511 3.22962 15.1434 2.21873 12.7941 2.03159C10.4448 1.84445 8.10483 2.49308 6.18713 3.86303C4.26944 5.23299 2.89722 7.23624 2.31258 9.51933C1.72795 11.8024 1.96846 14.2186 2.99169 16.3417Z"
         stroke="currentColor"
@@ -357,17 +357,17 @@ export default function LeadsPage() {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="secondary" size="sm" onClick={handleGlobalExport}>
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5" aria-hidden="true" />
               Export
             </Button>
             <Button asChild size="sm">
               <Link href="/leads/import">
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
               Import
             </Link>
             </Button>
             <Button size="sm" onClick={() => setShowAddModal(true)}>
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5" aria-hidden="true" />
               Add Lead
             </Button>
           </div>
@@ -376,7 +376,7 @@ export default function LeadsPage() {
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <div className="relative flex-1 min-w-52">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
             <input
               type="text"
               placeholder="Search leads..."
@@ -403,7 +403,7 @@ export default function LeadsPage() {
 
         {/* Error state */}
         {error && (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive mb-4">
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive mb-4" role="alert" aria-live="assertive">
             {error}
             <Button onClick={triggerRefetch} className="ml-3 underline hover:no-underline">
               Retry
@@ -429,7 +429,7 @@ export default function LeadsPage() {
                   variant="secondary"
                   size="sm"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
                   Export
                 </Button>
                 <Button
@@ -631,17 +631,17 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
 
   return (
     <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-lg" role="dialog" aria-modal="true" aria-label={`Compose email to ${lead.business_name}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-foreground">Compose Email to {lead.business_name}</h2>
-          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
+          <h2 className="text-base font-semibold text-foreground" id="compose-title">Compose Email to {lead.business_name}</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
         <div className="p-5 space-y-3">
           {loading && (
             <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               Generating email…
             </div>
           )}
@@ -658,7 +658,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
                 size="sm"
                 className="flex items-center gap-1.5"
               >
-                <Star className="w-3.5 h-3.5" />
+                <Star className="w-3.5 h-3.5" aria-hidden="true" />
                 Scan reviews for insights
               </Button>
               {scanError && <p className="text-xs text-destructive mt-1">{scanError}</p>}
@@ -667,22 +667,24 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
 
           {scanning && (
             <div className="text-sm text-muted-foreground flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
               Scanning reviews…
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Subject</label>
+            <label htmlFor="compose-subject" className="block text-xs font-medium text-muted-foreground mb-1">Subject</label>
             <input
+              id="compose-subject"
               className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Body</label>
+            <label htmlFor="compose-body" className="block text-xs font-medium text-muted-foreground mb-1">Body</label>
             <textarea
+              id="compose-body"
               className="w-full h-40 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
               value={body}
               onChange={(e) => setBody(e.target.value)}
@@ -709,7 +711,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
               variant="secondary"
               className="flex-1 inline-flex items-center justify-center gap-2"
             >
-              <NotebookPen className="w-4 h-4" />
+              <NotebookPen className="w-4 h-4" aria-hidden="true" />
               {logging ? "Logging..." : "Log as sent"}
             </Button>
             <a
@@ -717,7 +719,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
               onClick={onClose}
               className="flex-1 inline-flex items-center justify-center gap-2"
             >
-              <Mail className="w-4 h-4" />
+              <Mail className="w-4 h-4" aria-hidden="true" />
               Open in Email Client
             </a>
           </div>
@@ -799,13 +801,13 @@ function MessagePickerModal({
 
   return (
     <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-md" role="dialog" aria-modal="true" aria-label={`${channel === "whatsapp" ? "Send WhatsApp" : "Send SMS"} to ${lead.business_name}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-base font-semibold text-foreground" id="message-picker-title">
             {channel === "whatsapp" ? "Send WhatsApp" : "Send SMS"} to {lead.business_name}
           </h2>
-          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
         <div className="p-5 space-y-3">
@@ -819,8 +821,9 @@ function MessagePickerModal({
 
           {templates.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Template</label>
+              <label htmlFor="message-template" className="block text-xs font-medium text-muted-foreground mb-1">Template</label>
               <select
+                id="message-template"
                 className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={selectedTpl ?? ""}
                 onChange={(e) => handleTemplateChange(e.target.value)}
@@ -835,8 +838,9 @@ function MessagePickerModal({
           )}
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Message</label>
+            <label htmlFor="message-body" className="block text-xs font-medium text-muted-foreground mb-1">Message</label>
             <textarea
+              id="message-body"
               className="w-full h-32 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -853,7 +857,7 @@ function MessagePickerModal({
               disabled={sending || !message.trim()}
               className="flex-1 inline-flex items-center justify-center gap-2"
             >
-              {channel === "whatsapp" ? <WhatsAppIcon className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+              {channel === "whatsapp" ? <WhatsAppIcon className="w-4 h-4" aria-hidden="true" /> : <MessageSquare className="w-4 h-4" aria-hidden="true" />}
               {sending ? "Sending…" : "Send"}
             </Button>
           </div>
@@ -876,11 +880,11 @@ function SequencePickerModal({
 }) {
   return (
     <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-sm" role="dialog" aria-modal="true" aria-label="Add to sequence" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-foreground">Add to Sequence</h2>
-          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
+          <h2 className="text-base font-semibold text-foreground" id="sequence-picker-title">Add to Sequence</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
         <div className="p-4 space-y-2 max-h-[320px] overflow-auto">
@@ -926,15 +930,17 @@ function NoteModal({
   const [text, setText] = useState("");
   return (
     <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-md" role="dialog" aria-modal="true" aria-label="Add note" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-foreground">Add Note</h2>
-          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
+          <h2 className="text-base font-semibold text-foreground" id="note-title">Add Note</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
         <div className="p-5">
+          <label htmlFor="note-body" className="block text-xs font-medium text-muted-foreground mb-1">Note</label>
           <textarea
+            id="note-body"
             className="input w-full h-32 rounded-md"
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -995,22 +1001,23 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
 
   return (
     <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-md" role="dialog" aria-modal="true" aria-label="Add lead" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-foreground">Add Lead</h2>
-          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
+          <h2 className="text-base font-semibold text-foreground" id="add-lead-title">Add Lead</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground" aria-label="Close">
+            <X className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2 text-sm text-destructive">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2 text-sm text-destructive" role="alert" aria-live="assertive">
               {error}
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Business name *</label>
+            <label htmlFor="add-lead-name" className="block text-sm font-medium text-foreground mb-1">Business name *</label>
             <input
+              id="add-lead-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -1020,8 +1027,9 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+              <label htmlFor="add-lead-email" className="block text-sm font-medium text-foreground mb-1">Email</label>
               <input
+                id="add-lead-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -1029,8 +1037,9 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Phone</label>
+              <label htmlFor="add-lead-phone" className="block text-sm font-medium text-foreground mb-1">Phone</label>
               <input
+                id="add-lead-phone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -1040,8 +1049,9 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
+              <label htmlFor="add-lead-category" className="block text-sm font-medium text-foreground mb-1">Category</label>
               <input
+                id="add-lead-category"
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -1049,8 +1059,9 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">City</label>
+              <label htmlFor="add-lead-city" className="block text-sm font-medium text-foreground mb-1">City</label>
               <input
+                id="add-lead-city"
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
@@ -1059,8 +1070,9 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Website</label>
+            <label htmlFor="add-lead-website" className="block text-sm font-medium text-foreground mb-1">Website</label>
             <input
+              id="add-lead-website"
               type="url"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}

@@ -60,11 +60,11 @@ export function Sidebar() {
       <div className="flex items-center h-16 px-4 border-b border-border">
         {collapsed ? (
           <div className="mx-auto">
-            <Zap className="w-6 h-6 text-primary" />
+            <Zap className="w-6 h-6 text-primary" aria-hidden="true" />
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
-            <Zap className="w-6 h-6 text-primary" />
+            <Zap className="w-6 h-6 text-primary" aria-hidden="true" />
             <span className="font-bold text-lg text-foreground tracking-tight">LeadGen</span>
           </div>
         )}
@@ -84,8 +84,9 @@ export function Sidebar() {
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               )}
+              aria-current={active ? "page" : undefined}
             >
-              <Icon className={cn("size-[1.125rem] shrink-0", active && "text-primary")} />
+              <Icon className={cn("size-[1.125rem] shrink-0", active && "text-primary")} aria-hidden="true" />
               <motion.span
                 animate={{
                   opacity: collapsed ? 0 : 1,

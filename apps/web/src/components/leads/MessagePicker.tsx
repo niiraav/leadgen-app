@@ -12,6 +12,9 @@ import {
 import { api, UpgradeRequiredError } from "@/lib/api";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 import { Portal } from "@/components/ui/portal";
+import FocusTrap from "focus-trap-react";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -236,6 +239,9 @@ export default function MessagePicker({
 
   /* ---- Render ---- */
 
+  useScrollLock(open);
+  useEscapeKey(open, onClose);
+
   if (!open) return null;
 
   return (
@@ -244,9 +250,13 @@ export default function MessagePicker({
       className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
+      <FocusTrap active={open} focusTrapOptions={{ returnFocusOnDeactivate: true, escapeDeactivates: true, onDeactivate: onClose }}>
       <div
         className="bg-card border border-border/60 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={channel === "whatsapp" ? "Send WhatsApp" : channel === "sms" ? "Send SMS" : "Send Message"}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-border/40">
@@ -509,6 +519,7 @@ export default function MessagePicker({
           )}
         </div>
       </div>
+      </FocusTrap>
     </div>
     </Portal>
   );
