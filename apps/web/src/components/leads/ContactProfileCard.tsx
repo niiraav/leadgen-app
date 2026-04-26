@@ -19,7 +19,7 @@ const EMAIL_STATUS_CONFIG: Record<string, { label: string; className: string; to
   "catch-all": { label: "Catch-all",   className: "text-warning",       tooltip: "Domain accepts all emails, deliverability uncertain" },
   accept_all:  { label: "Accept-all",  className: "text-warning",       tooltip: "Domain accepts all emails, deliverability uncertain" },
   disposable:  { label: "Disposable",  className: "text-orange",      tooltip: "Disposable/temporary email provider" },
-  unknown:     { label: "Unknown",     className: "text-foreground-faint",  tooltip: "Could not verify email" },
+  unknown:     { label: "Unknown",     className: "text-muted-foreground",  tooltip: "Could not verify email" },
 };
 
 // ─── Tooltip wrapper (native title for WCAG, styled hover for visual) ────────
@@ -57,7 +57,7 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-3 text-sm">
-      <Icon className="w-4 h-4 text-foreground-faint shrink-0" />
+      <Icon className="w-4 h-4 text-muted-foreground shrink-0" />
       <div className="flex-1 min-w-0 flex items-center gap-2">
         <span className="text-foreground truncate">{children}</span>
         {action}
@@ -88,12 +88,12 @@ function SocialRow({
           value={editValue || ""}
           onChange={(e) => onEditChange?.(e.target.value)}
           placeholder={`https://${label.toLowerCase().replace(/\s+/g, "")}...`}
-          className="flex-1 rounded-lg border border-border bg-secondary px-2 py-1 text-xs text-foreground focus:outline-none min-h-[28px]"
+          className="flex-1 rounded-lg border border-border bg-secondary px-2 py-1 text-xs text-foreground focus:outline-none min-h-7"
         />
         <TooltipButton label="Save" onClick={onSave} className="text-success hover:bg-success/5">
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
         </TooltipButton>
-        <TooltipButton label="Cancel" onClick={onCancel} className="text-foreground-faint hover:text-foreground hover:bg-secondary">
+        <TooltipButton label="Cancel" onClick={onCancel} className="text-muted-foreground hover:text-foreground hover:bg-secondary">
           <X className="w-3.5 h-3.5" />
         </TooltipButton>
       </div>
@@ -116,9 +116,9 @@ function SocialRow({
   return (
     <button
       onClick={onAdd}
-      className="flex items-center gap-1.5 text-xs text-foreground-faint hover:text-primary transition-colors"
+      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors"
     >
-      <span className="text-foreground-faint">+</span>
+      <span className="text-muted-foreground">+</span>
       <span>Add {label}</span>
     </button>
   );
@@ -351,7 +351,7 @@ export default function ContactProfileCard({
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-foreground">Contact & Profile</h3>
           {!editing ? (
-            <TooltipButton label="Edit contact info" onClick={startEditing} className="text-foreground-faint hover:text-primary hover:bg-primary/5">
+            <TooltipButton label="Edit contact info" onClick={startEditing} className="text-muted-foreground hover:text-primary hover:bg-primary/5">
               <Pencil className="w-3.5 h-3.5" />
             </TooltipButton>
           ) : (
@@ -359,7 +359,7 @@ export default function ContactProfileCard({
               <TooltipButton label="Save changes" onClick={saveEdit} disabled={saving} className="text-success hover:bg-success/5">
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               </TooltipButton>
-              <TooltipButton label="Cancel editing" onClick={() => setEditing(false)} className="text-foreground-faint hover:text-destructive hover:bg-destructive/5">
+              <TooltipButton label="Cancel editing" onClick={() => setEditing(false)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/5">
                 <X className="w-3.5 h-3.5" />
               </TooltipButton>
             </div>
@@ -579,7 +579,7 @@ export default function ContactProfileCard({
                         </div>
                       </div>
                     )}
-                    <p className="text-micro text-foreground-faint text-center">
+                    <p className="text-micro text-muted-foreground text-center">
                       Finds direct email, phone, LinkedIn and owner name · Uses 1 credit
                     </p>
                   </div>
@@ -592,11 +592,11 @@ export default function ContactProfileCard({
             {/* ── Owner ── */}
             <div className="mt-4 pt-4 border-t border-border/40">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-micro font-semibold text-foreground-faint uppercase tracking-wider">Owner</span>
+                <span className="text-micro font-semibold text-muted-foreground uppercase tracking-wider">Owner</span>
                 <TooltipButton
                   label={lead.owner_name ? "Edit owner" : "Add owner"}
                   onClick={() => setShowOwnerEdit(true)}
-                  className="text-foreground-faint hover:text-primary hover:bg-primary/5"
+                  className="text-muted-foreground hover:text-primary hover:bg-primary/5"
                 >
                   <Pencil className="w-3 h-3" />
                 </TooltipButton>
@@ -610,7 +610,7 @@ export default function ContactProfileCard({
                       value={ownerName}
                       onChange={(e) => setOwnerName(e.target.value)}
                       placeholder="e.g. John Smith"
-                      className="w-full rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-foreground focus:outline-none min-h-[28px]"
+                      className="w-full rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-foreground focus:outline-none min-h-7"
                     />
                   </div>
                   <div>
@@ -619,11 +619,11 @@ export default function ContactProfileCard({
                       value={ownerFirstName}
                       onChange={(e) => setOwnerFirstName(e.target.value)}
                       placeholder="e.g. John"
-                      className="w-full rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-foreground focus:outline-none min-h-[28px]"
+                      className="w-full rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-foreground focus:outline-none min-h-7"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={handleSaveOwner} className="btn btn-primary text-xs py-0.5 h-6 min-h-[24px]">Save</button>
+                    <button onClick={handleSaveOwner} className="btn btn-primary text-xs py-0.5 h-6 min-h-6">Save</button>
                     <button onClick={() => setShowOwnerEdit(false)} className="text-xs text-muted-foreground hover:text-foreground underline">Cancel</button>
                   </div>
                 </div>
@@ -638,20 +638,20 @@ export default function ContactProfileCard({
                     </span>
                   )}
                   {lead.owner_name_source === "reviews" && (
-                    <span className="text-foreground-faint" title="AI-extracted from reviews — please verify">
+                    <span className="text-muted-foreground" title="AI-extracted from reviews — please verify">
                       <Info className="w-3 h-3" />
                     </span>
                   )}
                 </div>
               ) : (
-                <span className="text-sm text-foreground-faint italic">Unknown</span>
+                <span className="text-sm text-muted-foreground italic">Unknown</span>
               )}
             </div>
 
             {/* ── Social & Web ── */}
             <div className="mt-4 pt-4 border-t border-border/40">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-micro font-semibold text-foreground-faint uppercase tracking-wider">Social & Web</span>
+                <span className="text-micro font-semibold text-muted-foreground uppercase tracking-wider">Social & Web</span>
                 {socialError && <span className="text-xs text-destructive">{socialError}</span>}
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2">

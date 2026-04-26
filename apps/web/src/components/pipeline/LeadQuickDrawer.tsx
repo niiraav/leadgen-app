@@ -371,7 +371,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
             <h3 className="text-sm font-semibold text-foreground">{lead.business_name}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">{lead.email || lead.phone || "No contact"}</p>
           </div>
-          <button onClick={onClose} aria-label="Close drawer" className="text-foreground-faint hover:text-foreground">
+          <button onClick={onClose} aria-label="Close drawer" className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -402,7 +402,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 )}
               </div>
               <p className="text-xs text-foreground line-clamp-2">{replySnippet(localLatestReply)}</p>
-              <p className="text-micro-sm text-foreground-faint mt-1.5">
+              <p className="text-micro-sm text-muted-foreground mt-1.5">
                 {relativeTime(localLatestReply?.received_at || localLatestReply?.created_at || localLatestReply?.timestamp)}
               </p>
 
@@ -451,7 +451,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
             </label>
 
             <div className="relative mb-3">
-              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="date"
                 value={followUpDate}
@@ -483,7 +483,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
               Deal value
             </label>
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground-faint">£</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">£</span>
               <input
                 type="number"
                 step="0.01"
@@ -496,7 +496,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
               />
             </div>
             {lead.dealValue && lead.dealValue > 0 && (
-              <p className="text-micro-sm text-foreground-faint mt-1">
+              <p className="text-micro-sm text-muted-foreground mt-1">
                 Current: {formatCompactDealValue(lead.dealValue)}
               </p>
             )}
@@ -536,7 +536,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
             </div>
           )}
           {saving && (
-            <div className="flex items-center gap-1.5 text-micro-sm text-foreground-faint">
+            <div className="flex items-center gap-1.5 text-micro-sm text-muted-foreground">
               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Saving...
             </div>
@@ -584,7 +584,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 placeholder="Add notes about this lead..."
                 rows={3}
                 maxLength={2000}
-                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
               />
               {lead.notes && lead.notes.trim().length > 0 && (
                 <div className="mt-2 rounded-lg border border-border bg-card p-3">
@@ -594,7 +594,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
               <div className="flex items-center justify-between mt-1">
                 <div className="flex items-center gap-1.5 min-h-4">
                   {notesSaving && (
-                    <span className="text-micro-sm text-foreground-faint flex items-center gap-1">
+                    <span className="text-micro-sm text-muted-foreground flex items-center gap-1">
                       <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       Saving...
                     </span>

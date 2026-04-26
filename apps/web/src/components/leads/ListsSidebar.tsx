@@ -92,7 +92,7 @@ export function ListsSidebar({
   return (
     <aside className="w-56 shrink-0 border-r border-border/60 bg-card h-full flex flex-col">
       <div className="p-3 border-b border-border/40">
-        <h3 className="text-xs font-semibold text-foreground-faint uppercase tracking-wider mb-2">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
           Lists
         </h3>
 
@@ -107,7 +107,7 @@ export function ListsSidebar({
           )}
         >
           <span className="font-medium">All</span>
-          <span className="ml-auto text-xs text-foreground-faint bg-card rounded-full px-1.5 py-px">
+          <span className="ml-auto text-xs text-muted-foreground bg-card rounded-full px-1.5 py-px">
             {lists.reduce((sum, l) => sum + l.count, 0)}
           </span>
         </div>
@@ -149,7 +149,7 @@ export function ListsSidebar({
                 </button>
                 <button
                   onClick={() => setRenamingId(null)}
-                  className="text-foreground-faint hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground"
                   title="Cancel"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -158,7 +158,7 @@ export function ListsSidebar({
             ) : (
               <>
                 <span className="truncate flex-1 text-sm">{list.name}</span>
-                <span className="text-xs text-foreground-faint bg-card rounded-full px-1.5 py-px shrink-0">
+                <span className="text-xs text-muted-foreground bg-card rounded-full px-1.5 py-px shrink-0">
                   {list.count}
                 </span>
                 <div className="hidden group-hover:flex items-center gap-0.5 shrink-0">
@@ -167,7 +167,7 @@ export function ListsSidebar({
                       e.stopPropagation();
                       startRename(list);
                     }}
-                    className="p-0.5 text-foreground-faint hover:text-foreground rounded"
+                    className="p-0.5 text-muted-foreground hover:text-foreground rounded"
                     title="Rename"
                   >
                     <Pencil className="w-3 h-3" />
@@ -177,7 +177,7 @@ export function ListsSidebar({
                       e.stopPropagation();
                       handleDelete(list.id);
                     }}
-                    className="p-0.5 text-foreground-faint hover:text-destructive rounded"
+                    className="p-0.5 text-muted-foreground hover:text-destructive rounded"
                     title="Delete"
                   >
                     <Trash2 className="w-3 h-3" />

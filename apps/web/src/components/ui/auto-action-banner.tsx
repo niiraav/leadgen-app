@@ -34,7 +34,7 @@ export default function AutoActionBanner({ message, onUndo, onDismiss }: Props) 
             Undo
           </button>
         )}
-        <button onClick={onDismiss} className="text-foreground-faint hover:text-foreground">
+        <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground">
           <X className="w-4 h-4" />
         </button>
       </div>

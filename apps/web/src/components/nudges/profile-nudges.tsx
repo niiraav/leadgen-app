@@ -33,18 +33,18 @@ export function TargetAreaNudge({ onDismiss }: { onDismiss: () => void }) {
             onChange={(e) => setLocation(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
             placeholder={profile?.target_geography || "City or postcode"}
-            className="mt-2 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[36px]"
+            className="mt-2 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-9"
           />
           <div className="flex items-center gap-2 mt-2">
             <button onClick={handleSave} disabled={saving || !location.trim()} className="btn btn-primary text-xs py-1 h-7 disabled:opacity-50">
               {saving ? <Check className="w-3 h-3" /> : "Save"}
             </button>
-            <button onClick={() => { markNudgeSeen("on_search"); onDismiss(); }} className="text-xs text-foreground-faint hover:text-foreground underline">
+            <button onClick={() => { markNudgeSeen("on_search"); onDismiss(); }} className="text-xs text-muted-foreground hover:text-foreground underline">
               Later
             </button>
           </div>
         </div>
-        <button onClick={() => { markNudgeSeen("on_search"); onDismiss(); }} className="text-foreground-faint hover:text-foreground shrink-0">
+        <button onClick={() => { markNudgeSeen("on_search"); onDismiss(); }} className="text-muted-foreground hover:text-foreground shrink-0">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -79,16 +79,16 @@ export function WorkingHoursNudge({ onDone }: { onDone: () => void }) {
           </p>
           <div className="flex items-center gap-2 mt-2">
             <input type="time" value={start} onChange={(e) => setStart(e.target.value)}
-              className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground min-h-[32px]" />
-            <span className="text-xs text-foreground-faint">to</span>
+              className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground min-h-8" />
+            <span className="text-xs text-muted-foreground">to</span>
             <input type="time" value={end} onChange={(e) => setEnd(e.target.value)}
-              className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground min-h-[32px]" />
+              className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-foreground min-h-8" />
             <button onClick={handleSave} disabled={saving} className="btn btn-primary text-xs py-1 h-7 disabled:opacity-50 ml-1">
               {saving ? <Check className="w-3 h-3" /> : "Save"}
             </button>
           </div>
         </div>
-        <button onClick={() => { markNudgeSeen("on_sequence"); onDone(); }} className="text-foreground-faint hover:text-foreground shrink-0">
+        <button onClick={() => { markNudgeSeen("on_sequence"); onDone(); }} className="text-muted-foreground hover:text-foreground shrink-0">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -124,7 +124,7 @@ export function SignoffNudge({ onDone }: { onDone: () => void }) {
           <div className="flex flex-wrap gap-2 mt-2">
             {SIGNOFF_OPTIONS.map((s) => (
               <button key={s} onClick={() => setChosen(s)}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all min-h-[32px] ${
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-all min-h-8 ${
                   chosen === s ? "border-purple bg-purple/10 text-purple" : "border-border/60 bg-card text-muted-foreground"
                 }`}>{s}</button>
             ))}
@@ -134,7 +134,7 @@ export function SignoffNudge({ onDone }: { onDone: () => void }) {
             {saved ? <><Check className="w-3 h-3 mr-1" />Saved</> : "Save"}
           </button>
         </div>
-        <button onClick={() => { markNudgeSeen("on_email"); onDone(); }} className="text-foreground-faint hover:text-foreground shrink-0">
+        <button onClick={() => { markNudgeSeen("on_email"); onDone(); }} className="text-muted-foreground hover:text-foreground shrink-0">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -169,7 +169,7 @@ export function SalesCycleNudge({ onDone, onComplete }: { onDone: () => void; on
                 }`}>{d}d</button>
             ))}
           </div>
-          <button onClick={onDone} className="text-xs text-foreground-faint hover:text-foreground underline mt-2">
+          <button onClick={onDone} className="text-xs text-muted-foreground hover:text-foreground underline mt-2">
             Skip
           </button>
         </div>

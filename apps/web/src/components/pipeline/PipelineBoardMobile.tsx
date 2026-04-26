@@ -48,7 +48,7 @@ export default function PipelineBoardMobile({
               <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
                 {column.title}
               </h3>
-              <span className="text-xs font-medium text-foreground-faint tabular-nums ml-auto">
+              <span className="text-xs font-medium text-muted-foreground tabular-nums ml-auto">
                 {leads.length}
               </span>
             </div>
@@ -83,7 +83,7 @@ export default function PipelineBoardMobile({
               ))}
               {leads.length === 0 && (
                 <div className="rounded-md border border-dashed border-border bg-secondary/50 h-12 flex items-center justify-center">
-                  <span className="text-micro text-foreground-faint">No leads</span>
+                  <span className="text-micro text-muted-foreground">No leads</span>
                 </div>
               )}
             </div>

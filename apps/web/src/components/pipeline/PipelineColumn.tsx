@@ -40,7 +40,7 @@ export default function PipelineColumn({
             {column.title}
           </h3>
         </div>
-        <span className="text-xs font-medium text-foreground-faint tabular-nums">
+        <span className="text-xs font-medium text-muted-foreground tabular-nums">
           {leads.length}
         </span>
       </div>
@@ -89,7 +89,7 @@ export default function PipelineColumn({
             `}
           >
             {leads.length === 0 && !isOver && (
-              <span className="text-micro text-foreground-faint">Drop leads here</span>
+              <span className="text-micro text-muted-foreground">Drop leads here</span>
             )}
           </div>
         )}

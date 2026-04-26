@@ -342,7 +342,7 @@ export const PipelineTable = memo(function PipelineTable({
 
                   // Follow-up chip
                   const followUpChip = (() => {
-                    if (!lead.followUpDate) return <span className="text-foreground-faint">—</span>;
+                    if (!lead.followUpDate) return <span className="text-muted-foreground">—</span>;
                     const health = followUpHealth(lead.followUpDate);
                     const colorClass =
                       health === "red"
@@ -454,7 +454,7 @@ export const PipelineTable = memo(function PipelineTable({
                             {formatCompactDealValue(lead.dealValue)}
                           </span>
                         ) : (
-                          <span className="text-foreground-faint">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
 
@@ -467,7 +467,7 @@ export const PipelineTable = memo(function PipelineTable({
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-foreground-faint">—</span>
+                          <span className="text-sm text-muted-foreground">—</span>
                         )}
                       </td>
 
@@ -487,7 +487,7 @@ export const PipelineTable = memo(function PipelineTable({
                               )}
                             </Link>
                           ) : (
-                            <span className="p-1.5 rounded-md opacity-30 text-foreground-faint">
+                            <span className="p-1.5 rounded-md opacity-30 text-muted-foreground">
                               <Mail className="w-5 h-5" />
                             </span>
                           )}
@@ -504,7 +504,7 @@ export const PipelineTable = memo(function PipelineTable({
                               <WhatsAppIcon className="w-5 h-5" />
                             </button>
                           ) : (
-                            <span className="p-1.5 rounded-md opacity-30 text-foreground-faint">
+                            <span className="p-1.5 rounded-md opacity-30 text-muted-foreground">
                               <WhatsAppIcon className="w-5 h-5" />
                             </span>
                           )}

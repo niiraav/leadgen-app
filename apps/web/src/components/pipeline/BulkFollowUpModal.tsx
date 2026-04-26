@@ -63,7 +63,7 @@ export default function BulkFollowUpModal({
             <Clock className="w-4 h-4 text-primary" />
             Set follow-up
           </h3>
-          <button onClick={onCancel} aria-label="Close modal" className="text-foreground-faint hover:text-foreground">
+          <button onClick={onCancel} aria-label="Close modal" className="text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -93,7 +93,7 @@ export default function BulkFollowUpModal({
         </div>
 
         <div className="relative mb-5">
-          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
+          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="date"
             value={selectedDate}

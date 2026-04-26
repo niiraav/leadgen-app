@@ -127,7 +127,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
                 href={`tel:${phone}`}
                 onClick={(e) => e.stopPropagation()}
                 title="Call"
-                className={`${btnClass} bg-secondary text-foreground-faint hover:text-foreground transition-colors`}
+                className={`${btnClass} bg-secondary text-muted-foreground hover:text-foreground transition-colors`}
               >
                 <Phone className="w-4 h-4" />
               </a>

@@ -158,7 +158,7 @@ export function SavedFilters({
           }}
         >
           <div className="p-2 border-b border-border/40">
-            <h4 className="text-xs font-semibold text-foreground-faint uppercase tracking-wider px-2 py-1">
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2 py-1">
               Saved Filters
             </h4>
           </div>
@@ -171,7 +171,7 @@ export function SavedFilters({
                 ))}
               </div>
             ) : displayFilters.length === 0 ? (
-              <p className="p-3 text-xs text-foreground-faint text-center">
+              <p className="p-3 text-xs text-muted-foreground text-center">
                 No saved filters yet
               </p>
             ) : (
@@ -191,7 +191,7 @@ export function SavedFilters({
                   </button>
                   <button
                     onClick={() => handleDelete(filter.id)}
-                    className="opacity-0 group-hover/row:opacity-100 text-foreground-faint hover:text-destructive transition-opacity"
+                    className="opacity-0 group-hover/row:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
                     title="Delete"
                   >
                     <X className="w-3 h-3" />
@@ -234,7 +234,7 @@ export function SavedFilters({
                     setNewName("");
                     setShowSaveInput(false);
                   }}
-                  className="text-xs p-1 rounded hover:bg-secondary text-foreground-faint"
+                  className="text-xs p-1 rounded hover:bg-secondary text-muted-foreground"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

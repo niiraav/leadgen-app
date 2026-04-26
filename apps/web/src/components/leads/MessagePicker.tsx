@@ -264,7 +264,7 @@ export default function MessagePicker({
           </div>
           <button
             onClick={onClose}
-            className="text-foreground-faint hover:text-foreground transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -307,7 +307,7 @@ export default function MessagePicker({
                         setSelectedId(tpl.id);
                         setShowCustom(false);
                       }}
-                      className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all min-h-[44px] active:scale-[0.98] ${
+                      className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all min-h-11 active:scale-[0.98] ${
                         isSelected
                           ? "border-primary bg-primary/10"
                           : "border-border/60 bg-secondary hover:border-border"
@@ -317,7 +317,7 @@ export default function MessagePicker({
                         {isSelected ? (
                           <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
                         ) : (
-                          <Circle className="w-4 h-4 text-foreground-faint shrink-0" />
+                          <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
                         )}
                         <span
                           className={`text-sm font-semibold ${
@@ -355,7 +355,7 @@ export default function MessagePicker({
                   value={customLabel}
                   onChange={(e) => setCustomLabel(e.target.value)}
                   placeholder="e.g. First outreach"
-                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]"
+                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-11"
                 />
               </div>
               <div>
@@ -366,14 +366,14 @@ export default function MessagePicker({
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder="Hi {name}, I noticed your {rating}-rated business in {category}..."
-                  className="w-full h-32 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full h-32 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
                 <div className="flex items-center justify-between mt-1">
                   <span
                     className={`text-xs ${
                       customMessage.trim() && !customHasPersonalization
                         ? "text-destructive"
-                        : "text-foreground-faint"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {customMessage.trim() && !customHasPersonalization
@@ -386,7 +386,7 @@ export default function MessagePicker({
                       <button
                         onClick={handleSaveTemplate}
                         disabled={savingTemplate}
-                        className="text-xs text-primary hover:underline flex items-center gap-1 min-h-[32px] disabled:opacity-50"
+                        className="text-xs text-primary hover:underline flex items-center gap-1 min-h-8 disabled:opacity-50"
                       >
                         {savingTemplate ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -401,7 +401,7 @@ export default function MessagePicker({
               {/* Preview */}
               {customMessage.trim() && customHasPersonalization && (
                 <div className="rounded-lg border border-border/40 bg-secondary p-3">
-                  <p className="text-xs font-medium text-foreground-faint mb-1">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
                     Preview
                   </p>
                   <p className="text-sm text-foreground">
@@ -445,7 +445,7 @@ export default function MessagePicker({
                       (showCustom &&
                         (!customMessage.trim() || !customHasPersonalization))
                     }
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-success/10 text-success hover:bg-success/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-success/10 text-success hover:bg-success/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-11"
                   >
                     {sending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -471,7 +471,7 @@ export default function MessagePicker({
                         (!customMessage.trim() || !customHasPersonalization)) ||
                       !hasPhone
                     }
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-h-11"
                   >
                     {sending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -492,7 +492,7 @@ export default function MessagePicker({
                     setShowCustom((prev) => !prev);
                     if (!showCustom) setSelectedId(null);
                   }}
-                  className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                  className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-11"
                 >
                   <Pencil className="w-4 h-4" />
                   {showCustom ? "Use Template" : "Custom"}
@@ -500,7 +500,7 @@ export default function MessagePicker({
 
                 <button
                   onClick={onClose}
-                  className="flex-1 rounded-lg border border-border/60 bg-secondary px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                  className="flex-1 rounded-lg border border-border/60 bg-secondary px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-11"
                 >
                   Cancel
                 </button>

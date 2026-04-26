@@ -209,7 +209,7 @@ export default function HotLeadsWidget() {
                   <span className="text-sm font-medium text-foreground truncate">
                     {businessName}
                   </span>
-                  <span className="text-micro text-foreground-faint shrink-0">
+                  <span className="text-micro text-muted-foreground shrink-0">
                     {relativeTime(reply.received_at)}
                   </span>
                 </div>

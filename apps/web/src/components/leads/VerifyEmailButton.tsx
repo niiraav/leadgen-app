@@ -22,7 +22,7 @@ const STATUS_BADGE: Record<string, { label: string; className: string; icon?: ty
   "catch-all": { label: "Catch-all",   className: "text-warning",  icon: AlertTriangle },
   accept_all:  { label: "Accept-all",  className: "text-warning",  icon: AlertTriangle },
   disposable:  { label: "Disposable",  className: "text-orange",  icon: ShieldAlert },
-  unknown:     { label: "Unknown",     className: "text-foreground-faint", icon: AlertTriangle },
+  unknown:     { label: "Unknown",     className: "text-muted-foreground", icon: AlertTriangle },
 };
 
 export function VerifyEmailButton({
@@ -139,7 +139,7 @@ export function VerifyEmailButton({
           >
             <div className="p-4 text-center">
               <p className="text-sm text-foreground font-medium">Use 1 verification credit?</p>
-              <p className="text-xs text-foreground-faint mt-1 break-all">Email: {email}</p>
+              <p className="text-xs text-muted-foreground mt-1 break-all">Email: {email}</p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => setShowConfirm(false)}

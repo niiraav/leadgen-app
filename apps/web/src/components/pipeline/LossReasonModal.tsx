@@ -54,7 +54,7 @@ export default function LossReasonModal({
             <AlertCircle className="w-4 h-4 text-destructive" />
             Lost deal
           </h3>
-          <button onClick={onClose} aria-label="Close modal" className="text-foreground-faint hover:text-foreground">
+          <button onClick={onClose} aria-label="Close modal" className="text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>

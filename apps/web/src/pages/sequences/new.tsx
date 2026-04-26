@@ -157,21 +157,21 @@ export default function NewSequencePage() {
                 <button
                   onClick={() => moveStep(idx, "up")}
                   disabled={idx === 0}
-                  className="rounded-full p-1 text-foreground-faint hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
+                  className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => moveStep(idx, "down")}
                   disabled={idx === steps.length - 1}
-                  className="rounded-full p-1 text-foreground-faint hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
+                  className="rounded-full p-1 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
                 >
                   <ArrowDown className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => removeStep(idx)}
                   disabled={steps.length <= 1}
-                  className="rounded-full p-1 text-foreground-faint hover:text-destructive hover:bg-destructive/5 transition-colors disabled:opacity-30"
+                  className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors disabled:opacity-30"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -195,7 +195,7 @@ export default function NewSequencePage() {
                   value={step.body_template}
                   onChange={(e) => updateStep(idx, "body_template", e.target.value)}
                   placeholder="Email body..."
-                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                   rows={6}
                 />
               </div>

@@ -22,7 +22,7 @@ export default function SelectionToolbar({ count, columns, onMoveTo, onClear }: 
         <div className="h-4 w-px bg-border" />
 
         <div className="flex items-center gap-1">
-          <span className="text-micro font-medium text-foreground-faint uppercase tracking-wide mr-1">
+          <span className="text-micro font-medium text-muted-foreground uppercase tracking-wide mr-1">
             Move to
           </span>
           {columns.map((col) => (

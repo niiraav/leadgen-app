@@ -165,7 +165,7 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
                     {compactSummary(entry.filters)}
                   </p>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-foreground-faint opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
+                <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0" />
               </button>
 
               <button
@@ -173,7 +173,7 @@ export function SavedSearchesPanel({ onApply, refreshToken }: SavedSearchesPanel
                   if (isDeleting) return;
                   handleDelete(entry.id);
                 }}
-                className="opacity-0 group-hover/row:opacity-100 text-foreground-faint hover:text-destructive transition-opacity p-1 shrink-0"
+                className="opacity-0 group-hover/row:opacity-100 text-muted-foreground hover:text-destructive transition-opacity p-1 shrink-0"
                 title="Delete saved search"
               >
                 {isDeleting ? (

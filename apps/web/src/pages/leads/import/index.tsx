@@ -171,14 +171,14 @@ export default function ImportPage() {
                       ? "bg-success text-success-foreground"
                       : active
                       ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-foreground-faint border border-border"
+                      : "bg-secondary text-muted-foreground border border-border"
                   }`}
                 >
                   {done ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                 </div>
                 <span
                   className={
-                    active || done ? "font-semibold text-foreground" : "text-foreground-faint"
+                    active || done ? "font-semibold text-foreground" : "text-muted-foreground"
                   }
                 >
                   {s.label}
@@ -216,7 +216,7 @@ export default function ImportPage() {
                 <p className="text-sm font-semibold text-foreground">
                   Drop your CSV file here
                 </p>
-                <p className="text-xs text-foreground-faint mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   or click to browse from your computer
                 </p>
               </div>
@@ -262,7 +262,7 @@ export default function ImportPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">{fileName}</p>
-                <p className="text-xs text-foreground-faint">
+                <p className="text-xs text-muted-foreground">
                   {formatFileSize(fileSize)} • {csvData.length} rows previewed
                 </p>
               </div>
@@ -274,7 +274,7 @@ export default function ImportPage() {
                 setHeaders([]);
                 setMapping({});
               }}
-              className="rounded-full p-2 text-foreground-faint hover:text-foreground hover:bg-secondary transition-colors"
+              className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -315,7 +315,7 @@ export default function ImportPage() {
           <Card className="p-0 overflow-hidden">
             <div className="p-4 border-b border-border/40">
               <h3 className="text-sm font-semibold text-foreground">Preview</h3>
-              <p className="text-xs text-foreground-faint">
+              <p className="text-xs text-muted-foreground">
                 First {Math.min(csvData.length, 5)} rows
               </p>
             </div>

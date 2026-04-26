@@ -206,7 +206,7 @@ export default function PipelinePage() {
       {/* Search + Filters + View Toggle */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={board.searchQuery}
@@ -218,7 +218,7 @@ export default function PipelinePage() {
             <button
               onClick={() => onSearchChange("")}
               aria-label="Clear search"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-faint hover:text-foreground"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
             </button>
@@ -249,7 +249,7 @@ export default function PipelinePage() {
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors focus-ring ${
               board.viewMode === "board"
                 ? "bg-card text-foreground shadow-sm"
-                : "text-foreground-faint hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
@@ -263,7 +263,7 @@ export default function PipelinePage() {
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors focus-ring ${
               board.viewMode === "list"
                 ? "bg-card text-foreground shadow-sm"
-                : "text-foreground-faint hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <ListIcon className="w-3.5 h-3.5" />

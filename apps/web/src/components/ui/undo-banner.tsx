@@ -66,7 +66,7 @@ function UndoBannerItem({ action, onDismiss }: { action: UndoAction; onDismiss: 
           Undo
         </button>
       )}
-      <button onClick={onDismiss} className="text-foreground-faint hover:text-foreground shrink-0">
+      <button onClick={onDismiss} className="text-muted-foreground hover:text-foreground shrink-0">
         <X className="w-4 h-4" />
       </button>
     </div>

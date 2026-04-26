@@ -189,7 +189,7 @@ export default function PipelineCard({
           <h4 className="text-sm font-semibold text-foreground truncate flex-1 min-w-0">
             {lead.business_name}
           </h4>
-          <ChevronRight className="w-3.5 h-3.5 text-foreground-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
         </div>
 
         {/* Row 2: Stage badge */}

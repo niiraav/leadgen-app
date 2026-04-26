@@ -169,7 +169,7 @@ function ListCard({
           </div>
 
           {/* Meta row */}
-          <div className="flex items-center gap-2 mt-1.5 text-xs text-foreground-faint">
+          <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
             {lead.category && <span className="font-medium text-muted-foreground">{lead.category}</span>}
             {lead.city && <span>· {lead.city}</span>}
             {lead.email && <span>· {lead.email}</span>}
@@ -182,7 +182,7 @@ function ListCard({
         </div>
 
         {/* Right: chevron */}
-        <ChevronRight className="w-4 h-4 text-foreground-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
+        <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
       </div>
     </div>
   );
@@ -198,7 +198,7 @@ export default function PipelineListView({
 }: PipelineListViewProps) {
   if (leads.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-sm text-foreground-faint">
+      <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
         No leads match the current filters.
       </div>
     );

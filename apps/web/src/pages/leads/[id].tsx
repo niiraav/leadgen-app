@@ -472,7 +472,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Deal value — editable inline */}
           <div className="flex items-center gap-1.5">
-            <PoundSterling className="w-3.5 h-3.5 text-foreground-faint" />
+            <PoundSterling className="w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="number"
               min={0}
@@ -488,7 +488,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               placeholder="Value"
               className="w-24 text-xs font-medium text-foreground bg-transparent border-b border-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 px-1 py-0.5 rounded-sm"
             />
-            {saving && <Loader2 className="w-3 h-3 animate-spin text-foreground-faint" />}
+            {saving && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
           </div>
 
           {/* Phase 4.1: StatusDropdown + domain context */}
@@ -510,7 +510,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     }
                   }}
           />
-          <span className="text-micro uppercase tracking-wider text-foreground-faint font-medium">
+          <span className="text-micro uppercase tracking-wider text-muted-foreground font-medium">
             {DOMAIN_LABELS[getLeadDomain({
               engagementStatus: lead.engagementStatus ?? null,
               pipelineStage: lead.pipelineStage ?? null,
@@ -702,7 +702,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Themes */}
                 {lead.review_summary.themes && lead.review_summary.themes.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">What Customers Value</h4>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">What Customers Value</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.themes.map((t, i) => (
                         <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-success/10 text-success font-medium">{t}</span>
@@ -713,7 +713,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* USP Candidates */}
                 {lead.review_summary.usp_candidates && lead.review_summary.usp_candidates.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Unique Strengths</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.usp_candidates.map((u, i) => (
                         <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-primary/10 text-primary font-medium">{u}</span>
@@ -724,7 +724,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Staff Names */}
                 {lead.review_summary.staff_names && lead.review_summary.staff_names.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Staff Mentioned</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.staff_names.map((s, i) => (
                         <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-secondary text-foreground font-medium">
@@ -738,7 +738,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Pain Points */}
                 {lead.review_summary.pain_points && lead.review_summary.pain_points.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Pain Points</h4>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Pain Points</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.pain_points.map((p, i) => (
                         <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-warning/10 text-warning font-medium">{p}</span>
@@ -749,13 +749,13 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Owner Evidence */}
                 {lead.review_summary.owner_name && lead.review_summary.owner_evidence && (
                   <div className="rounded-lg bg-secondary/60 p-2.5">
-                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Owner Evidence</h4>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Owner Evidence</h4>
                     <p className="text-xs text-muted-foreground italic">{lead.review_summary.owner_evidence}</p>
                   </div>
                 )}
                 {/* Fetched timestamp */}
                 {lead.reviews_fetched_at && (
-                  <p className="text-micro text-foreground-faint pt-1">
+                  <p className="text-micro text-muted-foreground pt-1">
                     Insights from {lead.review_count || 0} reviews &middot; analyzed {new Date(lead.reviews_fetched_at).toLocaleDateString()}
                   </p>
                 )}
@@ -860,7 +860,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       </div>
                     )}
                     {!lead.review_summary && !emailLoading && lead.email && (
-                      <p className="text-micro text-foreground-faint mt-1 flex items-center gap-1">
+                      <p className="text-micro text-muted-foreground mt-1 flex items-center gap-1">
                         <Star className="w-2.5 h-2.5" />
                         Scan reviews first for a personalised email
                       </p>
@@ -903,7 +903,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                         const matchIdx = subjectOptions.indexOf(e.target.value);
                         if (matchIdx >= 0) setSelectedSubjectIdx(matchIdx);
                       }}
-                      className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-foreground placeholder:text-foreground-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
                   </div>
 
@@ -914,7 +914,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       value={draftEmail}
                       onChange={(e) => setDraftEmail(e.target.value)}
                       rows={12}
-                      className="w-full px-0 py-1 text-sm bg-transparent border-0 text-foreground placeholder:text-foreground-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none leading-relaxed"
+                      className="w-full px-0 py-1 text-sm bg-transparent border-0 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none leading-relaxed"
                       placeholder="Write your email here or use AI to generate..."
                     />
                   </div>
@@ -934,7 +934,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                           <Copy className="w-4 h-4" />
                         )}
                       </button>
-                      <span className="text-xs text-foreground-faint">
+                      <span className="text-xs text-muted-foreground">
                         {draftEmail.split(/\s+/).filter(Boolean).length} words
                       </span>
                       {isMobile && !copied && (
@@ -1054,7 +1054,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                           <div key={r.id} className="border border-border/40 rounded-lg p-3 space-y-1.5">
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-medium text-foreground">{r.subject || "(no subject)"}</span>
-                              <span className="text-micro text-foreground-faint">{new Date(r.received_at).toLocaleDateString()}</span>
+                              <span className="text-micro text-muted-foreground">{new Date(r.received_at).toLocaleDateString()}</span>
                             </div>
                             <p className="text-xs text-muted-foreground line-clamp-3">{r.body_plain?.slice(0, 300)}</p>
                             <div className="flex items-center gap-2 flex-wrap">
@@ -1064,7 +1064,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                                 </span>
                               )}
                               {r.key_phrase && (
-                                <span className="text-micro text-foreground-faint italic">"{r.key_phrase}"</span>
+                                <span className="text-micro text-muted-foreground italic">"{r.key_phrase}"</span>
                               )}
                               {r.needs_review && (
                                 <span className="text-micro bg-warning/10 text-warning px-1.5 py-0.5 rounded">Needs review</span>

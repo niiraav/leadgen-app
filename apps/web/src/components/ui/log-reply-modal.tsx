@@ -81,7 +81,7 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
       <div className="bg-card border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Log Reply — {leadName}</h2>
-          <button onClick={onClose} className="text-foreground-faint hover:text-foreground"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5">
           {step === "input" && (
@@ -91,7 +91,7 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
               <textarea
                 value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 placeholder="e.g. Thanks for reaching out. Can you send me pricing details?"
-                className="w-full h-40 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none mb-4"
+                className="w-full h-40 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none mb-4"
               />
               <div className="flex items-center justify-between">
                 <button onClick={handleSkip} className="text-xs text-muted-foreground hover:text-foreground underline">

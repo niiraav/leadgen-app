@@ -212,12 +212,12 @@ export default function SequenceDetailPage() {
                   <button onClick={saveStep} disabled={saving} className="rounded-full p-1 text-success hover:bg-success/5">
                     {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                   </button>
-                  <button onClick={cancelEdit} className="rounded-full p-1 text-foreground-faint hover:text-destructive hover:bg-destructive/5">
+                  <button onClick={cancelEdit} className="rounded-full p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/5">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
-                <button onClick={() => startEdit(step)} className="rounded-full p-1 text-foreground-faint hover:text-primary hover:bg-primary/5">
+                <button onClick={() => startEdit(step)} className="rounded-full p-1 text-muted-foreground hover:text-primary hover:bg-primary/5">
                   <Pencil className="w-4 h-4" />
                 </button>
               )}
@@ -259,7 +259,7 @@ export default function SequenceDetailPage() {
               <div>
                 <p className="text-sm font-medium text-foreground mb-1">{step.subject_template}</p>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{step.body_template}</p>
-                <p className="text-xs text-foreground-faint mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Send {step.delay_days === 0 ? "immediately" : `after ${step.delay_days} day(s)`}
                 </p>
               </div>

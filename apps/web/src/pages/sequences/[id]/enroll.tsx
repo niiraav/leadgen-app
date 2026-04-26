@@ -145,7 +145,7 @@ export default function EnrollPage() {
 
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={search}
@@ -186,7 +186,7 @@ export default function EnrollPage() {
                   {lead.email ?? "No email"}{lead.city ? ` · ${lead.city}` : ""}
                 </p>
               </div>
-              <span className="text-xs text-foreground-faint capitalize">
+              <span className="text-xs text-muted-foreground capitalize">
                 {lead.do_not_contact ? 'DNC' : (lead.engagement_status ?? lead.status)}
               </span>
             </div>

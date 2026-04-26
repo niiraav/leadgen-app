@@ -48,7 +48,7 @@ export default function BulkLossModal({
             <AlertCircle className="w-4 h-4 text-destructive" />
             Mark as lost
           </h3>
-          <button onClick={onCancel} aria-label="Close modal" className="text-foreground-faint hover:text-foreground">
+          <button onClick={onCancel} aria-label="Close modal" className="text-muted-foreground hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>

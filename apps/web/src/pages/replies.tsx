@@ -209,7 +209,7 @@ export default function RepliesPage() {
       <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
         {/* Intent tabs */}
         <div className="flex items-center gap-1 flex-wrap">
-          <Filter className="w-3.5 h-3.5 text-foreground-faint mr-1" />
+          <Filter className="w-3.5 h-3.5 text-muted-foreground mr-1" />
           {INTENT_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -285,7 +285,7 @@ export default function RepliesPage() {
           {/* Desktop table */}
           <div className="hidden md:block">
             {/* Header */}
-            <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-secondary/60 text-micro font-semibold text-foreground-faint uppercase tracking-wider border-b border-border/40">
+            <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-secondary/60 text-micro font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40">
               <div className="col-span-2">Hot Score</div>
               <div className="col-span-3">Business</div>
               <div className="col-span-1">Intent</div>
@@ -349,7 +349,7 @@ export default function RepliesPage() {
                     <div className="col-span-3 text-xs text-muted-foreground italic truncate">{truncatedKey}</div>
 
                     {/* Time */}
-                    <div className="col-span-2 flex items-center gap-1 text-xs text-foreground-faint">
+                    <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="w-3 h-3" />
                       {relativeTime(reply.received_at)}
                     </div>
@@ -408,7 +408,7 @@ export default function RepliesPage() {
                         <span className="text-micro font-bold text-muted-foreground">{reply.hot_score}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-foreground-faint">{relativeTime(reply.received_at)}</span>
+                        <span className="text-xs text-muted-foreground">{relativeTime(reply.received_at)}</span>
                         {reply.needs_review && (
                           <span className="text-micro bg-warning/10 text-warning px-1.5 py-0.5 rounded">Review</span>
                         )}
@@ -431,7 +431,7 @@ export default function RepliesPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-foreground-faint">
+          <p className="text-xs text-muted-foreground">
             Page {page + 1} of {totalPages} ({total} total)
           </p>
           <div className="flex items-center gap-1">
