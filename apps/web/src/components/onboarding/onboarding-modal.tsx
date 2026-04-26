@@ -119,7 +119,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
   if (done) {
     return (
       <Portal>
-      <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4">
         <div className="bg-card border border-border/60 rounded-lg w-full max-w-lg p-10 text-center">
           <div className="text-5xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-foreground mb-2">You&apos;re all set!</h2>
@@ -132,7 +132,7 @@ export default function OnboardingModal({ initialProfile, onComplete, onSkip }: 
 
   return (
     <Portal>
-    <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-[100] p-4">
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-[100] p-4">
       <div className="bg-card border border-border/60 rounded-lg w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           {/* Progress */}

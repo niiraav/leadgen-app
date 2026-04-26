@@ -77,7 +77,7 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
 
   return (
     <Portal>
-    <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-card border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Log Reply — {leadName}</h2>

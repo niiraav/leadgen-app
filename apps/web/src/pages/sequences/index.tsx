@@ -192,7 +192,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
 
       {/* Delete Confirmation Modal */}
       {deleteId && (
-        <div className="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50">
           <div className="bg-card rounded-xl border border-border/60 p-6 w-full max-w-sm mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">

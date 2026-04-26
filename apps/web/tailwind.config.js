@@ -55,7 +55,7 @@ module.exports = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        overlay: "hsl(var(--overlay) / <alpha-value>)",
+        overlay: "hsl(var(--overlay))",
 
         /* === Legacy aliases (DEPRECATED — keep until migration complete) === */
         bg: "var(--bg)",

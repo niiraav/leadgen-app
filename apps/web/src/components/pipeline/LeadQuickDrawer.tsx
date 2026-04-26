@@ -351,7 +351,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
     <div className="fixed inset-0 z-[100] flex justify-end">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-overlay/30"
+        className="fixed inset-0 bg-overlay"
         role="button"
         aria-label="Close drawer"
         tabIndex={0}

@@ -327,7 +327,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-overlay/30 z-[55]"
+              className="fixed inset-0 bg-overlay z-[55]"
               onClick={onClose}
             />
 

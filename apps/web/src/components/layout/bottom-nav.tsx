@@ -59,7 +59,7 @@ export function BottomNav() {
     <>
       {/* Drawer Backdrop */}
       {moreOpen && (
-        <div className="fixed inset-0 bg-overlay/60 z-50 md:hidden backdrop-blur-sm" onClick={onBackdropClick} />
+        <div className="fixed inset-0 bg-overlay z-50 md:hidden backdrop-blur-sm" onClick={onBackdropClick} />
       )}
 
       {/* Drawer Sheet */}

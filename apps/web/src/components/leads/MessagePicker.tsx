@@ -241,7 +241,7 @@ export default function MessagePicker({
   return (
     <Portal>
     <div
-      className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
       <div

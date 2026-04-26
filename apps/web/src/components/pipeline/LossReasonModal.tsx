@@ -47,7 +47,7 @@ export default function LossReasonModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay">
       <div className="bg-card rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">

@@ -630,7 +630,7 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
   const showScanPrompt = !loading && !scanning && fullLead && !fullLead.review_summary && (fullLead.place_id || fullLead.business_name);
 
   return (
-    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-lg w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Compose Email to {lead.business_name}</h2>
@@ -798,7 +798,7 @@ function MessagePickerModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">
@@ -875,7 +875,7 @@ function SequencePickerModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Add to Sequence</h2>
@@ -925,7 +925,7 @@ function NoteModal({
 }) {
   const [text, setText] = useState("");
   return (
-    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Add Note</h2>
@@ -994,7 +994,7 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
   };
 
   return (
-    <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Add Lead</h2>

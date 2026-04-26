@@ -53,7 +53,7 @@ export function EnrichButton({ leadId, enriched = false, onEnriched }: EnrichBut
 
       {showConfirm && (
         <Portal>
-        <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
+        <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
           <div
             className="bg-card border border-border/60 rounded-xl w-full max-w-xs"
             onClick={(e) => e.stopPropagation()}
