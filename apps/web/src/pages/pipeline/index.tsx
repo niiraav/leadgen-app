@@ -77,12 +77,12 @@ export default function PipelinePage() {
   });
   const healthSummary: HealthSummary | null = healthData
     ? {
-        stale_count: healthData.stale_count ?? 0,
-        proposals_out_count: healthData.proposals_out_count ?? 0,
-        proposals_out_value: healthData.proposals_out_value ?? 0,
-        replies_this_week: healthData.replies_this_week ?? 0,
-        won_this_month: healthData.won_this_month ?? 0,
-        won_this_month_value: healthData.won_this_month_value ?? 0,
+        stale_count: (healthData as any).stale_count ?? 0,
+        proposals_out_count: (healthData as any).proposals_out_count ?? 0,
+        proposals_out_value: (healthData as any).proposals_out_value ?? 0,
+        replies_this_week: (healthData as any).replies_this_week ?? 0,
+        won_this_month: (healthData as any).won_this_month ?? 0,
+        won_this_month_value: (healthData as any).won_this_month_value ?? 0,
       }
     : null;
 
@@ -183,7 +183,7 @@ export default function PipelinePage() {
           <KPICard
             title="Proposals out"
             value={healthSummary.proposals_out_count}
-            secondaryValue={healthSummary.proposals_out_value > 0 ? formatCompactDealValue(healthSummary.proposals_out_value) : undefined}
+            secondaryValue={healthSummary.proposals_out_value > 0 ? (formatCompactDealValue(healthSummary.proposals_out_value) ?? undefined) : undefined}
             changeType="positive"
             icon={<BarChart3 className="w-5 h-5" />}
           />
@@ -196,7 +196,7 @@ export default function PipelinePage() {
           <KPICard
             title="Won this month"
             value={healthSummary.won_this_month}
-            secondaryValue={healthSummary.won_this_month_value > 0 ? formatCompactDealValue(healthSummary.won_this_month_value) : undefined}
+            secondaryValue={healthSummary.won_this_month_value > 0 ? (formatCompactDealValue(healthSummary.won_this_month_value) ?? undefined) : undefined}
             changeType="positive"
             icon={<PoundSterling className="w-5 h-5" />}
           />

@@ -33,8 +33,19 @@ app.use('*', cors({
 
 // Public routes
 app.get('/health', (c) => {
-  const redisOk = isSchedulerHealthy();
-  return c.json({ status: 'ok', timestamp: new Date().toISOString(), redis: redisOk });
+  let schedulerStatus = 'disabled';
+  // schedulerQueue is imported from sequence-scheduler but not accessible here directly;
+  // isSchedulerHealthy returns false when queue is null or unhealthy
+  const healthy = isSchedulerHealthy();
+  // We can't directly check schedulerQueue from here, but if healthy is true, queue exists and is connected.
+  // If healthy is false, it could be either error or disabled (no env vars).
+  // Use a simple heuristic: if UPSTASH_REDIS_URL is set, it's 'error' when unhealthy; else 'disabled'.
+  if (process.env.UPSTASH_REDIS_URL) {
+    schedulerStatus = healthy ? 'connected' : 'error';
+  } else {
+    schedulerStatus = 'disabled';
+  }
+  return c.json({ status: 'ok', timestamp: new Date().toISOString(), scheduler: schedulerStatus });
 });
 
 // Auth routes require JWT

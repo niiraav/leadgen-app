@@ -769,10 +769,10 @@ export const api = {
   billing: {
     status: () => request<Record<string, unknown>>("/billing/status"),
     usage: () => request<Record<string, number>>("/billing/usage"),
-    checkout: (plan: string, period: string) =>
-      request<{ url: string }>("/billing/checkout", {
+    checkout: (period: string) =>
+      request<{ url: string; upgraded?: boolean }>("/billing/checkout", {
         method: "POST",
-        body: JSON.stringify({ plan, period }),
+        body: JSON.stringify({ period, plan: "outreach" }),
       }),
     portal: () => request<{ url: string }>("/billing/portal", { method: "POST" }),
     sync: () => request<Record<string, unknown>>("/billing/sync", { method: "POST" }),

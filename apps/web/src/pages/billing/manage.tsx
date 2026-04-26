@@ -43,10 +43,9 @@ interface BillingStatus {
 const PLAN_LABELS: Record<string, string> = {
   free: "Free",
   outreach: "Outreach",
-  growth: "Growth",
 };
 
-const PLAN_ORDER = ["free", "outreach", "growth"];
+const PLAN_ORDER = ["free", "outreach"];
 
 export default function BillingManagePage() {
   const router = useRouter();
@@ -280,13 +279,16 @@ export default function BillingManagePage() {
       {/* --- Cancel / Reactivate --- */}
       {!isFree && (
         <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
-          <h3 className="text-sm font-medium text-text">Cancel Subscription</h3>
+          <h3 className="text-sm font-medium text-text">
+            {isTrialing ? "End Trial" : "Cancel Subscription"}
+          </h3>
 
           {isCancelling ? (
             <>
               <p className="text-xs text-text-muted">
-                Your subscription is set to cancel at the end of the current billing period.
-                You can reactivate it anytime before then.
+                {isTrialing
+                  ? "Your trial will end immediately and you will lose Pro access."
+                  : "Your subscription is set to cancel at the end of the current billing period. You can reactivate it anytime before then."}
               </p>
               <button
                 onClick={handleReactivate}
@@ -304,8 +306,9 @@ export default function BillingManagePage() {
           ) : (
             <>
               <p className="text-xs text-text-muted">
-                Your subscription will remain active until the end of the current billing period.
-                You won&apos;t lose access immediately.
+                {isTrialing
+                  ? "Ending your trial will downgrade you to Free immediately. You won't be charged."
+                  : "Your subscription will remain active until the end of the current billing period. You won't lose access immediately."}
               </p>
               {confirmCancel ? (
                 <div className="space-y-2">
@@ -342,7 +345,7 @@ export default function BillingManagePage() {
                   className="rounded-lg border border-red/30 text-red text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-red/5 transition-colors"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
-                  Cancel Subscription
+                  {isTrialing ? "End Trial" : "Cancel Subscription"}
                 </button>
               )}
             </>

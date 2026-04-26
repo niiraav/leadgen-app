@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getUserId, supabaseAdmin, createActivity } from '../db';
-import { getTier, canonicalPlan, type CanonicalPlanId } from '../lib/billing/tiers';
+import { getTier, canonicalPlan, type CanonicalPlanId } from '@leadgen/shared';
 
 const router = new Hono();
 
@@ -16,13 +16,11 @@ const router = new Hono();
 const DAILY_MESSAGE_LIMITS: Record<CanonicalPlanId, number> = {
   free: 5,
   outreach: 50,
-  growth: -1, // unlimited
 };
 
 const CUSTOM_TEMPLATE_LIMITS: Record<CanonicalPlanId, number> = {
   free: 0,
   outreach: 5,
-  growth: -1, // unlimited
 };
 
 // ─── Default templates ───────────────────────────────────────────────────────
@@ -335,7 +333,7 @@ router.post('/templates', async (c) => {
 
     if (customLimit === 0) {
       return c.json({
-        error: 'Custom templates not available on Free plan. Upgrade to Outreach or Growth.',
+        error: 'Custom templates not available on Free plan. Upgrade to LeadGen Pro.',
         upgradeRequired: true,
       }, 402);
     }

@@ -233,10 +233,11 @@ export const usageTracking = pgTable('usage_tracking', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull(),
   month: text('month').notNull(), // YYYY-MM format
-  searchCount: integer('search_count').default(0),
-  creditsUsed: integer('credits_used').default(0),
+  searchesCount: integer('searches_count').default(0),
+  emailVerificationsCount: integer('email_verifications_count').default(0),
+  aiEmailsCount: integer('ai_emails_count').default(0),
+  leadsCount: integer('leads_count').default(0),
   enrichmentCount: integer('enrichment_count').default(0),
-  messageSendsCount: integer('message_sends_count').default(0),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
@@ -248,24 +249,13 @@ export const subscriptions = pgTable('subscriptions', {
   userId: uuid('user_id').notNull(),
   stripeSubscriptionId: text('stripe_subscription_id').notNull(),
   stripeCustomerId: text('stripe_customer_id'),
-  planId: text('plan_id').notNull(), // outreach / growth
+  planId: text('plan_id').notNull(), // free | outreach
   status: text('status').notNull(), // active / trialing / past_due / canceled / ended
   trialStartsAt: timestamp('trial_starts_at', { withTimezone: true }),
   trialEndsAt: timestamp('trial_ends_at', { withTimezone: true }),
   currentPeriodStart: timestamp('current_period_start', { withTimezone: true }),
   currentPeriodEnd: timestamp('current_period_end', { withTimezone: true }),
   cancelAtPeriodEnd: boolean('cancel_at_period_end').default(false),
-  leadCreditsUsed: integer('lead_credits_used').default(0),
-  leadCreditsLimit: integer('lead_credits_limit').notNull(),
-  searchCreditsUsed: integer('search_credits_used').default(0),
-  searchCreditsLimit: integer('search_credits_limit').notNull(),
-  emailVerificationCreditsUsed: integer('email_verification_credits_used').default(0),
-  emailVerificationCreditsLimit: integer('email_verification_credits_limit').notNull(),
-  aiEmailCreditsUsed: integer('ai_email_credits_used').default(0),
-  aiEmailCreditsLimit: integer('ai_email_credits_limit').notNull(),
-  sequenceContactCreditsUsed: integer('sequence_contact_credits_used').default(0),
-  sequenceContactCreditsLimit: integer('sequence_contact_credits_limit').default(0),
-  creditsResetAt: timestamp('credits_reset_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

@@ -86,7 +86,7 @@ export default function UsageBanner({
           onClick={() => router.push("/billing/upgrade")}
           className="ml-auto flex items-center gap-1 text-red font-medium hover:underline shrink-0"
         >
-          Limit reached — upgrade for more credits
+          Limit reached — start free trial
           <ArrowUpRight className="w-3 h-3" />
         </button>
       )}

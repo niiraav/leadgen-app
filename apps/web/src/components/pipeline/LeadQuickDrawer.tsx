@@ -300,13 +300,13 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
       if (generated) {
         setBioText(generated);
       } else if (res?.status === 402 || res?.code === 402 || res?.upgradeRequired) {
-        setBioError("Upgrade required to generate AI bio.");
+        setBioError("Start your free 14-day trial to generate AI bios.");
       } else {
         setBioText("Bio generated.");
       }
     } catch (e: any) {
       if (e?.status === 402 || e?.response?.status === 402) {
-        setBioError("Upgrade required to generate AI bio.");
+        setBioError("Start your free 14-day trial to generate AI bios.");
       } else {
         setBioError("Failed to generate bio. Please try again.");
       }

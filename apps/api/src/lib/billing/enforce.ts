@@ -1,9 +1,13 @@
 /**
  * Credit enforcement middleware and feature gates.
  * Used by route handlers to check if a user is allowed to perform an action.
+ *
+ * Post-consolidation: only 2 tiers (free / outreach = LeadGen Pro).
+ * Enforcement is simple: free users get 25 leads, 5 searches, nothing else.
+ * Paid users get everything.
  */
 import { supabaseAdmin } from '../../db';
-import { getTier, canonicalPlan, CanonicalPlanId } from './tiers';
+import { getTier, canonicalPlan, type CanonicalPlan } from '@leadgen/shared';
 import { getUsage } from '../usage';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -39,32 +43,31 @@ type CreditAction = 'search' | 'lead' | 'email_verification' | 'ai_email' | 'enr
 
 const ACTION_FIELD_MAP: Record<CreditAction, { usageField: string; limitField: string; label: string }> = {
   search: { usageField: 'searches_count', limitField: 'searchesPerMonth', label: 'Searches' },
-  lead: { usageField: 'leads_count', limitField: 'leadLimit', label: 'Leads' },
+  lead: { usageField: 'leads_count', limitField: 'leadsLimit', label: 'Leads' },
   email_verification: { usageField: 'email_verifications_count', limitField: 'emailVerificationsPerMonth', label: 'Email verifications' },
   ai_email: { usageField: 'ai_emails_count', limitField: 'aiEmailsPerMonth', label: 'AI emails' },
   enrichment: { usageField: 'enrichment_count', limitField: 'searchesPerMonth', label: 'Enrichments' },
-  sequence_contact: { usageField: 'leads_count', limitField: 'sequenceContactLimit', label: 'Sequence contacts' },
+  sequence_contact: { usageField: 'leads_count', limitField: 'sequencesLimit', label: 'Sequence contacts' },
 };
 
 // ─── Feature gate tiers ─────────────────────────────────────────────────────
 
 /**
  * Minimum plan tier required for each feature.
- * 'outreach' means outreach+ required; 'growth' means growth+ required.
+ * Post-consolidation: only 'outreach' (paid) or 'free' gates remain.
  */
-const FEATURE_GATES: Record<string, CanonicalPlanId> = {
-  sequences: 'growth',
-  custom_stages: 'growth',
+const FEATURE_GATES: Record<string, CanonicalPlan> = {
+  sequences: 'outreach',
+  custom_stages: 'outreach',
   email_verifications: 'outreach',
   bulk_export: 'outreach',
-  api_access: 'growth',
-  team_members: 'growth',
+  api_access: 'outreach',
+  team_members: 'outreach',
 };
 
-const TIER_HIERARCHY: Record<CanonicalPlanId, number> = {
+const TIER_HIERARCHY: Record<CanonicalPlan, number> = {
   free: 0,
   outreach: 1,
-  growth: 2,
 };
 
 // ─── enforceCredits ───────────────────────────────────────────────────────────
@@ -88,14 +91,12 @@ export async function enforceCredits(
   let plan: string = 'free';
   let subscriptionStatus: string | null = null;
 
-  // Try subscriptions table first — prefer active/trialing
   const { data: subs } = await supabaseAdmin
     .from('subscriptions')
     .select('plan, status')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  // Pick the first active/trialing subscription, else most recent
   const activeSub = (subs || []).find((s: any) => s.status === 'active' || s.status === 'trialing');
   const sub = activeSub || (subs || [])[0];
 
@@ -103,7 +104,6 @@ export async function enforceCredits(
     plan = (sub as any).plan || 'free';
     subscriptionStatus = (sub as any).status || null;
   } else {
-    // Fallback to profiles table
     const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('plan, subscription_status')
@@ -121,14 +121,12 @@ export async function enforceCredits(
   // If the limit is 0, the feature is not available on this tier
   if (limit === 0) {
     throw new EnforcementError(
-      `${mapping.label} not available on ${tier.label} plan. Upgrade to use this feature.`,
+      `${mapping.label} not available on ${tier.label} plan. Upgrade to LeadGen Pro to use this feature.`,
       { upgradeRequired: true, limit: 0, remaining: 0 }
     );
   }
 
   // 3. Check subscription status — deny if not active/trialing
-  // Active statuses: active, trialing (with access), past_due (grace — soft deny)
-  // Hard deny: paused, unpaid, incomplete, incomplete_expired, canceled
   const HARD_DENY_STATES = ['paused', 'unpaid', 'incomplete', 'incomplete_expired', 'cancelled', 'canceled'];
   const SOFT_DENY_STATES = ['past_due', 'grace_period'];
 
@@ -191,7 +189,6 @@ export async function enforceFeatureGate(
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  // Pick the first active/trialing subscription, else most recent
   const activeSub = (subs || []).find((s: any) => s.status === 'active' || s.status === 'trialing');
   const sub = activeSub || (subs || [])[0];
 
@@ -217,11 +214,11 @@ export async function enforceFeatureGate(
     const tierInfo = getTier(requiredTier);
     return {
       allowed: false,
-      upgradeRequired: `Subscription is ${subscriptionStatus}. Please update your payment method or resubscribe to ${tierInfo.label} (£${tierInfo.priceMonthly}/mo).`,
+      upgradeRequired: `Subscription is ${subscriptionStatus}. Please update your payment method or resubscribe to ${tierInfo.label} (£${tierInfo.monthlyPrice}/mo).`,
     };
   }
 
-  const userTier = canonicalPlan(plan) as CanonicalPlanId;
+  const userTier = canonicalPlan(plan) as CanonicalPlan;
   const userLevel = TIER_HIERARCHY[userTier] ?? 0;
   const requiredLevel = TIER_HIERARCHY[requiredTier] ?? 0;
 
@@ -233,6 +230,6 @@ export async function enforceFeatureGate(
   const tierInfo = getTier(requiredTier);
   return {
     allowed: false,
-    upgradeRequired: `${tierInfo.label} plan required (${tierInfo.label} — £${tierInfo.priceMonthly}/mo)`,
+    upgradeRequired: `${tierInfo.label} plan required (${tierInfo.label} — £${tierInfo.monthlyPrice}/mo)`,
   };
 }

@@ -176,12 +176,12 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   // Sync pipeline edit state when lead loads or changes
   useEffect(() => {
     if (lead) {
-      setEditFollowUp(lead.follow_up_date ? lead.follow_up_date.slice(0, 10) : "");
-      setEditDealValue(lead.deal_value ? String(lead.deal_value) : "");
-      setEditLossReason(lead.loss_reason ?? "");
-      setEditLossNotes(lead.loss_reason_notes ?? "");
+      setEditFollowUp(lead.followUpDate ? lead.followUpDate.slice(0, 10) : "");
+      setEditDealValue(lead.dealValue ? String(lead.dealValue) : "");
+      setEditLossReason(lead.lossReason ?? "");
+      setEditLossNotes(lead.lossReasonNotes ?? "");
     }
-  }, [lead?.follow_up_date, lead?.deal_value, lead?.loss_reason, lead?.loss_reason_notes]);
+  }, [lead?.followUpDate, lead?.dealValue, lead?.lossReason, lead?.lossReasonNotes]);
 
   const saveField = useCallback(async (field: string, value: unknown) => {
     if (!lead) return;
@@ -479,8 +479,8 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               onChange={(e) => setEditDealValue(e.target.value)}
               onBlur={() => {
                 const val = editDealValue === "" ? null : Number(editDealValue);
-                if (val !== (lead.deal_value ?? null)) {
-                  saveField("deal_value", val);
+                if (val !== (lead.dealValue ?? null)) {
+                  saveField("dealValue", val);
                 }
               }}
               placeholder="Value"
@@ -620,16 +620,16 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                   onChange={(e) => setEditFollowUp(e.target.value)}
                   onBlur={() => {
                     const val = editFollowUp === "" ? null : editFollowUp;
-                    if (val !== (lead.follow_up_date?.slice(0, 10) ?? null)) {
-                      saveField("follow_up_date", val);
+                    if (val !== (lead.followUpDate?.slice(0, 10) ?? null)) {
+                      saveField("followUpDate", val);
                     }
                   }}
                   className="flex-1 text-sm bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary"
                 />
-                {lead.follow_up_date && (
+                {lead.followUpDate && (
                   <span className="text-[11px] text-text-muted whitespace-nowrap">
                     {(() => {
-                      const due = new Date(lead.follow_up_date);
+                      const due = new Date(lead.followUpDate);
                       const today = new Date();
                       today.setUTCHours(0, 0, 0, 0);
                       due.setUTCHours(0, 0, 0, 0);
@@ -643,14 +643,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             </div>
 
             {/* Loss reason — only show if lost */}
-            {(lead.status === "lost" || lead.pipeline_stage === "lost") && (
+            {(lead.status === "lost" || lead.pipelineStage === "lost") && (
               <div className="space-y-2 pt-1 border-t border-border/30">
                 <label className="text-[11px] font-medium text-text-muted uppercase tracking-wide">Loss Reason</label>
                 <select
                   value={editLossReason}
                   onChange={(e) => {
                     setEditLossReason(e.target.value);
-                    saveField("loss_reason", e.target.value || null);
+                    saveField("lossReason", e.target.value || null);
                   }}
                   className="w-full text-sm bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary"
                 >
@@ -663,8 +663,8 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                   value={editLossNotes}
                   onChange={(e) => setEditLossNotes(e.target.value)}
                   onBlur={() => {
-                    if (editLossNotes !== (lead.loss_reason_notes ?? "")) {
-                      saveField("loss_reason_notes", editLossNotes || null);
+                    if (editLossNotes !== (lead.lossReasonNotes ?? "")) {
+                      saveField("lossReasonNotes", editLossNotes || null);
                     }
                   }}
                   placeholder="Additional notes…"

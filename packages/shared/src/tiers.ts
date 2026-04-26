@@ -1,111 +1,128 @@
 /**
- * Plan tiers — the single source of truth for billing limits.
- * All prices in GBP (£). Product called Gapr throughout.
+ * Plan tiers — single source of truth for LeadGen monorepo.
  *
- * Tiers: free / outreach / growth
- * outreach = £29/mo, growth = £59/mo
- *
- * CONSTRAINTS:
- * - No hardcoded plan strings in components — use TIERS map
- * - Custom pipeline stages: "Coming soon on Growth" — no functionality built
+ * Free  → 25 leads, 5 searches, 5 verifications, 5 AI emails, 1 sequence
+ * Pro   → 1,000 leads, 200 searches, 200 verifications, 100 AI emails, 50 sequences
  */
 
 export interface PlanTier {
   id: string;
   label: string;
-  priceMonthly: number; // GBP per month
-  priceAnnual: number;  // GBP per month (billed annually)
-  annualSavings: number; // GBP saved per year on annual vs monthly
-  leadLimit: number;
+  monthlyPrice: number;
+  annualPrice: number;
+  annualSavings: number;
+  leadsLimit: number;
   searchesPerMonth: number;
   emailVerificationsPerMonth: number;
   aiEmailsPerMonth: number;
-  sequenceContactLimit: number;
+  sequencesLimit: number;
+  stepsPerSequence: number;
   customStages: boolean;
-  features: string[];   // feature gates for this tier
+  features: string[];
 }
 
+export const FREE_TIER: PlanTier = {
+  id: 'free',
+  label: 'Free',
+  monthlyPrice: 0,
+  annualPrice: 0,
+  annualSavings: 0,
+  leadsLimit: 25,
+  searchesPerMonth: 5,
+  emailVerificationsPerMonth: 5,
+  aiEmailsPerMonth: 5,
+  sequencesLimit: 1,
+  stepsPerSequence: 1,
+  customStages: false,
+  features: ['search', 'leads', 'ai_emails', 'email_verifications', 'sequences'],
+} as const;
+
+export const OUTREACH_TIER: PlanTier = {
+  id: 'outreach',
+  label: 'LeadGen Pro',
+  monthlyPrice: 29,
+  annualPrice: 290,
+  annualSavings: 58,
+  leadsLimit: 1000,
+  searchesPerMonth: 200,
+  emailVerificationsPerMonth: 200,
+  aiEmailsPerMonth: 100,
+  sequencesLimit: 50,
+  stepsPerSequence: 3,
+  customStages: false,
+  features: ['search', 'leads', 'ai_emails', 'email_verifications', 'sequences'],
+} as const;
+
 export const TIERS: Record<string, PlanTier> = {
-  free: {
-    id: 'free',
-    label: 'Free',
-    priceMonthly: 0,
-    priceAnnual: 0,
-    annualSavings: 0,
-    leadLimit: 50,
-    searchesPerMonth: 50,
-    emailVerificationsPerMonth: 0,
-    aiEmailsPerMonth: 10,
-    sequenceContactLimit: 0,
-    customStages: false,
-    features: ['search', 'leads'],
-  },
-  outreach: {
-    id: 'outreach',
-    label: 'Outreach',
-    priceMonthly: 29,
-    priceAnnual: 24, // billed £288/year, save £60
-    annualSavings: 60,
-    leadLimit: 1_000,
-    searchesPerMonth: 1_000,
-    emailVerificationsPerMonth: 200,
-    aiEmailsPerMonth: 100,
-    sequenceContactLimit: 0,
-    customStages: false,
-    features: ['search', 'leads', 'ai_emails', 'email_verifications'],
-  },
-  growth: {
-    id: 'growth',
-    label: 'Growth',
-    priceMonthly: 59,
-    priceAnnual: 48, // billed £576/year, save £132
-    annualSavings: 132,
-    leadLimit: 10_000,
-    searchesPerMonth: 5_000,
-    emailVerificationsPerMonth: 1_000,
-    aiEmailsPerMonth: 500,
-    sequenceContactLimit: 500,
-    customStages: false,
-    features: ['search', 'leads', 'ai_emails', 'email_verifications', 'sequences', 'custom_stages'],
-  },
+  free: FREE_TIER,
+  outreach: OUTREACH_TIER,
 } as const;
 
 export type PlanId = keyof typeof TIERS;
 
-/** Canonical plan IDs only (excludes legacy aliases) */
-export const CANONICAL_PLANS = ['free', 'outreach', 'growth'] as const;
-export type CanonicalPlanId = typeof CANONICAL_PLANS[number];
+export const CANONICAL_PLANS = ['free', 'outreach'] as const;
+export type CanonicalPlanId = (typeof CANONICAL_PLANS)[number];
+export type CanonicalPlan = CanonicalPlanId; // backward-compat alias
 
 export function getTier(plan: string | null | undefined): PlanTier {
-  return (plan && TIERS[plan]) || TIERS.free;
+  if (!plan) return FREE_TIER;
+  const p = plan.toLowerCase().trim();
+  if (p === 'outreach' || p === 'leadgen pro' || p === 'pro' || p === 'paid') {
+    return OUTREACH_TIER;
+  }
+  return FREE_TIER;
 }
 
-/** Resolve plan names to canonical IDs */
 export function canonicalPlan(plan: string | null | undefined): CanonicalPlanId {
-  if (!plan || plan === 'free') return 'free';
-  if (plan === 'outreach') return 'outreach';
-  if (plan === 'growth') return 'growth';
+  if (!plan) return 'free';
+  const p = plan.toLowerCase().trim();
+  if (p === 'outreach' || p === 'leadgen pro' || p === 'pro' || p === 'paid') return 'outreach';
   return 'free';
 }
 
-export function getUserLimits(profile: { plan?: string | null; subscription_status?: string | null }): {
-  leadLimit: number;
+export function isPaidTier(plan: string | null | undefined): boolean {
+  return getTier(plan).id !== 'free';
+}
+
+export function getPlanLimits(plan: string | null | undefined) {
+  const tier = getTier(plan);
+  return {
+    leadsLimit: tier.leadsLimit,
+    searchesPerMonth: tier.searchesPerMonth,
+    emailVerificationsPerMonth: tier.emailVerificationsPerMonth,
+    aiEmailsPerMonth: tier.aiEmailsPerMonth,
+    sequencesLimit: tier.sequencesLimit,
+    stepsPerSequence: tier.stepsPerSequence,
+    customStages: tier.customStages,
+    features: [...tier.features],
+  };
+}
+
+export function getUserLimits(profile: {
+  plan?: string | null;
+  subscription_status?: string | null;
+}): {
+  leadsLimit: number;
   searchesPerMonth: number;
   emailVerificationsPerMonth: number;
   aiEmailsPerMonth: number;
-  sequenceContactLimit: number;
+  sequencesLimit: number;
+  stepsPerSequence: number;
   customStages: boolean;
   features: string[];
   isPaid: boolean;
 } {
   const tier = getTier(profile.plan);
-  const isPaid = profile.subscription_status === 'active' || profile.subscription_status === 'trialing';
+  const isPaid =
+    profile.subscription_status === 'active' ||
+    profile.subscription_status === 'trialing';
   return {
-    leadLimit: tier.leadLimit,
+    leadsLimit: tier.leadsLimit,
     searchesPerMonth: tier.searchesPerMonth,
     emailVerificationsPerMonth: tier.emailVerificationsPerMonth,
     aiEmailsPerMonth: tier.aiEmailsPerMonth,
-    sequenceContactLimit: tier.sequenceContactLimit,
+    sequencesLimit: tier.sequencesLimit,
+    stepsPerSequence: tier.stepsPerSequence,
     customStages: tier.customStages,
     features: [...tier.features],
     isPaid,

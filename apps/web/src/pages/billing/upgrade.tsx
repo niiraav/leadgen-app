@@ -17,72 +17,47 @@ import {
   GitBranch,
   Sparkles,
 } from "lucide-react";
+import { TIERS, FREE_TIER, OUTREACH_TIER } from "@leadgen/shared";
 
 /* ------------------------------------------------------------------ */
 /*  Pricing / Upgrade Page                                             */
 /* ------------------------------------------------------------------ */
 
-const PLANS = [
-  {
-    id: "outreach",
-    name: "Outreach",
-    monthly: "£29",
-    annual: "£24",
-    annualNote: "per month, billed £288/year — saves £60/year",
-    annualSaving: "£60",
+const PLANS = Object.values(TIERS)
+  .filter((t) => t.id !== "free")
+  .map((t) => ({
+    id: t.id,
+    name: t.label,
+    monthly: `£${t.monthlyPrice}`,
+    annual: `£${Math.round(t.annualPrice / 12)}`,
+    annualNote: `per month, billed £${t.annualPrice}/year — saves £${t.annualSavings}/year`,
+    annualSaving: `£${t.annualSavings}`,
+    popular: true, // single paid plan — always highlight
     features: [
-      "1,000 leads",
-      "Up to 100 lead searches/month",
-      "200 email verifications/month",
-      "100 AI emails/month",
-      "Up to 3 active sequences (3 steps each)",
+      `${t.leadsLimit.toLocaleString()} leads`,
+      `Up to ${t.searchesPerMonth.toLocaleString()} lead searches/month`,
+      `${t.emailVerificationsPerMonth.toLocaleString()} email verifications/month`,
+      `${t.aiEmailsPerMonth.toLocaleString()} AI emails/month`,
+      `Up to ${t.sequencesLimit} active sequences (${t.stepsPerSequence} steps each)`,
       "Basic analytics",
       "Email support (48hr)",
     ],
-    priceKey: "outreach",
+    priceKey: t.id,
     featureDetails: {
-      leads: "1,000",
-      searches: "100",
-      verifications: "200",
-      aiEmails: "100",
-      sequences: "3 (3 steps)",
+      leads: t.leadsLimit.toLocaleString(),
+      searches: t.searchesPerMonth.toLocaleString(),
+      verifications: t.emailVerificationsPerMonth.toLocaleString(),
+      aiEmails: t.aiEmailsPerMonth.toLocaleString(),
+      sequences: `${t.sequencesLimit} (${t.stepsPerSequence} steps)`,
     },
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    monthly: "£59",
-    annual: "£48",
-    annualNote: "per month, billed £576/year — saves £132/year",
-    annualSaving: "£132",
-    features: [
-      "10,000 leads",
-      "Up to 500 lead searches/month",
-      "1,000 email verifications/month",
-      "500 AI emails/month",
-      "Up to 20 active sequences (5 steps each)",
-      "Full analytics",
-      "Custom pipeline stages (coming soon)",
-      "Priority support (24hr)",
-    ],
-    priceKey: "growth",
-    popular: true,
-    featureDetails: {
-      leads: "10,000",
-      searches: "500",
-      verifications: "1,000",
-      aiEmails: "500",
-      sequences: "20 (5 steps)",
-    },
-  },
-];
+  }));
 
 const FREE_FEATURES = {
-  leads: "25",
-  searches: "5",
-  verifications: "—",
-  aiEmails: "0",
-  sequences: "—",
+  leads: FREE_TIER.leadsLimit.toLocaleString(),
+  searches: FREE_TIER.searchesPerMonth.toLocaleString(),
+  verifications: FREE_TIER.emailVerificationsPerMonth.toLocaleString(),
+  aiEmails: FREE_TIER.aiEmailsPerMonth.toLocaleString(),
+  sequences: FREE_TIER.sequencesLimit.toString(),
 };
 
 export default function BillingUpgradePage() {
@@ -107,14 +82,20 @@ export default function BillingUpgradePage() {
     fetchStatus();
   }, [fetchStatus]);
 
-  const handleSubscribe = async (planId: string) => {
-    setBusy(planId);
+  const handleSubscribe = async () => {
+    setBusy("subscribe");
     try {
-      const { url } = await api.billing.checkout(
-        planId,
+      const data = await api.billing.checkout(
         annual ? "annual" : "monthly"
       );
-      window.location.href = url;
+      if (data.upgraded) {
+        toast.success("Subscription upgraded successfully!");
+        router.push("/billing?checkout=success");
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      }
     } catch (err: any) {
       toast.error(err.message || "Checkout failed");
       setBusy(null);
@@ -172,7 +153,7 @@ export default function BillingUpgradePage() {
         </span>
         {annual && (
           <span className="text-xs font-medium text-green bg-green/10 px-2 py-0.5 rounded-full">
-            Save £60/£132
+            Save £{OUTREACH_TIER.annualSavings}
           </span>
         )}
       </div>
@@ -235,15 +216,15 @@ export default function BillingUpgradePage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => handleSubscribe(plan.id)}
-                  disabled={busy === plan.id}
+                  onClick={() => handleSubscribe()}
+                  disabled={busy === "subscribe"}
                   className={`w-full rounded-lg text-sm font-medium py-3 flex items-center justify-center gap-2 disabled:opacity-50 transition-colors ${
                     plan.popular
                       ? "bg-blue text-white hover:bg-blue/90"
                       : "border border-blue text-blue hover:bg-blue/5"
                   }`}
                 >
-                  {busy === plan.id ? (
+                  {busy === "subscribe" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <ArrowUpRight className="w-4 h-4" />
@@ -271,17 +252,16 @@ export default function BillingUpgradePage() {
                 <th className="text-left px-5 py-3 text-xs text-text-muted font-medium">Feature</th>
                 <th className="text-center px-4 py-3 text-xs text-text-muted font-medium">Free</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-text">Outreach</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-blue">Growth</th>
               </tr>
             </thead>
             <tbody>
-              <Row icon={<Users className="w-3.5 h-3.5" />} label="Leads" free={FREE_FEATURES.leads} outreach={PLANS[0].featureDetails.leads} growth={PLANS[1].featureDetails.leads} />
-              <Row icon={<Search className="w-3.5 h-3.5" />} label="Lead searches" free={FREE_FEATURES.searches} outreach={PLANS[0].featureDetails.searches} growth={PLANS[1].featureDetails.searches} />
-              <Row icon={<Mail className="w-3.5 h-3.5" />} label="Email verifications" free={FREE_FEATURES.verifications} outreach={PLANS[0].featureDetails.verifications} growth={PLANS[1].featureDetails.verifications} />
-              <Row icon={<Sparkles className="w-3.5 h-3.5" />} label="AI emails" free={FREE_FEATURES.aiEmails} outreach={PLANS[0].featureDetails.aiEmails} growth={PLANS[1].featureDetails.aiEmails} />
-              <Row icon={<GitBranch className="w-3.5 h-3.5" />} label="Active sequences" free={FREE_FEATURES.sequences} outreach={PLANS[0].featureDetails.sequences} growth={PLANS[1].featureDetails.sequences} />
-              <Row icon={<Zap className="w-3.5 h-3.5" />} label="Pipeline stages" free="—" outreach="Basic" growth="Custom (soon)" />
-              <Row icon={<Mail className="w-3.5 h-3.5" />} label="Support" free="—" outreach="Email (48hr)" growth="Priority (24hr)" />
+              <Row icon={<Users className="w-3.5 h-3.5" />} label="Leads" free={FREE_FEATURES.leads} outreach={PLANS[0].featureDetails.leads} />
+              <Row icon={<Search className="w-3.5 h-3.5" />} label="Lead searches" free={FREE_FEATURES.searches} outreach={PLANS[0].featureDetails.searches} />
+              <Row icon={<Mail className="w-3.5 h-3.5" />} label="Email verifications" free={FREE_FEATURES.verifications} outreach={PLANS[0].featureDetails.verifications} />
+              <Row icon={<Sparkles className="w-3.5 h-3.5" />} label="AI emails" free={FREE_FEATURES.aiEmails} outreach={PLANS[0].featureDetails.aiEmails} />
+              <Row icon={<GitBranch className="w-3.5 h-3.5" />} label="Active sequences" free={FREE_FEATURES.sequences} outreach={PLANS[0].featureDetails.sequences} />
+              <Row icon={<Zap className="w-3.5 h-3.5" />} label="Pipeline stages" free="—" outreach="Basic" />
+              <Row icon={<Mail className="w-3.5 h-3.5" />} label="Support" free="—" outreach="Email (48hr)" />
             </tbody>
           </table>
         </div>
@@ -305,7 +285,7 @@ export default function BillingUpgradePage() {
           </li>
           <li className="flex items-start gap-2">
             <Check className="w-3.5 h-3.5 text-green shrink-0 mt-0.5" />
-            Annual plans save you £60 (Outreach) or £132 (Growth) per year
+            Annual plans save you £{OUTREACH_TIER.annualSavings}/year compared to monthly billing
           </li>
         </ul>
       </div>
@@ -318,23 +298,20 @@ function Row({
   label,
   free,
   outreach,
-  growth,
 }: {
   icon: React.ReactNode;
   label: string;
   free: string;
   outreach: string;
-  growth: string;
 }) {
   return (
     <tr className="border-b border-border/20 last:border-0">
-      <td className="px-5 py-2.5 text-sm text-text-muted flex items-center gap-1.5">
-        {icon}
+      <td className="px-5 py-3 text-text flex items-center gap-2">
+        <span className="text-text-faint">{icon}</span>
         {label}
       </td>
-      <td className="text-center px-4 py-2.5 text-sm text-text-faint">{free}</td>
-      <td className="text-center px-4 py-2.5 text-sm text-text">{outreach}</td>
-      <td className="text-center px-4 py-2.5 text-sm text-text font-medium">{growth}</td>
+      <td className="text-center px-4 py-3 text-text-muted">{free}</td>
+      <td className="text-center px-4 py-3 text-text font-medium">{outreach}</td>
     </tr>
   );
 }

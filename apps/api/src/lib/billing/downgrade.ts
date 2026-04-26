@@ -4,7 +4,7 @@
  * and resets plan to free.
  */
 import { supabaseAdmin } from '../../db';
-import { getTier } from './tiers';
+import { getTier } from '@leadgen/shared';
 
 export interface DowngradeResult {
   userId: string;

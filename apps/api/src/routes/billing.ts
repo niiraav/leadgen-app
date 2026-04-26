@@ -2,7 +2,7 @@
  * Billing routes — Stripe checkout, customer portal, usage stats, webhook
  * All prices in GBP (£). Product called Gapr throughout.
  *
- * Tiers: free / outreach (£29) / growth (£59)
+ * Tiers: free / outreach (£29) — single paid plan (LeadGen Pro)
  * Checkout includes 14-day trial with pause-on-missing-payment.
  * Full webhook handlers: trial_will_end, payment_failed, grace period,
  * subscription lifecycle, downgrade via runDowngrade().
@@ -10,7 +10,7 @@
 import Stripe from 'stripe';
 import { Hono } from 'hono';
 import { supabaseAdmin, getUserId } from '../db';
-import { getTier, canonicalPlan } from '../lib/billing/tiers';
+import { getTier, canonicalPlan } from '@leadgen/shared';
 import { runDowngrade } from '../lib/billing/downgrade';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -20,13 +20,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const ORIGIN = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // ─── Price IDs ──────────────────────────────────────────────────────────────
+// Single plan: LeadGen Pro (outreach). No growth, no top-up credits.
 const PRICES = {
   outreach_monthly: process.env.STRIPE_PRICE_OUTREACH_MONTHLY,
   outreach_annual:  process.env.STRIPE_PRICE_OUTREACH_ANNUAL,
-  growth_monthly:   process.env.STRIPE_PRICE_GROWTH_MONTHLY,
-  growth_annual:    process.env.STRIPE_PRICE_GROWTH_ANNUAL,
-  credits_100:      process.env.STRIPE_PRICE_CREDITS_100,
-  credits_500:      process.env.STRIPE_PRICE_CREDITS_500,
 };
 
 // ─── BullMQ billing queue (shared Redis connection) ──────────────────────────
@@ -132,11 +129,11 @@ router.get('/status', async (c) => {
     plan,
     subscription_status: status,
     label: tier.label,
-    limit: tier.leadLimit,
+    limit: tier.leadsLimit,
     searches_per_month: tier.searchesPerMonth,
     email_verifications: tier.emailVerificationsPerMonth,
     ai_emails_per_month: tier.aiEmailsPerMonth,
-    sequence_limit: tier.sequenceContactLimit,
+    sequence_limit: tier.sequencesLimit,
     subscription_ends_at: profile?.subscription_ends_at,
     trial_ends_at: trialEndsAt,
     cancel_at_period_end: cancelAtPeriodEnd,
@@ -144,8 +141,8 @@ router.get('/status', async (c) => {
       ? { active: true, ends_at: gracePeriodEndsAt }
       : { active: false, ends_at: null },
     stripe_customer_id: profile?.stripe_customer_id,
-    price_monthly: tier.priceMonthly,
-    price_annual: tier.priceAnnual,
+    price_monthly: tier.monthlyPrice,
+    price_annual: tier.annualPrice,
   });
 });
 
@@ -186,7 +183,7 @@ router.post('/sync', async (c) => {
   // Pick the active/trialing subscription with the highest-tier plan.
   // If multiple active subs exist (shouldn't with our guard), cancel the extras.
   const activeSubs = subs.data.filter(s => s.status === 'active' || s.status === 'trialing');
-  const planOrder = ['free', 'outreach', 'growth']; // ascending
+  const planOrder = ['free', 'outreach']; // ascending
 
   let sub: any;
   if (activeSubs.length === 0) {
@@ -300,6 +297,17 @@ router.post('/checkout', async (c) => {
   const body = await c.req.json();
   const { plan, period } = body as { plan: string; period: 'monthly' | 'annual' };
 
+  // ── Trial guard ────────────────────────────────────────────────────────
+  const { data: profileTrial } = await supabaseAdmin
+    .from('profiles')
+    .select('trial_used')
+    .eq('id', userId)
+    .single();
+
+  if (profileTrial?.trial_used === true) {
+    return c.json({ error: 'Trial already used. Please contact support to reactivate.', code: 'TRIAL_USED' }, 403);
+  }
+
   const priceKey = planToPriceKey(plan, period);
   const priceId = priceKey ? (PRICES as any)[priceKey] : undefined;
 
@@ -386,7 +394,7 @@ router.post('/checkout', async (c) => {
           }, { onConflict: 'stripe_subscription_id' });
 
           // Return a special response so the frontend knows it was an upgrade, not a new checkout
-          return c.json({ upgraded: true, plan: canonical, subscription_status: updatedSub.status });
+          return c.json({ upgraded: true, url: `${ORIGIN}/billing?checkout=success`, plan: canonical, subscription_status: updatedSub.status });
         }
       }
 
@@ -442,7 +450,7 @@ router.post('/checkout', async (c) => {
 
       // If the requested plan matches the existing one, just return success
       if (canonicalPlan(subPlan) === canonical) {
-        return c.json({ upgraded: true, plan: subPlan, subscription_status: sub.status });
+        return c.json({ upgraded: true, url: `${ORIGIN}/billing?checkout=success`, plan: subPlan, subscription_status: sub.status });
       }
 
       // Otherwise upgrade via proration (same logic as above)
@@ -473,7 +481,7 @@ router.post('/checkout', async (c) => {
           updated_at: new Date().toISOString(),
         }, { onConflict: 'stripe_subscription_id' });
 
-        return c.json({ upgraded: true, plan: canonical, subscription_status: updatedSub.status });
+        return c.json({ upgraded: true, url: `${ORIGIN}/billing?checkout=success`, plan: canonical, subscription_status: updatedSub.status });
       }
     }
   } catch (listErr: any) {
@@ -505,37 +513,6 @@ router.post('/checkout', async (c) => {
     console.error('[Checkout] Stripe session creation failed:', stripeErr.message);
     return c.json({ error: 'Checkout session failed. Please try again.', code: 'SESSION_FAILED', detail: stripeErr.message }, 500);
   }
-});
-
-// ─── POST /billing/topup ─────────────────────────────────────────────────────
-router.post('/topup', async (c) => {
-  const userId = getUserId(c);
-  const body = await c.req.json();
-  const { tier } = body as { tier: '100' | '500' };
-
-  const priceId = tier === '500' ? PRICES.credits_500 : PRICES.credits_100;
-  if (!priceId) return c.json({ error: 'Invalid tier' }, 400);
-
-  const { data: profile } = await supabaseAdmin
-    .from('profiles')
-    .select('stripe_customer_id')
-    .eq('id', userId)
-    .single();
-
-  if (!profile?.stripe_customer_id) {
-    return c.json({ error: 'Create a subscription first' }, 400);
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    customer: profile.stripe_customer_id,
-    mode: 'payment',
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${ORIGIN}/billing?topup=success`,
-    cancel_url: `${ORIGIN}/billing?topup=cancelled`,
-    metadata: { userId, topup_tier: tier },
-  });
-
-  return c.json({ url: session.url as string });
 });
 
 // ─── POST /billing/portal ────────────────────────────────────────────────────
@@ -592,22 +569,27 @@ router.post('/portal', async (c) => {
 });
 
 // ─── POST /billing/cancel ────────────────────────────────────────────────────
-// Sets cancel_at_period_end on the current subscription (doesn't cancel immediately).
-// User keeps access until the period ends.
+// Cancel subscription. Trialing users are cancelled immediately (immediate downgrade).
+// Paid users cancel at period end by default, unless body.immediate is true.
 router.post('/cancel', async (c) => {
   const userId = getUserId(c);
   const body = await c.req.json().catch(() => ({}));
-  const cancelAtPeriodEnd = body.cancel_at_period_end !== false; // default true
 
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('stripe_subscription_id, plan')
+    .select('stripe_subscription_id, plan, subscription_status')
     .eq('id', userId)
     .single();
 
   if (!profile?.stripe_subscription_id) {
     return c.json({ error: 'No active subscription to cancel' }, 404);
   }
+
+  // Trial users always cancel immediately. Paid users default to period end.
+  const isTrialing = profile.subscription_status === 'trialing';
+  const cancelAtPeriodEnd = isTrialing
+    ? false
+    : (body.cancel_at_period_end !== false); // default true for paid
 
   try {
     const sub: any = await stripe.subscriptions.update(profile.stripe_subscription_id, {
@@ -631,12 +613,12 @@ router.post('/cancel', async (c) => {
       console.error('[Cancel] DB update failed:', subUpdateErr.message);
     }
 
-    console.log(`[Cancel] User ${userId} subscription ${cancelAtPeriodEnd ? 'will cancel at' : 'reactivated, cancelling at'} period end: ${periodEnd}`);
+    console.log(`[Cancel] User ${userId} subscription ${cancelAtPeriodEnd ? 'will cancel at' : 'cancelled immediately (trial)'} period end: ${periodEnd}`);
 
     return c.json({
       message: cancelAtPeriodEnd
         ? `Subscription will cancel at end of billing period (${periodEnd})`
-        : 'Immediate cancellation requested',
+        : 'Subscription cancelled immediately. You have been downgraded to Free.',
     });
   } catch (stripeErr: any) {
     console.error('[Cancel] Stripe error:', stripeErr.message);
@@ -774,12 +756,18 @@ router.post('/webhook', async (c) => {
             : null;
 
           // Update profiles table (including stripe_subscription_id for later webhook lookups)
-          await supabaseAdmin.from('profiles').update({
+          // If trialing, lock trial immediately so user can't restart trial later.
+          const profileUpdate: any = {
             plan,
             subscription_status: sub.status,
             subscription_ends_at: periodEnd,
             stripe_subscription_id: subId,
-          }).eq('id', uid);
+          };
+          if (sub.status === 'trialing' && sub.trial_start) {
+            profileUpdate.trial_used = true;
+            profileUpdate.trial_started_at = new Date(sub.trial_start * 1000).toISOString();
+          }
+          await supabaseAdmin.from('profiles').update(profileUpdate).eq('id', uid);
 
           // Create / update subscription row in subscriptions table
           await supabaseAdmin.from('subscriptions').upsert({
@@ -813,8 +801,9 @@ router.post('/webhook', async (c) => {
 
         if (profileId) {
           // Reset monthly usage counters on successful renewal
-          const now = new Date();
-          const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          // Use the subscription period end (UTC) to align with billing cycle
+          const periodEnd = invoice.period_end ? new Date(invoice.period_end * 1000) : new Date();
+          const month = `${periodEnd.getUTCFullYear()}-${String(periodEnd.getUTCMonth() + 1).padStart(2, '0')}`;
           await supabaseAdmin.from('usage_tracking').upsert({
             user_id: profileId,
             month,

@@ -126,7 +126,7 @@ export function VerifyEmailButton({
 
       {upgradeError && (
         <span className="text-xs text-amber ml-1 cursor-pointer hover:underline" onClick={() => { window.location.href = "/billing"; }}>
-          Upgrade to verify emails →
+          Start free trial to verify emails →
         </span>
       )}
 

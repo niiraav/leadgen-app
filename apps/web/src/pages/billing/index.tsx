@@ -11,60 +11,42 @@ import {
   ExternalLink,
   TrendingUp,
   ArrowUpRight,
-  Zap,
   Mail,
   Users,
   Search,
   Settings,
   Clock,
   AlertTriangle,
+  X,
 } from "lucide-react";
+import { TIERS, FREE_TIER, OUTREACH_TIER } from "@leadgen/shared";
 
 /* ------------------------------------------------------------------ */
 /*  Billing & Plan Page                                                */
 /* ------------------------------------------------------------------ */
 
-// Tier definitions (must match tiers.ts in shared package)
-const PLANS = [
-  {
-    id: "outreach",
-    name: "Outreach",
-    monthly: "£29",
-    annual: "£24",
-    annualNote: "per month, billed £288/year — saves £60/year",
+const PLANS = Object.values(TIERS)
+  .filter((t) => t.id !== "free")
+  .map((t) => ({
+    id: t.id,
+    name: t.label,
+    monthly: `£${t.monthlyPrice}`,
+    annual: `£${Math.round(t.annualPrice / 12)}`,
+    annualNote: `per month, billed £${t.annualPrice}/year — saves £${t.annualSavings}/year`,
     features: [
-      "1,000 leads",
-      "Up to 100 lead searches/month",
-      "200 email verifications/month",
-      "100 AI emails/month",
-      "Up to 3 active sequences (3 steps each)",
+      `${t.leadsLimit.toLocaleString()} leads`,
+      `Up to ${t.searchesPerMonth.toLocaleString()} lead searches/month`,
+      `${t.emailVerificationsPerMonth.toLocaleString()} email verifications/month`,
+      `${t.aiEmailsPerMonth.toLocaleString()} AI emails/month`,
+      `Up to ${t.sequencesLimit} active sequences (${t.stepsPerSequence} steps each)`,
       "Basic analytics",
       "Email support (48hr)",
     ],
-    priceKey: "outreach",
-  },
-  {
-    id: "growth",
-    name: "Growth",
-    monthly: "£59",
-    annual: "£48",
-    annualNote: "per month, billed £576/year — saves £132/year",
-    features: [
-      "10,000 leads",
-      "Up to 500 lead searches/month",
-      "1,000 email verifications/month",
-      "500 AI emails/month",
-      "Up to 20 active sequences (5 steps each)",
-      "Full analytics",
-      "Custom pipeline stages (coming soon)",
-      "Priority support (24hr)",
-    ],
-    priceKey: "growth",
-    popular: true,
-  },
-];
+    priceKey: t.id,
+    popular: false,
+  }));
 
-const FREE_PLAN_NOTE = "25 leads · 5 lead searches · 0 AI emails / month";
+const FREE_PLAN_NOTE = `${FREE_TIER.leadsLimit} leads · ${FREE_TIER.searchesPerMonth} lead searches · ${FREE_TIER.aiEmailsPerMonth} AI emails / month`;
 
 interface BillingStatus {
   plan: string;
@@ -110,8 +92,10 @@ function TrialCountdown({ trialEndsAt }: { trialEndsAt: string }) {
 
   if (daysLeft <= 0) return null;
 
+  const urgent = daysLeft <= 3;
+
   return (
-    <div className="flex items-center gap-1.5 text-xs text-amber">
+    <div className={`flex items-center gap-1.5 text-xs ${urgent ? "text-red font-medium" : "text-amber"}`}>
       <Clock className="w-3.5 h-3.5" />
       Trial: {daysLeft} day{daysLeft !== 1 ? "s" : ""} remaining
     </div>
@@ -177,6 +161,17 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [annual, setAnnual] = useState(false);
+  const [showFirstLoginBanner, setShowFirstLoginBanner] = useState(false);
+
+  useEffect(() => {
+    const dismissed = localStorage.getItem("billing_first_login_banner_dismissed");
+    if (!dismissed) setShowFirstLoginBanner(true);
+  }, []);
+
+  const dismissFirstLoginBanner = () => {
+    localStorage.setItem("billing_first_login_banner_dismissed", "1");
+    setShowFirstLoginBanner(false);
+  };
 
   const fetchAll = useCallback(async () => {
     try {
@@ -212,14 +207,20 @@ export default function BillingPage() {
     }
   }, [router.query]);
 
-  const handleSubscribe = async (planId: string) => {
-    setBusy(planId);
+  const handleSubscribe = async () => {
+    setBusy("subscribe");
     try {
-      const { url } = await api.billing.checkout(
-        planId,
+      const data = await api.billing.checkout(
         annual ? "annual" : "monthly"
       );
-      window.location.href = url;
+      if (data.upgraded) {
+        toast.success("Subscription upgraded successfully!");
+        router.push("/billing?checkout=success");
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      }
     } catch (err: any) {
       toast.error(err.message || "Checkout failed");
       setBusy(null);
@@ -233,27 +234,6 @@ export default function BillingPage() {
       window.location.href = url;
     } catch (err: any) {
       toast.error(err.message || "Failed to open billing portal");
-      setBusy(null);
-    }
-  };
-
-  const handleTopUp = async (tier: "100" | "500") => {
-    setBusy(`topup-${tier}`);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/billing/topup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error || "Top-up failed");
-        setBusy(null);
-      }
-    } catch {
-      toast.error("Top-up failed");
       setBusy(null);
     }
   };
@@ -288,6 +268,35 @@ export default function BillingPage() {
           Manage your subscription and view monthly usage
         </p>
       </div>
+
+      {/* --- First-login dismissible trial banner --- */}
+      {isFree && showFirstLoginBanner && (
+        <div className="rounded-xl border border-blue/20 bg-blue/5 p-4 flex items-start gap-3">
+          <Clock className="w-5 h-5 text-blue shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-text">
+              Start your free 14-day trial
+            </p>
+            <p className="text-xs text-text-muted mt-0.5">
+              Get full access to all Pro features. No credit card required to start — cancel anytime.
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => router.push("/billing/upgrade")}
+                className="text-xs font-medium text-blue hover:underline"
+              >
+                Learn more →
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={dismissFirstLoginBanner}
+            className="p-1 rounded hover:bg-blue/10 text-text-muted hover:text-text shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* --- Current Plan Summary --- */}
       {status && (
@@ -424,7 +433,7 @@ export default function BillingPage() {
                 annual ? "text-text" : "text-text-faint"
               }`}
             >
-              Annual <span className="text-green font-medium">Save £60/£132</span>
+              Annual <span className="text-green font-medium">Save £{OUTREACH_TIER.annualSavings}/yr</span>
             </span>
           </div>
         </div>
@@ -482,24 +491,24 @@ export default function BillingPage() {
                   </div>
                 ) : isFree ? (
                   <button
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={busy === plan.id}
+                    onClick={() => handleSubscribe()}
+                    disabled={busy === "subscribe"}
                     className="w-full rounded-lg bg-blue text-white text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-blue/90 transition-colors"
                   >
-                    {busy === plan.id ? (
+                    {busy === "subscribe" ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <ArrowUpRight className="w-3.5 h-3.5" />
                     )}
-                    Upgrade to {plan.name}
+                    Start Free Trial
                   </button>
                 ) : (
                   <button
-                    onClick={() => handleSubscribe(plan.id)}
-                    disabled={busy === plan.id}
+                    onClick={() => handleSubscribe()}
+                    disabled={busy === "subscribe"}
                     className="w-full rounded-lg border border-blue text-blue text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-blue/5 transition-colors"
                   >
-                    {busy === plan.id ? (
+                    {busy === "subscribe" ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <TrendingUp className="w-3.5 h-3.5" />
@@ -528,49 +537,10 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* --- Top-up credits --- */}
-      {isSubscribed && (
-        <div className="rounded-xl border border-border/60 bg-surface p-5">
-          <h3 className="text-sm font-medium text-text mb-3 flex items-center gap-1.5">
-            <Zap className="w-4 h-4 text-amber" />
-            Top-up credits
-          </h3>
-          <p className="text-xs text-text-muted mb-3">
-            Need extra email verifications this month?
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleTopUp("100")}
-              disabled={busy === "topup-100"}
-              className="rounded-lg border border-border/60 bg-surface-2 text-xs font-medium px-4 py-2 text-text hover:border-blue/40 hover:text-blue transition-colors flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {busy === "topup-100" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                "+"
-              )}
-              100 credits — £5
-            </button>
-            <button
-              onClick={() => handleTopUp("500")}
-              disabled={busy === "topup-500"}
-              className="rounded-lg border border-border/60 bg-surface-2 text-xs font-medium px-4 py-2 text-text hover:border-blue/40 hover:text-blue transition-colors flex items-center gap-1.5 disabled:opacity-50"
-            >
-              {busy === "topup-500" ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                "+"
-              )}
-              500 credits — £20
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* --- Coming Soon --- */}
       <div className="rounded-xl border border-border/40 bg-surface/50 p-5">
         <h3 className="text-sm font-medium text-text-faint mb-2">
-          Coming soon on Growth tier
+          Coming soon on Gapr Pro
         </h3>
         <ul className="space-y-1.5">
           {[
