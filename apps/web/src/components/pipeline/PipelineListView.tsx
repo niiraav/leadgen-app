@@ -1,7 +1,9 @@
+import { cn } from "@/lib/utils";
 import { PipelineLead, SelectModifiers } from "@/hooks/usePipelineBoard";
 import { getColumnDef, getLeadColumn, followUpHealth, formatCompactDealValue } from "@leadgen/shared";
 import { ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { PIPELINE_COLUMN_BORDER_CLASS } from "@/lib/shared/constants/pipeline";
 import {
   PIPELINE_STAGE_VARIANTS,
   ENGAGEMENT_STATUS_VARIANTS,
@@ -114,13 +116,14 @@ function ListCard({
   return (
     <div
       onClick={handleClick}
-      className={`
-        relative group cursor-pointer select-none
-        rounded-2xl border p-4 transition-colors
-        ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/30 hover:bg-primary/[0.02]"}
-        ${isRecentlyMoved ? "border-primary/35 bg-primary/5 shadow-sm" : ""}
-      `}
-      style={{ borderLeftColor: column?.color ?? undefined, borderLeftWidth: "4px" }}
+      className={cn(
+        "relative group cursor-pointer select-none rounded-2xl border border-l-4 p-4 transition-colors",
+        PIPELINE_COLUMN_BORDER_CLASS[columnId] ?? "border-l-muted-foreground",
+        isSelected
+          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+          : "border-border bg-card hover:border-primary/30 hover:bg-primary/[0.02]",
+        isRecentlyMoved && "border-primary/35 bg-primary/5 shadow-sm"
+      )}
     >
       {/* Checkbox — toggles this card only, never opens drawer */}
       <div

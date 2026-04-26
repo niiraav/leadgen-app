@@ -14,8 +14,10 @@ import {
   Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TableEmptyState } from "@/components/ui/empty-state";
+import { PipelineColumnDef } from "@/hooks/usePipelineBoard";
+import { PIPELINE_COLUMN_DOT_CLASS } from "@/lib/shared/constants/pipeline";
 import { formatRelativeTime } from "@/lib/activity-utils";
+import { TableEmptyState } from "@/components/ui/empty-state";
 import {
   getColumnDef,
   getLeadColumn,
@@ -181,8 +183,7 @@ function StageDropdown({
               )}
             >
               <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ backgroundColor: col.color }}
+                className={`w-2 h-2 rounded-full flex-shrink-0 ${PIPELINE_COLUMN_DOT_CLASS[col.id] ?? 'bg-muted-foreground'}`}
               />
               {col.title}
               {col.id === currentId && <Check className="w-3.5 h-3.5 ml-auto" />}

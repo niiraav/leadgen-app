@@ -45,19 +45,19 @@ interface ReplyDrawerProps {
   onClose: () => void;
 }
 
-const intentMeta: Record<string, { label: string; colour: string; icon: React.ReactNode }> = {
-  interested: { label: 'Interested', colour: 'bg-success hover:bg-success/90', icon: <Sparkles className="h-3 w-3 mr-1" /> },
-  'not-interested': { label: 'Not Interested', colour: 'bg-destructive hover:bg-destructive/90', icon: <ShieldAlert className="h-3 w-3 mr-1" /> },
-  'needs-info': { label: 'Needs Info', colour: 'bg-warning hover:bg-warning/90', icon: <AlertTriangle className="h-3 w-3 mr-1" /> },
-  'out-of-office': { label: 'Out of Office', colour: 'bg-primary hover:bg-primary/90', icon: <Clock className="h-3 w-3 mr-1" /> },
-  'forwarded-to-colleague': { label: 'Forwarded', colour: 'bg-primary hover:bg-primary/90', icon: <Send className="h-3 w-3 mr-1" /> },
-  'no-intent-detected': { label: 'No Intent', colour: 'bg-muted-foreground hover:bg-muted-foreground/90', icon: <Bot className="h-3 w-3 mr-1" /> },
+const intentMeta: Record<string, { label: string; colour: string; textClass: string; icon: React.ReactNode }> = {
+  interested: { label: 'Interested', colour: 'bg-success hover:bg-success/90', textClass: 'text-success-foreground', icon: <Sparkles className="h-3 w-3 mr-1" /> },
+  'not-interested': { label: 'Not Interested', colour: 'bg-destructive hover:bg-destructive/90', textClass: 'text-destructive-foreground', icon: <ShieldAlert className="h-3 w-3 mr-1" /> },
+  'needs-info': { label: 'Needs Info', colour: 'bg-warning hover:bg-warning/90', textClass: 'text-warning-foreground', icon: <AlertTriangle className="h-3 w-3 mr-1" /> },
+  'out-of-office': { label: 'Out of Office', colour: 'bg-primary hover:bg-primary/90', textClass: 'text-primary-foreground', icon: <Clock className="h-3 w-3 mr-1" /> },
+  'forwarded-to-colleague': { label: 'Forwarded', colour: 'bg-primary hover:bg-primary/90', textClass: 'text-primary-foreground', icon: <Send className="h-3 w-3 mr-1" /> },
+  'no-intent-detected': { label: 'No Intent', colour: 'bg-muted-foreground hover:bg-muted-foreground/90', textClass: 'text-primary-foreground', icon: <Bot className="h-3 w-3 mr-1" /> },
 };
 
 function IntentBadge({ intent }: { intent: string }) {
   const meta = intentMeta[intent] ?? intentMeta['no-intent-detected'];
   return (
-    <span className={`inline-flex items-center gap-1 text-white text-xs font-semibold px-2.5 py-1 rounded-full ${meta.colour}`}>
+    <span className={`inline-flex items-center gap-1 ${meta.textClass} text-xs font-semibold px-2.5 py-1 rounded-full ${meta.colour}`}>
       {meta.icon}
       {meta.label}
     </span>

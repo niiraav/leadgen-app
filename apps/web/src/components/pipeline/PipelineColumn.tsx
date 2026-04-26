@@ -1,6 +1,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { PipelineColumnDef, PipelineLead } from "@/hooks/usePipelineBoard";
+import { PIPELINE_COLUMN_DOT_CLASS } from "@/lib/shared/constants/pipeline";
 import PipelineCard from "./PipelineCard";
 
 interface PipelineColumnProps {
@@ -33,8 +34,7 @@ export default function PipelineColumn({
       <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-1.5">
           <span
-            className="w-2 h-2 rounded-full flex-shrink-0"
-            style={{ backgroundColor: column.color }}
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${PIPELINE_COLUMN_DOT_CLASS[column.id] ?? 'bg-muted-foreground'}`}
           />
           <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
             {column.title}

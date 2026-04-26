@@ -62,7 +62,6 @@
     --surface: hsl(var(--card));
     --surface-2: hsl(var(--secondary));
     --surface-raised: hsl(var(--popover));
-    --border-legacy: rgba(0, 0, 0, 0.08);
     --border-strong: rgba(0, 0, 0, 0.12);
     --border-subtle: hsl(var(--border) / 0.5);
     --text: hsl(var(--foreground));
@@ -121,7 +120,6 @@
     --surface: hsl(var(--card));
     --surface-2: hsl(var(--secondary));
     --surface-raised: hsl(var(--popover));
-    --border-legacy: rgba(255, 255, 255, 0.08);
     --border-strong: rgba(255, 255, 255, 0.14);
     --border-subtle: hsl(var(--border) / 0.5);
     --text: hsl(var(--foreground));

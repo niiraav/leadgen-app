@@ -1,6 +1,7 @@
 import { ArrowRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PipelineColumnDef } from "@/hooks/usePipelineBoard";
+import { PIPELINE_COLUMN_DOT_CLASS } from "@/lib/shared/constants/pipeline";
 
 interface SelectionToolbarProps {
   count: number;
@@ -34,8 +35,7 @@ export default function SelectionToolbar({ count, columns, onMoveTo, onClear }: 
               onClick={() => onMoveTo(col.id)}
             >
               <span
-                className="w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: col.color }}
+                className={`w-1.5 h-1.5 rounded-full ${PIPELINE_COLUMN_DOT_CLASS[col.id] ?? 'bg-muted-foreground'}`}
               />
               {col.title}
               <ArrowRight className="w-3 h-3" />

@@ -52,3 +52,29 @@ export const LOSS_REASON_LABELS: Record<string, string> = {
   went_with_competitor: 'Went with competitor',
   unqualified: 'Unqualified',
 };
+
+/** Semantic Tailwind colour classes for pipeline column indicators.
+ *  Maps column ID → dot background class and list-view border-left class.
+ *  Replaces inline hex injection (style={{ backgroundColor: column.color }}).
+ */
+export const PIPELINE_COLUMN_DOT_CLASS: Record<string, string> = {
+  new: 'bg-primary',
+  contacted: 'bg-warning',
+  replied: 'bg-success',
+  interested: 'bg-success',
+  not_interested: 'bg-destructive',
+  proposal_sent: 'bg-primary',
+  converted: 'bg-success',
+  lost: 'bg-muted-foreground',
+};
+
+export const PIPELINE_COLUMN_BORDER_CLASS: Record<string, string> = {
+  new: 'border-l-primary',
+  contacted: 'border-l-warning',
+  replied: 'border-l-success',
+  interested: 'border-l-success',
+  not_interested: 'border-l-destructive',
+  proposal_sent: 'border-l-primary',
+  converted: 'border-l-success',
+  lost: 'border-l-muted-foreground',
+};
