@@ -1,8 +1,11 @@
 import type { GetServerSideProps } from "next";
+import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Zap, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
   const router = useRouter();
@@ -48,7 +51,6 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
         setGoogleLoading(false);
         return;
       }
-      // Redirect to Google OAuth
       window.location.href = data.url;
     } catch (err: any) {
       setError(err.message || "Google login failed");
@@ -57,29 +59,30 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg p-6">
+    <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <Zap className="w-8 h-8 text-blue" />
-          <span className="font-bold text-xl text-text tracking-tight">LeadGen</span>
+          <Zap className="w-8 h-8 text-primary" />
+          <span className="font-bold text-xl text-foreground tracking-tight">LeadGen</span>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-surface p-8">
-          <h1 className="text-xl font-bold text-text mb-1">Welcome back</h1>
-          <p className="text-sm text-text-muted mb-6">Sign in to your account</p>
+        <div className="rounded-lg border border-border/60 bg-card p-8">
+          <h1 className="text-xl font-bold text-foreground mb-1">Welcome back</h1>
+          <p className="text-sm text-muted-foreground mb-6">Sign in to your account</p>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red/10 border border-red/20 px-4 py-3 text-sm text-red">
+            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
           {/* Google OAuth */}
-          <button
+          <Button
+            variant="outline"
+            className="w-full h-10 mb-4"
             onClick={handleGoogleLogin}
             disabled={googleLoading}
-            className="w-full mb-4 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-border-strong bg-surface-2 text-text text-sm font-medium hover:bg-surface transition-colors disabled:opacity-50"
           >
             {googleLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -92,42 +95,46 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
               </svg>
             )}
             Continue with Google
-          </button>
+          </Button>
 
           <div className="flex items-center gap-3 mb-6">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-text-faint">or</span>
+            <span className="text-xs text-muted-foreground">or</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
           {/* Email/Password */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">Email</label>
-              <input
+              <label htmlFor="login-email" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Email
+              </label>
+              <Input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="input"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">Password</label>
-              <input
+              <label htmlFor="login-password" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Password
+              </label>
+              <Input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="input"
               />
             </div>
-            <button
+            <Button
               type="submit"
+              className="w-full"
               disabled={loading || !email || !password}
-              className="btn btn-primary w-full disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -137,14 +144,14 @@ export default function LoginPage({ errorMessage }: { errorMessage?: string }) {
               ) : (
                 "Sign in"
               )}
-            </button>
+            </Button>
           </form>
 
-          <p className="text-xs text-text-muted mt-6 text-center">
+          <p className="text-xs text-muted-foreground mt-6 text-center">
             Don&apos;t have an account?{" "}
-            <a href="/auth/signup" className="text-blue hover:underline">
+            <Link href="/auth/signup" className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm">
               Create one
-            </a>
+            </Link>
           </p>
         </div>
       </div>

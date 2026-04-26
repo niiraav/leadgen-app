@@ -487,10 +487,10 @@ export default function SearchGoogleMaps() {
         >
           {/* Centered page title */}
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-text">
-              Find <span className="text-blue">B2B Leads</span>
+            <h1 className="text-2xl font-bold text-foreground">
+              Find <span className="text-primary">B2B Leads</span>
             </h1>
-            <p className="text-sm text-text-muted mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Search Google Maps for businesses in your target area
             </p>
           </div>
@@ -510,8 +510,8 @@ export default function SearchGoogleMaps() {
           {loading && results.length === 0 && (
             <div className="mt-6 space-y-3">
               <div className="flex items-center gap-2 mb-2">
-                <Loader2 className="w-4 h-4 animate-spin text-text-muted" />
-                <span className="text-sm text-text-muted">Searching...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Searching...</span>
               </div>
               {Array.from({ length: 6 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full rounded-lg" />
@@ -540,7 +540,7 @@ export default function SearchGoogleMaps() {
                           }
                         }}
                         placeholder="Search name..."
-                        className="h-7 w-40 text-sm bg-surface border border-border rounded-lg px-2 text-text focus:outline-none focus:ring-1 focus:ring-primary/20"
+                        className="h-7 w-40 text-sm bg-card border border-border rounded-lg px-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
                         autoFocus
                       />
                       <button
@@ -550,7 +550,7 @@ export default function SearchGoogleMaps() {
                           }
                         }}
                         disabled={saveSearchLoading || !saveSearchName.trim()}
-                        className="text-xs px-2 py-1 rounded-lg bg-blue text-accent-text disabled:opacity-50"
+                        className="text-xs px-2 py-1 rounded-lg bg-primary text-accent-text disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -559,7 +559,7 @@ export default function SearchGoogleMaps() {
                           setShowSaveInput(false);
                           setSaveSearchName("");
                         }}
-                        className="text-xs px-2 py-1 rounded-lg border border-border text-text-muted hover:text-text"
+                        className="text-xs px-2 py-1 rounded-lg border border-border text-muted-foreground hover:text-foreground"
                       >
                         Cancel
                       </button>
@@ -571,7 +571,7 @@ export default function SearchGoogleMaps() {
                         setSaveSearchName(base.length > 40 ? base.slice(0, 40) : base);
                         setShowSaveInput(true);
                       }}
-                      className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-text-muted hover:text-text hover:border-border-strong transition-colors"
+                      className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-border-strong transition-colors"
                     >
                       Save search
                     </button>
@@ -625,7 +625,7 @@ export default function SearchGoogleMaps() {
           {/* Results area */}
           <div>
             {error && (
-              <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
+              <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive mb-4">
                 {error}
                 <button
                   onClick={() =>
@@ -678,13 +678,13 @@ export default function SearchGoogleMaps() {
                   <thead>
                     <tr className="border-b border-border text-left">
                       <th className="w-10 px-2 py-3" />
-                      <th className="px-3 py-3 font-medium text-text-muted">Business</th>
-                      <th className="px-3 py-3 font-medium text-text-muted">Category</th>
-                      <th className="px-3 py-3 font-medium text-text-muted">Location</th>
-                      <th className="px-3 py-3 font-medium text-text-muted">Rating</th>
-                      <th className="px-3 py-3 font-medium text-text-muted">Links</th>
-                      <th className="px-3 py-3 font-medium text-text-muted">Phone</th>
-                      <th className="px-3 py-3 font-medium text-text-muted">Actions</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Business</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Category</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Location</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Rating</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Links</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Phone</th>
+                      <th className="px-3 py-3 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>

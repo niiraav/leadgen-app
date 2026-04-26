@@ -1,6 +1,7 @@
 import { withAuth } from "@/lib/auth";
 import { KPICard, Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import OnboardingModal from "@/components/onboarding/onboarding-modal";
@@ -58,32 +59,32 @@ interface DeadLead {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface p-5 animate-pulse">
-      <div className="h-4 w-20 bg-surface-2 rounded mb-3" />
-      <div className="h-8 w-16 bg-surface-2 rounded mb-2" />
-      <div className="h-3 w-32 bg-surface-2 rounded" />
+    <div className="rounded-lg border border-border bg-card p-5 animate-pulse">
+      <div className="h-4 w-20 bg-secondary rounded mb-3" />
+      <div className="h-8 w-16 bg-secondary rounded mb-2" />
+      <div className="h-3 w-32 bg-secondary rounded" />
     </div>
   );
 }
 
 function ChartSkeleton() {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface p-5 animate-pulse">
-      <div className="h-4 w-32 bg-surface-2 rounded mb-4" />
-      <div className="h-48 bg-surface-2 rounded" />
+    <div className="rounded-lg border border-border bg-card p-5 animate-pulse">
+      <div className="h-4 w-32 bg-secondary rounded mb-4" />
+      <div className="h-48 bg-secondary rounded" />
     </div>
   );
 }
 
 function DeadLeadCardSkeleton() {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface p-4 animate-pulse">
-      <div className="h-4 w-48 bg-surface-2 rounded mb-2" />
-      <div className="h-3 w-64 bg-surface-2 rounded mb-4" />
+    <div className="rounded-lg border border-border bg-card p-4 animate-pulse">
+      <div className="h-4 w-48 bg-secondary rounded mb-2" />
+      <div className="h-3 w-64 bg-secondary rounded mb-4" />
       <div className="flex gap-2">
-        <div className="h-8 w-20 bg-surface-2 rounded" />
-        <div className="h-8 w-24 bg-surface-2 rounded" />
-        <div className="h-8 w-16 bg-surface-2 rounded" />
+        <div className="h-8 w-20 bg-secondary rounded" />
+        <div className="h-8 w-24 bg-secondary rounded" />
+        <div className="h-8 w-16 bg-secondary rounded" />
       </div>
     </div>
   );
@@ -92,19 +93,19 @@ function DeadLeadCardSkeleton() {
 // ─── BarChart (simple horizontal, no Recharts needed for funnel) ────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  new: "text-blue",
-  contacted: "text-amber",
-  responded: "text-green",
-  interested: "text-emerald",
-  not_interested: "text-red",
-  qualified: "text-blue",
-  proposal_sent: "text-purple",
-  converted: "text-green",
-  won: "text-green",
-  closed: "text-text-faint",
-  lost: "text-red",
-  archived: "text-text-faint",
-  out_of_office: "text-text-faint",
+  new: "text-primary",
+  contacted: "text-warning",
+  responded: "text-success",
+  interested: "text-success",
+  not_interested: "text-destructive",
+  qualified: "text-primary",
+  proposal_sent: "text-primary",
+  converted: "text-success",
+  won: "text-success",
+  closed: "text-muted-foreground",
+  lost: "text-destructive",
+  archived: "text-muted-foreground",
+  out_of_office: "text-muted-foreground",
 };
 
 // ─── Animated KPI Card wrapper ────────────────────────────────────────────────────
@@ -194,12 +195,12 @@ function SimpleBarChart({ data }: { data: { status: string; count: number }[] })
     <div className="space-y-2">
       {data.map((item) => (
         <div key={item.status} className="flex items-center gap-3">
-          <span className="text-xs text-text-muted w-24 text-right capitalize shrink-0">
+          <span className="text-xs text-muted-foreground w-24 text-right capitalize shrink-0">
             {STATUS_LABELS[item.status] || item.status}
           </span>
-          <div className="flex-1 bg-surface-2 rounded-full h-6 overflow-hidden">
+          <div className="flex-1 bg-secondary rounded-full h-6 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${STATUS_COLORS[item.status] || "text-blue"}`}
+              className={`h-full rounded-full transition-all ${STATUS_COLORS[item.status] || "text-primary"}`}
               style={{
                 width: `${Math.max((item.count / maxCount) * 100, 8)}%`,
                 backgroundColor: "currentColor",
@@ -207,11 +208,11 @@ function SimpleBarChart({ data }: { data: { status: string; count: number }[] })
               }}
             />
           </div>
-          <span className="text-xs text-text w-8 shrink-0">{item.count}</span>
+          <span className="text-xs text-foreground w-8 shrink-0">{item.count}</span>
         </div>
       ))}
       {data.length === 0 && (
-        <p className="text-center text-xs text-text-faint py-8">No data yet</p>
+        <p className="text-center text-xs text-muted-foreground py-8">No data yet</p>
       )}
     </div>
   );
@@ -223,7 +224,7 @@ function WeeklyLeadsChart({ data }: { data: { date: string; count: number }[] })
   if (!data.length) {
     return (
       <div className="h-48 flex items-center justify-center">
-        <p className="text-xs text-text-faint">No data this week</p>
+        <p className="text-xs text-muted-foreground">No data this week</p>
       </div>
     );
   }
@@ -263,21 +264,21 @@ function WeeklyLeadsChart({ data }: { data: { date: string; count: number }[] })
       ))}
 
       {/* Area fill */}
-      <path d={areaPath} fill="currentColor" className="text-blue" opacity="0.15" />
+      <path d={areaPath} fill="currentColor" className="text-primary" opacity="0.15" />
 
       {/* Line */}
-      <path d={linePath} fill="none" stroke="currentColor" className="text-blue" strokeWidth="2" />
+      <path d={linePath} fill="none" stroke="currentColor" className="text-primary" strokeWidth="2" />
 
       {/* Dots */}
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4" fill="currentColor" className="text-blue" />
+          <circle cx={p.x} cy={p.y} r="4" fill="currentColor" className="text-primary" />
           {/* Day label */}
           <text
             x={p.x}
             y={height - 8}
             textAnchor="middle"
-            className="text-text-faint"
+            className="text-muted-foreground"
             fill="currentColor"
             fontSize="11"
           >
@@ -289,7 +290,7 @@ function WeeklyLeadsChart({ data }: { data: { date: string; count: number }[] })
             y={p.y - 10}
             textAnchor="middle"
             fill="currentColor"
-            className="text-text"
+            className="text-foreground"
             fontSize="12"
             fontWeight="500"
           >
@@ -308,25 +309,19 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
 
   if (showDeleteConfirm) {
     return (
-      <div className="rounded-xl border border-red/20 bg-red/5 p-4 flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-red shrink-0 mt-0.5" />
+      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 flex items-start gap-3">
+        <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
         <div className="flex-1">
-          <p className="text-sm font-medium text-text">Delete &quot;{lead.business_name}&quot;?</p>
-          <p className="text-xs text-text-muted mt-0.5">This cannot be undone.</p>
+          <p className="text-sm font-medium text-foreground">Delete &quot;{lead.business_name}&quot;?</p>
+          <p className="text-xs text-muted-foreground mt-0.5">This cannot be undone.</p>
           <div className="flex gap-2 mt-3">
-            <button
-              onClick={() => onAction(lead.id, "delete")}
-              className="btn text-xs py-1.5 h-7 bg-red hover:bg-red/90 text-white"
-            >
+            <Button variant="destructive" size="sm" onClick={() => onAction(lead.id, "delete")}>
               <Trash2 className="w-3.5 h-3.5" />
               Delete
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(false)}
-              className="btn btn-ghost text-xs py-1.5 h-7"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowDeleteConfirm(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -334,38 +329,29 @@ function DeadLeadActionCard({ lead, onAction }: { lead: DeadLead; onAction: (id:
   }
 
   return (
-    <div className="rounded-xl border border-border/60 bg-surface p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 text-amber shrink-0 mt-0.5" />
+        <AlertTriangle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <h4 className="text-sm font-medium text-text truncate">{lead.business_name}</h4>
-            <span className="text-xs text-text-faint capitalize">{(lead as any).pipelineStage || lead.status}</span>
+            <h4 className="text-sm font-medium text-foreground truncate">{lead.business_name}</h4>
+            <span className="text-xs text-muted-foreground capitalize">{(lead as any).pipelineStage || lead.status}</span>
           </div>
-          <p className="text-xs text-text-muted mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Completed {lead.sequence_name}. No reply received.
           </p>
           <div className="flex gap-2 mt-2">
-            <button
-              onClick={() => onAction(lead.id, "archive")}
-              className="btn btn-ghost text-xs py-1 h-7"
-            >
+            <Button variant="ghost" size="sm" onClick={() => onAction(lead.id, "archive")}>
               <Archive className="w-3.5 h-3.5" />
               Archive
-            </button>
-            <button
-              onClick={() => onAction(lead.id, "recontact")}
-              className="btn btn-ghost text-xs py-1 h-7 text-blue"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" className="text-primary" onClick={() => onAction(lead.id, "recontact")}>
               <RefreshCw className="w-3.5 h-3.5" />
               Re-contact
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="btn btn-ghost text-xs py-1 h-7 text-red"
-            >
+            </Button>
+            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setShowDeleteConfirm(true)} aria-label="Delete lead">
               <Trash2 className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -458,11 +444,11 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-sm text-red mb-3">{error}</p>
-          <button onClick={fetchData} className="btn btn-secondary text-sm">
+          <p className="text-sm text-destructive mb-3">{error}</p>
+          <Button variant="secondary" size="sm" onClick={fetchData}>
             <RefreshCw className="w-4 h-4" />
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -531,7 +517,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
       >
         {/* Weekly Leads */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Weekly Leads</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Weekly Leads</h3>
           {loading ? (
             <ChartSkeleton />
           ) : (
@@ -541,7 +527,7 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
 
         {/* Pipeline Funnel */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Pipeline Funnel</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Pipeline Funnel</h3>
           {loading ? (
             <ChartSkeleton />
           ) : (
@@ -554,13 +540,13 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Categories */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Top Categories</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Top Categories</h3>
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center justify-between animate-pulse">
-                  <div className="h-4 w-32 bg-surface-2 rounded" />
-                  <div className="h-5 w-10 bg-surface-2 rounded-full" />
+                  <div className="h-4 w-32 bg-secondary rounded" />
+                  <div className="h-5 w-10 bg-secondary rounded-full" />
                 </div>
               ))}
             </div>
@@ -569,10 +555,10 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
               {(data?.top_categories ?? []).map((cat, idx) => (
                 <div key={cat.category} className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs text-text-faint w-4">{idx + 1}</span>
-                    <span className="text-sm text-text capitalize">{cat.category}</span>
+                    <span className="text-xs text-muted-foreground w-4">{idx + 1}</span>
+                    <span className="text-sm text-foreground capitalize">{cat.category}</span>
                   </div>
-                  <span className="text-xs font-medium text-text-muted bg-surface-2 px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs font-medium text-muted-foreground bg-secondary px-2.5 py-0.5 rounded-full">
                     {cat.count}
                   </span>
                 </div>
@@ -592,29 +578,29 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
 
         {/* Sequence Stats */}
         <Card className="p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Sequence Stats</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Sequence Stats</h3>
           {loading ? (
             <div className="grid grid-cols-2 gap-3">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-16 bg-surface-2 rounded-lg animate-pulse" />
+                <div key={i} className="h-16 bg-secondary rounded-lg animate-pulse" />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3">
               {/* Enrolled */}
-              <div className="rounded-lg bg-blue/5 border border-blue/10 p-3">
-                <p className="text-xs text-text-faint mb-1">Enrolled</p>
-                <p className="text-lg font-bold text-blue">{data?.sequence_stats.total_enrolled ?? 0}</p>
+              <div className="rounded-lg bg-primary/5 border border-primary/10 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Enrolled</p>
+                <p className="text-lg font-bold text-primary">{data?.sequence_stats.total_enrolled ?? 0}</p>
               </div>
               {/* Completed */}
-              <div className="rounded-lg bg-green/5 border border-green/10 p-3">
-                <p className="text-xs text-text-faint mb-1">Completed</p>
-                <p className="text-lg font-bold text-green">{data?.sequence_stats.completed ?? 0}</p>
+              <div className="rounded-lg bg-success/5 border border-success/10 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Completed</p>
+                <p className="text-lg font-bold text-success">{data?.sequence_stats.completed ?? 0}</p>
               </div>
               {/* Replied */}
-              <div className="rounded-lg bg-green/5 border border-green/10 p-3">
-                <p className="text-xs text-text-faint mb-1">Replied</p>
-                <p className="text-lg font-bold text-green">{data?.sequence_stats.replied ?? 0}</p>
+              <div className="rounded-lg bg-success/5 border border-success/10 p-3">
+                <p className="text-xs text-muted-foreground mb-1">Replied</p>
+                <p className="text-lg font-bold text-success">{data?.sequence_stats.replied ?? 0}</p>
               </div>
               {/* Dead Leads */}
               <button
@@ -622,10 +608,10 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
                   const el = document.getElementById("dead-leads-section");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
-                className="rounded-lg bg-amber/5 border border-amber/10 p-3 text-left hover:bg-amber/10 transition-colors cursor-pointer"
+                className="rounded-lg bg-warning/5 border border-warning/10 p-3 text-left hover:bg-warning/10 transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <p className="text-xs text-text-faint mb-1">Dead Leads Pending</p>
-                <p className="text-lg font-bold text-amber">{data?.sequence_stats.dead_leads_pending ?? 0}</p>
+                <p className="text-xs text-muted-foreground mb-1">Dead Leads Pending</p>
+                <p className="text-lg font-bold text-warning">{data?.sequence_stats.dead_leads_pending ?? 0}</p>
               </button>
             </div>
           )}
@@ -649,8 +635,8 @@ export default function DashboardPage({ user }: { user?: { id: string; email: st
             {deadLeads.length > 0 && (
               <>
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-text flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-amber" />
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
                     Actions Required
                   </h3>
                   <Badge variant="secondary">{deadLeads.length} pending</Badge>

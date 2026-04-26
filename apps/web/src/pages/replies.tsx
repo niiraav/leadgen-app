@@ -50,14 +50,14 @@ async function fetchAuthHeaders(): Promise<Record<string, string>> {
 
 function intentColor(intent: string) {
   const map: Record<string, string> = {
-    interested: "bg-green/10 text-green",
-    question: "bg-blue/10 text-blue",
-    objection: "bg-amber/10 text-amber",
-    "not_interested": "bg-red/10 text-red",
+    interested: "bg-success/10 text-success",
+    question: "bg-primary/10 text-primary",
+    objection: "bg-warning/10 text-warning",
+    "not_interested": "bg-destructive/10 text-destructive",
     "not_now": "bg-purple/10 text-purple",
     "out_of_office": "bg-cyan/10 text-cyan",
   };
-  return map[intent] || "bg-surface-2 text-text-muted";
+  return map[intent] || "bg-secondary text-muted-foreground";
 }
 
 function intentEmoji(intent: string) {
@@ -73,9 +73,9 @@ function intentEmoji(intent: string) {
 }
 
 function hotScoreColor(score: number) {
-  if (score >= SCORE_THRESHOLDS.GREEN) return "bg-green";
-  if (score >= SCORE_THRESHOLDS.AMBER) return "bg-amber";
-  return "bg-red";
+  if (score >= SCORE_THRESHOLDS.GREEN) return "bg-success";
+  if (score >= SCORE_THRESHOLDS.AMBER) return "bg-warning";
+  return "bg-destructive";
 }
 
 function relativeTime(dateStr: string) {
@@ -195,29 +195,29 @@ export default function RepliesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-blue" />
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-primary" />
             Replies
           </h1>
-          <p className="text-xs text-text-muted mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {total} total repl{total !== 1 ? "ies" : "y"} detected
           </p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="rounded-xl border border-border/60 bg-surface p-4 space-y-3">
+      <div className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
         {/* Intent tabs */}
         <div className="flex items-center gap-1 flex-wrap">
-          <Filter className="w-3.5 h-3.5 text-text-faint mr-1" />
+          <Filter className="w-3.5 h-3.5 text-foreground-faint mr-1" />
           {INTENT_FILTERS.map((f) => (
             <button
               key={f.value}
               onClick={() => { setIntentFilter(f.value); setPage(0); }}
               className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
                 intentFilter === f.value
-                  ? "bg-blue text-white"
-                  : "bg-surface-2 text-text-muted hover:bg-surface-2/80"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}
             >
               {f.label}
@@ -232,29 +232,29 @@ export default function RepliesPage() {
               onClick={() => { setNeedsReviewOnly(!needsReviewOnly); setPage(0); }}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                 needsReviewOnly
-                  ? "bg-amber/10 text-amber border border-amber/20"
-                  : "bg-surface-2 text-text-muted hover:bg-surface-2/80"
+                  ? "bg-warning/10 text-warning border border-amber/20"
+                  : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}
             >
-              {needsReviewOnly && <span className="w-1.5 h-1.5 rounded-full bg-amber" />}
+              {needsReviewOnly && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
               Needs Review only
             </button>
             <button
               onClick={() => { setUnreadOnly(!unreadOnly); setPage(0); }}
               className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                 unreadOnly
-                  ? "bg-red/10 text-red border border-red/20"
-                  : "bg-surface-2 text-text-muted hover:bg-surface-2/80"
+                  ? "bg-destructive/10 text-destructive border border-destructive/20"
+                  : "bg-secondary text-muted-foreground hover:bg-secondary/80"
               }`}
             >
-              {unreadOnly && <span className="w-1.5 h-1.5 rounded-full bg-red" />}
+              {unreadOnly && <span className="w-1.5 h-1.5 rounded-full bg-destructive" />}
               Unread only
             </button>
           </div>
 
           <button
             onClick={() => setSortBy(sortBy === "hot_score" ? "recent" : "hot_score")}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-surface-2 text-text-muted hover:bg-surface-2/80 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-secondary text-muted-foreground hover:bg-secondary/80 transition-colors"
           >
             <ArrowUpDown className="w-3 h-3" />
             {sortBy === "hot_score" ? "Hot Score" : "Most Recent"}
@@ -265,7 +265,7 @@ export default function RepliesPage() {
       {/* Error */}
       {error && (
         <div className="flex items-center justify-center py-8">
-          <p className="text-sm text-red">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
@@ -285,7 +285,7 @@ export default function RepliesPage() {
           {/* Desktop table */}
           <div className="hidden md:block">
             {/* Header */}
-            <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-surface-2/60 text-[10px] font-semibold text-text-faint uppercase tracking-wider border-b border-border/40">
+            <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-secondary/60 text-micro font-semibold text-foreground-faint uppercase tracking-wider border-b border-border/40">
               <div className="col-span-2">Hot Score</div>
               <div className="col-span-3">Business</div>
               <div className="col-span-1">Intent</div>
@@ -297,7 +297,7 @@ export default function RepliesPage() {
             {/* Rows */}
             {loading ? (
               <div className="p-8">
-                <div className="flex items-center justify-center gap-2 text-text-muted">
+                <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   <span className="text-sm">Loading replies...</span>
                 </div>
@@ -317,39 +317,39 @@ export default function RepliesPage() {
                 return (
                   <div
                     key={reply.id}
-                    className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-surface-2/30 transition-colors items-center ${isUnread ? "bg-red/5" : ""}`}
+                    className={`grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/30 last:border-b-0 hover:bg-secondary/30 transition-colors items-center ${isUnread ? "bg-destructive/5" : ""}`}
                   >
                     {/* Hot score bar */}
                     <div className="col-span-2 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-surface-2 rounded-full overflow-hidden">
+                      <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full ${hotScoreColor(reply.hot_score)}`}
                           style={{ width: `${Math.max(reply.hot_score, 4)}%` }}
                         />
                       </div>
-                      <span className="text-[10px] font-bold text-text-muted w-6">{reply.hot_score}</span>
+                      <span className="text-micro font-bold text-muted-foreground w-6">{reply.hot_score}</span>
                     </div>
 
                     {/* Business */}
-                    <div className="col-span-3 text-sm font-medium text-text truncate flex items-center gap-1.5">
+                    <div className="col-span-3 text-sm font-medium text-foreground truncate flex items-center gap-1.5">
                       {businessName}
-                      {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-red shrink-0" title="Unread" />}
+                      {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" title="Unread" />}
                     </div>
 
                     {/* Intent */}
                     <div className="col-span-1">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${intentColor(intent)}`}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-semibold ${intentColor(intent)}`}
                       >
                         {intentEmoji(intent)}
                       </span>
                     </div>
 
                     {/* Key phrase */}
-                    <div className="col-span-3 text-xs text-text-muted italic truncate">{truncatedKey}</div>
+                    <div className="col-span-3 text-xs text-muted-foreground italic truncate">{truncatedKey}</div>
 
                     {/* Time */}
-                    <div className="col-span-2 flex items-center gap-1 text-xs text-text-faint">
+                    <div className="col-span-2 flex items-center gap-1 text-xs text-foreground-faint">
                       <Clock className="w-3 h-3" />
                       {relativeTime(reply.received_at)}
                     </div>
@@ -358,7 +358,7 @@ export default function RepliesPage() {
                     <div className="col-span-1 flex justify-end">
                       <button
                         onClick={() => openDrawer(reply.id)}
-                        className="p-1.5 rounded-lg hover:bg-blue/10 text-text-muted hover:text-blue transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
                         title="View details"
                       >
                         <Eye className="w-4 h-4" />
@@ -381,7 +381,7 @@ export default function RepliesPage() {
           <div className="md:hidden">
             {loading ? (
               <div className="p-8 flex justify-center">
-                <Loader2 className="w-5 h-5 animate-spin text-text-muted" />
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
               </div>
             ) : (
               replies.map((reply) => {
@@ -392,7 +392,7 @@ export default function RepliesPage() {
                 return (
                   <div
                     key={reply.id}
-                    className={`p-4 border-b border-border/30 last:border-b-0 flex items-start gap-3 ${isUnread ? "bg-red/5" : ""}`}
+                    className={`p-4 border-b border-border/30 last:border-b-0 flex items-start gap-3 ${isUnread ? "bg-destructive/5" : ""}`}
                   >
                     <div
                       className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-sm ${intentColor(intent)} border border-current/10`}
@@ -401,22 +401,22 @@ export default function RepliesPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-text truncate flex items-center gap-1.5">
+                        <span className="text-sm font-medium text-foreground truncate flex items-center gap-1.5">
                           {businessName}
-                          {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-red shrink-0" title="Unread" />}
+                          {isUnread && <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" title="Unread" />}
                         </span>
-                        <span className="text-[10px] font-bold text-text-muted">{reply.hot_score}</span>
+                        <span className="text-micro font-bold text-muted-foreground">{reply.hot_score}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-text-faint">{relativeTime(reply.received_at)}</span>
+                        <span className="text-xs text-foreground-faint">{relativeTime(reply.received_at)}</span>
                         {reply.needs_review && (
-                          <span className="text-[10px] bg-amber/10 text-amber px-1.5 py-0.5 rounded">Review</span>
+                          <span className="text-micro bg-warning/10 text-warning px-1.5 py-0.5 rounded">Review</span>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => openDrawer(reply.id)}
-                      className="p-1.5 rounded-lg hover:bg-blue/10 text-text-muted hover:text-blue transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -431,14 +431,14 @@ export default function RepliesPage() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-text-faint">
+          <p className="text-xs text-foreground-faint">
             Page {page + 1} of {totalPages} ({total} total)
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="p-2 rounded-lg hover:bg-surface-2 text-text-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -460,8 +460,8 @@ export default function RepliesPage() {
                   onClick={() => setPage(p)}
                   className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
                     p === page
-                      ? "bg-blue text-white"
-                      : "hover:bg-surface-2 text-text-muted"
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary text-muted-foreground"
                   }`}
                 >
                   {p + 1}
@@ -471,7 +471,7 @@ export default function RepliesPage() {
             <button
               onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
-              className="p-2 rounded-lg hover:bg-surface-2 text-text-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-2 rounded-lg hover:bg-secondary text-muted-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

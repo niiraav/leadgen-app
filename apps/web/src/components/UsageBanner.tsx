@@ -36,17 +36,17 @@ export default function UsageBanner({
   let colorClass: string;
   let dotClass: string;
   if (overLimit) {
-    colorClass = "text-red";
-    dotClass = "bg-red";
+    colorClass = "text-destructive";
+    dotClass = "bg-destructive";
   } else if (pct > 80) {
-    colorClass = "text-amber";
-    dotClass = "bg-amber";
+    colorClass = "text-warning";
+    dotClass = "bg-warning";
   } else if (pct > 50) {
-    colorClass = "text-amber";
-    dotClass = "bg-amber";
+    colorClass = "text-warning";
+    dotClass = "bg-warning";
   } else {
-    colorClass = "text-green";
-    dotClass = "bg-green";
+    colorClass = "text-success";
+    dotClass = "bg-success";
   }
 
   // Trial days remaining
@@ -68,15 +68,15 @@ export default function UsageBanner({
     <div
       className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs ${
         overLimit
-          ? "border-red/30 bg-red/5 text-red"
-          : "border-border/40 bg-surface/80 text-text-muted"
+          ? "border-destructive/30 bg-destructive/5 text-destructive"
+          : "border-border/40 bg-card/80 text-muted-foreground"
       }`}
     >
       {/* Status dot */}
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotClass}`} />
 
       {/* Usage text */}
-      <span className={overLimit ? "text-red font-medium" : colorClass}>
+      <span className={overLimit ? "text-destructive font-medium" : colorClass}>
         {usageText}
       </span>
 
@@ -84,7 +84,7 @@ export default function UsageBanner({
       {overLimit && (
         <button
           onClick={() => router.push("/billing/upgrade")}
-          className="ml-auto flex items-center gap-1 text-red font-medium hover:underline shrink-0"
+          className="ml-auto flex items-center gap-1 text-destructive font-medium hover:underline shrink-0"
         >
           Limit reached — start free trial
           <ArrowUpRight className="w-3 h-3" />
@@ -95,7 +95,7 @@ export default function UsageBanner({
       {!overLimit && pct > 80 && !isUnlimited && (
         <button
           onClick={() => router.push("/billing/upgrade")}
-          className="ml-auto flex items-center gap-1 text-amber hover:underline shrink-0"
+          className="ml-auto flex items-center gap-1 text-warning hover:underline shrink-0"
         >
           Nearing limit
           <ArrowUpRight className="w-3 h-3" />
@@ -104,7 +104,7 @@ export default function UsageBanner({
 
       {/* Trial badge */}
       {trialDaysLeft !== null && trialDaysLeft > 0 && (
-        <span className="ml-auto flex items-center gap-1 text-blue shrink-0">
+        <span className="ml-auto flex items-center gap-1 text-primary shrink-0">
           <Clock className="w-3 h-3" />
           {trialDaysLeft}d trial left
         </span>
@@ -112,7 +112,7 @@ export default function UsageBanner({
 
       {/* If both trial and near-limit, show both (trial first, limit second) */}
       {trialDaysLeft !== null && trialDaysLeft > 0 && overLimit && (
-        <span className="flex items-center gap-1 text-blue shrink-0">
+        <span className="flex items-center gap-1 text-primary shrink-0">
           <Clock className="w-3 h-3" />
           {trialDaysLeft}d trial left
         </span>

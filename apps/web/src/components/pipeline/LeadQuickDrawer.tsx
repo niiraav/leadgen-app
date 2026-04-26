@@ -96,14 +96,14 @@ function BioSummary({ text }: { text: string }) {
   if (!clean) return null;
   const isLong = clean.length > 150;
   return (
-    <div className="bg-surface-2 border border-border rounded-md px-3 py-2">
-      <p className={`text-xs text-text leading-relaxed ${expanded ? "" : "line-clamp-3"}`}>
+    <div className="bg-secondary border border-border rounded-md px-3 py-2">
+      <p className={`text-xs text-foreground leading-relaxed ${expanded ? "" : "line-clamp-3"}`}>
         {clean}
       </p>
       {isLong && (
-        <button
-          onClick={() => setExpanded((e) => !e)}
-          className="mt-1 text-[11px] text-primary hover:underline"
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="mt-1 text-micro-sm text-primary hover:underline focus-ring"
         >
           {expanded ? "Show less" : "Read more"}
         </button>
@@ -324,7 +324,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
       ? "text-warning"
       : healthData?.follow_up_health === "green"
       ? "text-success"
-      : "text-text-muted";
+      : "text-muted-foreground";
 
   const healthLabel =
     healthData?.follow_up_health === "red"
@@ -337,12 +337,12 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
 
   const healthDot =
     healthData?.follow_up_health === "red"
-      ? "bg-red-500"
+      ? "bg-destructive"
       : healthData?.follow_up_health === "amber"
-      ? "bg-amber-500"
+      ? "bg-warning"
       : healthData?.follow_up_health === "green"
-      ? "bg-green-500"
-      : "bg-gray-300";
+      ? "bg-success"
+      : "bg-muted-foreground/20";
 
   // Derive reply id from local state
   const activeReplyId = replyIdFrom(localLatestReply);
@@ -350,16 +350,28 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
   return (
     <div className="fixed inset-0 z-[100] flex justify-end">
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/30" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-overlay/30"
+        role="button"
+        aria-label="Close drawer"
+        tabIndex={0}
+        onClick={onClose}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClose?.();
+          }
+        }}
+      />
 
       {/* Drawer */}
-      <div className="relative bg-surface border-l border-border w-full max-w-md h-full overflow-y-auto animate-slide-in-right">
+      <div className="relative bg-card border-l border-border w-full max-w-md h-full overflow-y-auto animate-slide-in-right">
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-text">{lead.business_name}</h3>
-            <p className="text-xs text-text-muted mt-0.5">{lead.email || lead.phone || "No contact"}</p>
+            <h3 className="text-sm font-semibold text-foreground">{lead.business_name}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{lead.email || lead.phone || "No contact"}</p>
           </div>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <button onClick={onClose} aria-label="Close drawer" className="text-foreground-faint hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -369,28 +381,28 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
 
           {/* DNC Banner */}
           {v?.showDncBanner && lead.doNotContact && (
-            <div className="flex items-center gap-2 rounded-md bg-red-50 border border-red-100 px-3 py-2">
-              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <span className="text-xs font-medium text-red-600">Do Not Contact</span>
+            <div className="flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+              <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+              <span className="text-xs font-medium text-destructive">Do Not Contact</span>
             </div>
           )}
 
           {/* Reply Preview */}
           {v?.showReplyPreview && localLatestReply && (
-            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+            <div className="rounded-lg border border-border bg-secondary p-3">
               <div className="flex items-center gap-2 mb-1">
-                <MessageSquare className="w-3.5 h-3.5 text-text-muted" />
-                <span className="text-[10px] font-medium uppercase tracking-wider text-text-muted">
+                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-micro font-medium uppercase tracking-wider text-muted-foreground">
                   Latest Reply
                 </span>
                 {(localUnreadCount ?? 0) > 0 && (
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-[10px] text-white font-bold">
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-destructive text-micro text-destructive-foreground font-bold">
                     {(localUnreadCount ?? 0) > 9 ? '9+' : localUnreadCount}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-text line-clamp-2">{replySnippet(localLatestReply)}</p>
-              <p className="text-[11px] text-text-faint mt-1.5">
+              <p className="text-xs text-foreground line-clamp-2">{replySnippet(localLatestReply)}</p>
+              <p className="text-micro-sm text-foreground-faint mt-1.5">
                 {relativeTime(localLatestReply?.received_at || localLatestReply?.created_at || localLatestReply?.timestamp)}
               </p>
 
@@ -400,7 +412,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                   <button
                     onClick={() => markHandledMutation.mutate(activeReplyId)}
                     disabled={markHandledMutation.isPending}
-                    className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-surface-2 border border-border text-text-muted hover:bg-secondary transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1 text-micro-sm px-2 py-1 rounded bg-secondary border border-border text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50 focus-ring"
                   >
                     {markHandledMutation.isPending ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -413,7 +425,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                     <button
                       onClick={() => markReadMutation.mutate(activeReplyId)}
                       disabled={markReadMutation.isPending}
-                      className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-surface-2 border border-border text-text-muted hover:bg-secondary transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1 text-micro-sm px-2 py-1 rounded bg-secondary border border-border text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50 focus-ring"
                     >
                       {markReadMutation.isPending ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -433,13 +445,13 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {/* Follow-up */}
           {v?.showFollowUp && (
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-2">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
               <Calendar className="w-3.5 h-3.5" />
               Follow-up date
             </label>
 
             <div className="relative mb-3">
-              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+              <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
               <input
                 type="date"
                 value={followUpDate}
@@ -454,7 +466,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 <button
                   key={opt.days}
                   onClick={() => handleQuick(opt.days)}
-                  className="flex-1 py-1.5 px-1 rounded-md text-[11px] font-medium bg-surface-2 border border-border text-text-muted hover:bg-secondary transition-colors"
+                  className="flex-1 py-1.5 px-1 rounded-md text-micro-sm font-medium bg-secondary border border-border text-muted-foreground hover:bg-secondary transition-colors focus-ring"
                 >
                   {opt.label}
                 </button>
@@ -466,12 +478,12 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {/* Deal Value */}
           {v?.showDealValue && (
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-2">
+            <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
               <PoundSterling className="w-3.5 h-3.5" />
               Deal value
             </label>
             <div className="relative">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-text-faint">£</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-foreground-faint">£</span>
               <input
                 type="number"
                 step="0.01"
@@ -484,7 +496,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
               />
             </div>
             {lead.dealValue && lead.dealValue > 0 && (
-              <p className="text-[11px] text-text-faint mt-1">
+              <p className="text-micro-sm text-foreground-faint mt-1">
                 Current: {formatCompactDealValue(lead.dealValue)}
               </p>
             )}
@@ -518,13 +530,13 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
 
           {/* Save indicator */}
           {saved && (
-            <div className="flex items-center gap-1.5 text-[11px] text-success">
+            <div className="flex items-center gap-1.5 text-micro-sm text-success">
               <Save className="w-3 h-3" />
               Saved
             </div>
           )}
           {saving && (
-            <div className="flex items-center gap-1.5 text-[11px] text-text-faint">
+            <div className="flex items-center gap-1.5 text-micro-sm text-foreground-faint">
               <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
               Saving...
             </div>
@@ -536,20 +548,20 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
             <div>
               {healthLoading ? (
                 <div className="space-y-2">
-                  <div className="h-4 bg-surface-2 rounded animate-pulse w-3/4" />
-                  <div className="h-4 bg-surface-2 rounded animate-pulse w-1/2" />
+                  <div className="h-4 bg-secondary rounded animate-pulse w-3/4" />
+                  <div className="h-4 bg-secondary rounded animate-pulse w-1/2" />
                 </div>
               ) : healthData ? (
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className={`w-2 h-2 rounded-full ${healthDot}`} />
                   <span className={`text-xs font-medium ${healthColor}`}>{healthLabel}</span>
                   {healthData.days_since_activity !== null && healthData.days_since_activity !== undefined && (
-                    <span className="text-[11px] text-text-muted">
+                    <span className="text-micro-sm text-muted-foreground">
                       {healthData.days_since_activity}d since activity
                     </span>
                   )}
                   {healthData.stale && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">
+                    <span className="text-micro px-1.5 py-0.5 rounded bg-warning/10 text-warning font-medium">
                       Stale
                     </span>
                   )}
@@ -561,7 +573,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {/* ── NOTES ── */}
           {v?.showNotes && (
             <div>
-              <label className="flex items-center gap-1.5 text-xs font-medium text-text-muted mb-2">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground mb-2">
                 <FileText className="w-3.5 h-3.5" />
                 Notes
               </label>
@@ -572,30 +584,30 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 placeholder="Add notes about this lead..."
                 rows={3}
                 maxLength={2000}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
               />
               {lead.notes && lead.notes.trim().length > 0 && (
-                <div className="mt-2 rounded-lg border border-border bg-surface p-3">
-                  <p className="text-xs text-text whitespace-pre-wrap">{lead.notes}</p>
+                <div className="mt-2 rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-foreground whitespace-pre-wrap">{lead.notes}</p>
                 </div>
               )}
               <div className="flex items-center justify-between mt-1">
-                <div className="flex items-center gap-1.5 min-h-[16px]">
+                <div className="flex items-center gap-1.5 min-h-4">
                   {notesSaving && (
-                    <span className="text-[11px] text-text-faint flex items-center gap-1">
+                    <span className="text-micro-sm text-foreground-faint flex items-center gap-1">
                       <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       Saving...
                     </span>
                   )}
                   {notesSaved && !notesSaving && (
-                    <span className="text-[11px] text-success flex items-center gap-1">
+                    <span className="text-micro-sm text-success flex items-center gap-1">
                       <Save className="w-3 h-3" />
                       Saved
                     </span>
                   )}
                 </div>
                 {notesText.length > 1800 && (
-                  <span className={`text-[11px] ${notesText.length >= 1950 ? "text-warning" : "text-text-muted"}`}>
+                  <span className={`text-micro-sm ${notesText.length >= 1950 ? "text-warning" : "text-muted-foreground"}`}>
                     {2000 - notesText.length} remaining
                   </span>
                 )}
@@ -609,16 +621,16 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {v?.showContactBlock && (
             <details open={v.expandContactBlock} className="group">
               <summary className="flex items-center justify-between cursor-pointer list-none">
-                <span className="text-xs font-semibold text-text">Contact</span>
-                <ChevronDown className="w-4 h-4 text-text-muted transition-transform group-open:rotate-180" />
+                <span className="text-xs font-semibold text-foreground">Contact</span>
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
               </summary>
               <div className="mt-3 space-y-2">
                 {lead.email && (
                   <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
-                    <span className="text-xs text-text">{lead.email}</span>
+                    <Mail className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs text-foreground">{lead.email}</span>
                     {v?.showEmailVerification && lead.email_status && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted">
+                      <span className="text-micro px-1.5 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
                         {lead.email_status}
                       </span>
                     )}
@@ -626,21 +638,21 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 )}
                 {lead.phone && (
                   <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
-                    <span className="text-xs text-text">{lead.phone}</span>
+                    <Phone className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                    <span className="text-xs text-foreground">{lead.phone}</span>
                   </div>
                 )}
                 {(lead.address || lead.city || lead.country) && (
                   <div className="flex items-start gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-text-muted flex-shrink-0 mt-0.5" />
-                    <span className="text-xs text-text">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <span className="text-xs text-foreground">
                       {[lead.address, lead.city, lead.country].filter(Boolean).join(", ")}
                     </span>
                   </div>
                 )}
                 {lead.website_url && (
                   <div className="flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                    <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
                     <a
                       href={lead.website_url}
                       target="_blank"
@@ -656,19 +668,19 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 {v?.showEnrichmentContact && (lead.contact_full_name || lead.contact_title || lead.contact_email || lead.contact_phone) && (
                   <div className="mt-2 pt-2 border-t border-border space-y-1.5">
                     {lead.contact_full_name && (
-                      <p className="text-xs text-text">
-                        <span className="text-text-muted">Name:</span> {lead.contact_full_name}
-                        {lead.contact_title && <span className="text-text-muted"> — {lead.contact_title}</span>}
+                      <p className="text-xs text-foreground">
+                        <span className="text-muted-foreground">Name:</span> {lead.contact_full_name}
+                        {lead.contact_title && <span className="text-muted-foreground"> — {lead.contact_title}</span>}
                       </p>
                     )}
                     {lead.contact_email && (
-                      <p className="text-xs text-text">
-                        <span className="text-text-muted">Email:</span> {lead.contact_email}
+                      <p className="text-xs text-foreground">
+                        <span className="text-muted-foreground">Email:</span> {lead.contact_email}
                       </p>
                     )}
                     {lead.contact_phone && (
-                      <p className="text-xs text-text">
-                        <span className="text-text-muted">Phone:</span> {lead.contact_phone}
+                      <p className="text-xs text-foreground">
+                        <span className="text-muted-foreground">Phone:</span> {lead.contact_phone}
                       </p>
                     )}
                   </div>
@@ -683,11 +695,11 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {v?.showAiBio && (bioText || !lead.ai_bio) && (
             <details className="group">
               <summary className="flex items-center justify-between cursor-pointer list-none">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-text">
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
                   AI Bio
                 </span>
-                <ChevronDown className="w-4 h-4 text-text-muted transition-transform group-open:rotate-180" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
               </summary>
               <div className="mt-2">
                 {bioText ? (
@@ -698,7 +710,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                   <button
                     onClick={handleGenerateBio}
                     disabled={bioGenerating}
-                    className="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded bg-surface-2 border border-border text-text-muted hover:bg-secondary transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-micro-sm px-2.5 py-1.5 rounded bg-secondary border border-border text-muted-foreground hover:bg-secondary transition-colors disabled:opacity-50 focus-ring"
                   >
                     {bioGenerating ? (
                       <>
@@ -721,17 +733,17 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {v?.showReviewSummary && reviewSummaryData && (
             <details className="group">
               <summary className="flex items-center justify-between cursor-pointer list-none">
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-text">
-                  <Quote className="w-3.5 h-3.5 text-text-muted" />
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Quote className="w-3.5 h-3.5 text-muted-foreground" />
                   Review Summary
                 </span>
-                <ChevronDown className="w-4 h-4 text-text-muted transition-transform group-open:rotate-180" />
+                <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform group-open:rotate-180" />
               </summary>
               <div className="mt-3 space-y-3">
                 {/* Themes */}
                 {Array.isArray(reviewSummaryData.themes) && reviewSummaryData.themes.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-medium text-text-muted mb-1.5 flex items-center gap-1">
+                    <p className="text-micro-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
                       <Tag className="w-3 h-3" />
                       Themes
                     </p>
@@ -739,7 +751,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                       {(reviewSummaryData.themes as string[]).map((theme: string, i: number) => (
                         <span
                           key={i}
-                          className="text-[11px] px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted"
+                          className="text-micro-sm px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground"
                         >
                           {theme}
                         </span>
@@ -751,13 +763,13 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 {/* Pain Points */}
                 {Array.isArray(reviewSummaryData.pain_points) && reviewSummaryData.pain_points.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-medium text-text-muted mb-1.5 flex items-center gap-1">
+                    <p className="text-micro-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
                       <Frown className="w-3 h-3" />
                       Pain Points
                     </p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {(reviewSummaryData.pain_points as string[]).map((point: string, i: number) => (
-                        <li key={i} className="text-xs text-text">{point}</li>
+                        <li key={i} className="text-xs text-foreground">{point}</li>
                       ))}
                     </ul>
                   </div>
@@ -766,13 +778,13 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 {/* USP Candidates */}
                 {Array.isArray(reviewSummaryData.usp_candidates) && reviewSummaryData.usp_candidates.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-medium text-text-muted mb-1.5 flex items-center gap-1">
+                    <p className="text-micro-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-1">
                       <Lightbulb className="w-3 h-3" />
                       USP Candidates
                     </p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {(reviewSummaryData.usp_candidates as string[]).map((usp: string, i: number) => (
-                        <li key={i} className="text-xs text-text">{usp}</li>
+                        <li key={i} className="text-xs text-foreground">{usp}</li>
                       ))}
                     </ul>
                   </div>
@@ -781,26 +793,26 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
                 {/* Staff Names */}
                 {Array.isArray(reviewSummaryData.staff_names) && reviewSummaryData.staff_names.length > 0 && (
                   <div>
-                    <p className="text-[11px] font-medium text-text-muted mb-1 flex items-center gap-1">
+                    <p className="text-micro-sm font-medium text-muted-foreground mb-1 flex items-center gap-1">
                       <Users className="w-3 h-3" />
                       Staff Names
                     </p>
-                    <p className="text-xs text-text">{(reviewSummaryData.staff_names as string[]).join(", ")}</p>
+                    <p className="text-xs text-foreground">{(reviewSummaryData.staff_names as string[]).join(", ")}</p>
                   </div>
                 )}
 
                 {/* Owner Name + Evidence */}
                 {(!!reviewSummaryData.owner_name || !!reviewSummaryData.owner_evidence) && (
                   <div>
-                    <p className="text-[11px] font-medium text-text-muted mb-1 flex items-center gap-1">
+                    <p className="text-micro-sm font-medium text-muted-foreground mb-1 flex items-center gap-1">
                       <Crown className="w-3 h-3" />
                       Owner
                     </p>
                     {!!reviewSummaryData.owner_name && (
-                      <p className="text-xs text-text font-medium">{(reviewSummaryData.owner_name as string)}</p>
+                      <p className="text-xs text-foreground font-medium">{(reviewSummaryData.owner_name as string)}</p>
                     )}
                     {!!reviewSummaryData.owner_evidence && (
-                      <blockquote className="mt-1 text-[11px] text-text-muted italic border-l-2 border-border pl-2">
+                      <blockquote className="mt-1 text-micro-sm text-muted-foreground italic border-l-2 border-border pl-2">
                         {(reviewSummaryData.owner_evidence as string)}
                       </blockquote>
                     )}
@@ -818,11 +830,11 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
               {lead.rating && (
                 <div className="flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 text-warning fill-warning" />
-                  <span className="text-xs font-medium text-text">{lead.rating}</span>
+                  <span className="text-xs font-medium text-foreground">{lead.rating}</span>
                 </div>
               )}
               {lead.review_count !== null && lead.review_count !== undefined && (
-                <span className="text-[11px] text-text-muted">
+                <span className="text-micro-sm text-muted-foreground">
                   {lead.review_count} review{lead.review_count !== 1 ? "s" : ""}
                 </span>
               )}
@@ -833,7 +845,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
           {v?.showCategoryTags && (lead.category || (lead.tags && lead.tags.length > 0)) && (
             <div className="flex flex-wrap items-center gap-2">
               {lead.category && (
-                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted">
+                <span className="inline-flex items-center gap-1 text-micro-sm px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground">
                   <Tag className="w-3 h-3" />
                   {lead.category}
                 </span>
@@ -841,7 +853,7 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
               {lead.tags?.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[11px] px-2 py-0.5 rounded-full bg-surface-2 border border-border text-text-muted"
+                  className="text-micro-sm px-2 py-0.5 rounded-full bg-secondary border border-border text-muted-foreground"
                 >
                   {tag}
                 </span>
@@ -851,19 +863,19 @@ export default function LeadQuickDrawer({ lead, isOpen, onClose, onUpdate }: Lea
 
           {/* Loss Reason */}
           {v?.showLossReason && lead.lossReason && (
-            <div className="rounded-md bg-red-50 border border-red-100 px-3 py-2">
-              <p className="text-[11px] font-medium text-red-600">
+            <div className="rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2">
+              <p className="text-micro-sm font-medium text-destructive">
                 Lost: {LOSS_REASON_LABELS[lead.lossReason] || lead.lossReason}
               </p>
               {lead.lossReasonNotes && (
-                <p className="text-[11px] text-red-500 mt-1">{lead.lossReasonNotes}</p>
+                <p className="text-micro-sm text-destructive mt-1">{lead.lossReasonNotes}</p>
               )}
             </div>
           )}
 
           {/* Last Activity */}
           {v?.showLastActivity && lead.lastActivity && (
-            <div className="text-[11px] text-text-muted">
+            <div className="text-micro-sm text-muted-foreground">
               {lead.lastActivity.label && <span>{lead.lastActivity.label}</span>}
               {lead.lastActivity.timestamp && (
                 <span className="ml-1">— {relativeTime(lead.lastActivity.timestamp as unknown as string)}</span>

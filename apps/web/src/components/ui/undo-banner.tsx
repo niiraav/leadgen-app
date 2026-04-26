@@ -55,18 +55,18 @@ function UndoBannerItem({ action, onDismiss }: { action: UndoAction; onDismiss: 
   }, [timeLeft, onDismiss]);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-blue/20 bg-surface px-4 py-3 shadow-md">
-      <span className="text-sm text-text flex-1 truncate">{action.message}</span>
+    <div className="flex items-center gap-3 rounded-xl border border-primary/20 bg-card px-4 py-3 shadow-md">
+      <span className="text-sm text-foreground flex-1 truncate">{action.message}</span>
       {timeLeft > 0 && (
         <button
           onClick={async () => { await action.onUndo(); onDismiss(); }}
-          className="flex items-center gap-1 text-xs font-medium text-blue hover:underline shrink-0"
+          className="flex items-center gap-1 text-xs font-medium text-primary hover:underline shrink-0"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Undo
         </button>
       )}
-      <button onClick={onDismiss} className="text-text-faint hover:text-text shrink-0">
+      <button onClick={onDismiss} className="text-foreground-faint hover:text-foreground shrink-0">
         <X className="w-4 h-4" />
       </button>
     </div>

@@ -46,12 +46,12 @@ interface ReplyDrawerProps {
 }
 
 const intentMeta: Record<string, { label: string; colour: string; icon: React.ReactNode }> = {
-  interested: { label: 'Interested', colour: 'bg-green-600 hover:bg-green-700', icon: <Sparkles className="h-3 w-3 mr-1" /> },
-  'not-interested': { label: 'Not Interested', colour: 'bg-red-600 hover:bg-red-700', icon: <ShieldAlert className="h-3 w-3 mr-1" /> },
-  'needs-info': { label: 'Needs Info', colour: 'bg-amber-600 hover:bg-amber-700', icon: <AlertTriangle className="h-3 w-3 mr-1" /> },
-  'out-of-office': { label: 'Out of Office', colour: 'bg-blue-600 hover:bg-blue-700', icon: <Clock className="h-3 w-3 mr-1" /> },
-  'forwarded-to-colleague': { label: 'Forwarded', colour: 'bg-purple-600 hover:bg-purple-700', icon: <Send className="h-3 w-3 mr-1" /> },
-  'no-intent-detected': { label: 'No Intent', colour: 'bg-slate-600 hover:bg-slate-700', icon: <Bot className="h-3 w-3 mr-1" /> },
+  interested: { label: 'Interested', colour: 'bg-success hover:bg-success/90', icon: <Sparkles className="h-3 w-3 mr-1" /> },
+  'not-interested': { label: 'Not Interested', colour: 'bg-destructive hover:bg-destructive/90', icon: <ShieldAlert className="h-3 w-3 mr-1" /> },
+  'needs-info': { label: 'Needs Info', colour: 'bg-warning hover:bg-warning/90', icon: <AlertTriangle className="h-3 w-3 mr-1" /> },
+  'out-of-office': { label: 'Out of Office', colour: 'bg-primary hover:bg-primary/90', icon: <Clock className="h-3 w-3 mr-1" /> },
+  'forwarded-to-colleague': { label: 'Forwarded', colour: 'bg-primary hover:bg-primary/90', icon: <Send className="h-3 w-3 mr-1" /> },
+  'no-intent-detected': { label: 'No Intent', colour: 'bg-muted-foreground hover:bg-muted-foreground/90', icon: <Bot className="h-3 w-3 mr-1" /> },
 };
 
 function IntentBadge({ intent }: { intent: string }) {
@@ -67,9 +67,9 @@ function IntentBadge({ intent }: { intent: string }) {
 function UrgentBanner({ score }: { score: number }) {
   if (score < 85) return null;
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
-      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-      <p className="text-sm font-medium text-amber-800">
+    <div className="bg-warning/10 border border-warning/30 rounded-lg px-3 py-2 mb-3 flex items-center gap-2">
+      <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+      <p className="text-sm font-medium text-warning">
         High-priority reply — this lead requires immediate attention.
       </p>
     </div>
@@ -80,9 +80,9 @@ function HotScoreBar({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-2 mb-2">
       <span className="text-xs font-medium text-muted-foreground">Hot Score</span>
-      <div className="flex-1 h-2 bg-surface-2 rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
         <div
-          className="h-full rounded-full bg-orange-500 transition-all duration-500"
+          className="h-full rounded-full bg-warning transition-all duration-500"
           style={{ width: `${Math.min(score, 100)}%` }}
         />
       </div>
@@ -100,12 +100,12 @@ function LeadInfoPanel({ lead }: { lead: any }) {
   const tags = lead.tags || [];
 
   return (
-    <div className="mt-2 mb-4 rounded-lg border border-border bg-surface-2 p-3">
+    <div className="mt-2 mb-4 rounded-lg border border-border bg-secondary p-3">
       <div className="flex items-center gap-2 mb-2">
         <User className="w-4 h-4 text-muted-foreground" />
         <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Lead Profile</span>
       </div>
-      <div className="grid grid-cols-1 gap-1.5 text-xs text-text">
+      <div className="grid grid-cols-1 gap-1.5 text-xs text-foreground">
         {lead.email && (
           <div className="flex items-center gap-2">
             <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
@@ -127,14 +127,14 @@ function LeadInfoPanel({ lead }: { lead: any }) {
         {website && (
           <div className="flex items-center gap-2">
             <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-            <a href={website} target="_blank" rel="noopener noreferrer" className="truncate text-blue-600 hover:underline">
+            <a href={website} target="_blank" rel="noopener noreferrer" className="truncate text-primary hover:underline">
               {website}
             </a>
           </div>
         )}
         {rating && (
           <div className="flex items-center gap-2">
-            <Star className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <Star className="w-3.5 h-3.5 text-warning shrink-0" />
             <span>{rating}</span>
           </div>
         )}
@@ -142,12 +142,12 @@ function LeadInfoPanel({ lead }: { lead: any }) {
           <div className="flex items-center gap-2 flex-wrap mt-1">
             <Tag className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             {lead.category && (
-              <span className="px-2 py-0.5 bg-surface rounded text-[10px] font-medium uppercase tracking-wide">
+              <span className="px-2 py-0.5 bg-card rounded text-micro font-medium uppercase tracking-wide">
                 {lead.category}
               </span>
             )}
             {tags.map((t: string) => (
-              <span key={t} className="px-2 py-0.5 bg-surface rounded text-[10px]">
+              <span key={t} className="px-2 py-0.5 bg-card rounded text-micro">
                 {t}
               </span>
             ))}
@@ -156,8 +156,8 @@ function LeadInfoPanel({ lead }: { lead: any }) {
       </div>
       {(lead.contact_full_name || lead.contact_title || lead.contact_email) && (
         <div className="mt-2 pt-2 border-t border-border">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Contact</p>
-          <div className="text-xs text-text">
+          <p className="text-micro font-semibold text-muted-foreground uppercase tracking-wider mb-1">Contact</p>
+          <div className="text-xs text-foreground">
             {lead.contact_full_name && <span className="font-medium">{lead.contact_full_name}</span>}
             {lead.contact_title && <span className="text-muted-foreground"> · {lead.contact_title}</span>}
             {lead.contact_email && (
@@ -327,7 +327,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-black/30 z-[55]"
+              className="fixed inset-0 bg-overlay/30 z-[55]"
               onClick={onClose}
             />
 
@@ -337,7 +337,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-              className={`fixed right-0 top-0 h-[100dvh] w-full ${drawerWidth} bg-white border-l border-border shadow-2xl z-[60] flex flex-col transition-[width] duration-300 ease-in-out`}
+              className={`fixed right-0 top-0 h-[100dvh] w-full ${drawerWidth} bg-card border-l border-border shadow-2xl z-[60] flex flex-col transition-[width] duration-300 ease-in-out`}
             >
             {/* Toast Notification */}
             {toastNotification && (
@@ -345,15 +345,15 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                 initial={{ y: -40, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: -40, opacity: 0 }}
-                className="absolute top-4 left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 shadow-lg flex items-center justify-between"
+                className="absolute top-4 left-4 right-4 z-50 bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 shadow-lg flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-amber-600" />
-                  <p className="text-sm font-medium text-amber-800">
+                  <Mail className="w-4 h-4 text-warning" />
+                  <p className="text-sm font-medium text-warning">
                     {toastNotification.title}
                   </p>
                   {toastNotification.subtitle && (
-                    <p className="text-xs text-amber-600 truncate max-w-[200px]">
+                    <p className="text-xs text-warning truncate max-w-[200px]">
                       {toastNotification.subtitle}
                     </p>
                   )}
@@ -361,7 +361,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-amber-700 hover:text-amber-900"
+                  className="text-warning hover:text-warning/80"
                   onClick={() => {
                     setToastNotification(null);
                     onClose();
@@ -378,7 +378,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                 {composeMode && (
                   <button
                     onClick={() => setComposeMode(false)}
-                    className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors shrink-0"
+                    className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
                     aria-label="Back to view mode"
                   >
                     <ArrowLeft className="w-5 h-5" />
@@ -397,7 +397,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                         className="ml-1 text-muted-foreground hover:text-foreground transition-colors"
                         aria-label="Copy email"
                       >
-                        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
                       </button>
                     )}
                   </p>
@@ -405,7 +405,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
               </div>
               <button
                 onClick={onClose}
-                className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors shrink-0"
+                className="rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
                 aria-label="Close drawer"
               >
                 <X className="w-5 h-5" />
@@ -425,7 +425,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                 <>
                   {lead && <LeadInfoPanel lead={lead} />}
                   <div className="mt-8 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-surface-2 mb-3">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary mb-3">
                       <Mail className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <p className="text-sm text-muted-foreground">No inbound replies yet for this lead.</p>
@@ -433,7 +433,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                   </div>
                 </>
               ) : !reply ? (
-                <div className="text-sm text-text-muted text-center py-8">
+                <div className="text-sm text-muted-foreground text-center py-8">
                   Reply not found.
                 </div>
               ) : (
@@ -445,7 +445,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                   <div className="flex items-center gap-2 flex-wrap mt-2">
                     <IntentBadge intent={reply.intent ?? 'no-intent-detected'} />
                     {reply.hot_score !== undefined && reply.hot_score >= 85 && (
-                      <span className="inline-flex items-center text-xs font-semibold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full">
+                      <span className="inline-flex items-center text-xs font-semibold text-warning bg-warning/10 px-2.5 py-1 rounded-full">
                         <Sparkles className="w-3 h-3 mr-1" />
                         High Priority
                       </span>
@@ -487,14 +487,14 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="mt-2 bg-surface-2 border border-border rounded-lg p-4 overflow-hidden"
+                        className="mt-2 bg-secondary border border-border rounded-lg p-4 overflow-hidden"
                       >
                         {reply.original_email ? (
                           <>
                             <p className="text-xs text-muted-foreground mb-1">
                               <strong>Subject:</strong> {reply.original_email.subject}
                             </p>
-                            <div className="text-sm text-text whitespace-pre-line leading-relaxed max-h-64 overflow-y-auto">
+                            <div className="text-sm text-foreground whitespace-pre-line leading-relaxed max-h-64 overflow-y-auto">
                               {reply.original_email.body}
                             </div>
                           </>
@@ -508,12 +508,12 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                   </div>
 
                   {/* Reply content */}
-                  <div className="mt-4 bg-surface-2 border border-border rounded-lg p-4">
+                  <div className="mt-4 bg-secondary border border-border rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <ReplyIcon className="w-4 h-4 text-muted-foreground" />
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reply Content</span>
                     </div>
-                    <div className="text-sm text-text whitespace-pre-line leading-relaxed">
+                    <div className="text-sm text-foreground whitespace-pre-line leading-relaxed">
                       {reply.body_plain || 'No content available.'}
                     </div>
                   </div>
@@ -532,7 +532,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                           type="text"
                           value={subject}
                           onChange={(e) => setSubject(e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                         />
                       </div>
                       <div>
@@ -541,7 +541,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                           type="text"
                           readOnly
                           value={reply?.lead?.email ?? lead?.email ?? ''}
-                          className="w-full px-3 py-2 rounded-lg border border-border bg-surface-2 text-sm text-muted-foreground cursor-not-allowed"
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-secondary text-sm text-muted-foreground cursor-not-allowed"
                         />
                       </div>
                       <div>
@@ -563,7 +563,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                             className="h-6 text-xs"
                             onClick={handleCopyDraft}
                           >
-                            {draftCopied ? <Check className="w-3 h-3 mr-1 text-green-500" /> : <Copy className="w-3 h-3 mr-1" />}
+                            {draftCopied ? <Check className="w-3 h-3 mr-1 text-success" /> : <Copy className="w-3 h-3 mr-1" />}
                             {draftCopied ? 'Copied' : 'Copy'}
                           </Button>
                       </div>
@@ -572,7 +572,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
                           value={draftText}
                           onChange={(e) => setDraftText(e.target.value)}
                           rows={10}
-                          className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
                         />
                       </div>
                     </motion.div>
@@ -582,7 +582,7 @@ export function ReplyDrawer({ replyId, leadId, isOpen, onClose }: ReplyDrawerPro
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t shrink-0 bg-surface">
+            <div className="px-6 py-4 border-t shrink-0 bg-card">
               {!replyId ? (
                 <Button
                   className="w-full bg-foreground text-background hover:bg-foreground/90"

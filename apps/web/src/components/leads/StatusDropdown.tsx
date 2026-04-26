@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, memo, useLayoutEffect } from "react";
+import { useState, useRef, memo, useLayoutEffect, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, AlertTriangle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,21 +22,21 @@ interface StatusDropdownProps {
 
 const STATUS_COLORS: Record<string, string> = {
   // Engagement (PRD §5.5)
-  new: "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700",
-  contacted: "bg-blue/10 text-blue border-blue/20",
-  replied: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700",
-  interested: "bg-amber/10 text-amber border-amber/20",
-  not_interested: "bg-red/10 text-red border-red/20",
-  out_of_office: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-700",
+  new: "bg-muted text-muted-foreground border-border",
+  contacted: "bg-primary/10 text-primary border-primary/20",
+  replied: "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border-primary/20 dark:border-primary/30",
+  interested: "bg-warning/10 text-warning border-warning/20",
+  not_interested: "bg-destructive/10 text-destructive border-destructive/20",
+  out_of_office: "bg-warning/10 dark:bg-warning/20 text-warning dark:text-warning border-warning/20 dark:border-warning/30",
   // Pipeline (PRD §5.5)
-  qualified: "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-700",
-  proposal_sent: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-700",
-  converted: "bg-green/10 text-green border-green/20",
-  lost: "bg-red/10 text-red border-red/20",
+  qualified: "bg-success/10 dark:bg-success/20 text-success dark:text-success border-success/20 dark:border-success/30",
+  proposal_sent: "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border-primary/20 dark:border-primary/30",
+  converted: "bg-success/10 text-success border-success/20",
+  lost: "bg-destructive/10 text-destructive border-destructive/20",
   // Lifecycle
-  active: "bg-green/10 text-green border-green/20",
-  closed: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
-  archived: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
+  active: "bg-success/10 text-success border-success/20",
+  closed: "bg-muted text-muted-foreground border-border",
+  archived: "bg-muted text-muted-foreground border-border",
 };
 
 function getPrimaryStatus(lead: LeadDomainFields): string {
@@ -109,11 +109,11 @@ export const StatusDropdown = memo(function StatusDropdown({
     }
   };
 
-  const badgeClass = STATUS_COLORS[primary] ?? "bg-surface-2 text-text-faint";
+  const badgeClass = STATUS_COLORS[primary] ?? "bg-secondary text-muted-foreground";
 
   const dropdown = open && dropdownPos && (
     <div
-      className="fixed rounded-lg border border-border/60 bg-surface shadow-lg py-1 z-[100]"
+      className="fixed rounded-lg border border-border bg-card shadow-lg py-1 z-[100]"
       style={{
         top: dropdownPos.top,
         left: dropdownPos.left,
@@ -122,7 +122,7 @@ export const StatusDropdown = memo(function StatusDropdown({
     >
       {/* Domain header */}
       <div className="px-3 py-1.5 border-b border-border/40">
-        <p className="text-[10px] font-medium text-text-faint uppercase tracking-wider">
+        <p className="text-micro font-medium text-muted-foreground uppercase tracking-wider">
           {DOMAIN_LABELS[domain]} Status
         </p>
       </div>
@@ -138,8 +138,8 @@ export const StatusDropdown = memo(function StatusDropdown({
               handleChange(option);
             }}
             className={cn(
-              "w-full px-3 py-1.5 text-xs text-left hover:bg-surface-2 transition-colors truncate",
-              option.value === primary && "font-semibold text-blue"
+              "w-full px-3 py-1.5 text-xs text-left hover:bg-secondary transition-colors truncate focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              option.value === primary && "font-semibold text-primary"
             )}
           >
             {option.label}
@@ -160,12 +160,12 @@ export const StatusDropdown = memo(function StatusDropdown({
               handleChange(option);
             }}
             className={cn(
-              "w-full px-3 py-1.5 text-xs text-left hover:bg-surface-2 transition-colors truncate",
+              "w-full px-3 py-1.5 text-xs text-left hover:bg-secondary transition-colors truncate focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
               option.value === "__toggle_dnc__" && isDNC
-                ? "text-red"
-                : "text-text-muted",
+                ? "text-destructive"
+                : "text-muted-foreground",
               option.value === "__toggle_dnc__" && !isDNC
-                ? "text-amber"
+                ? "text-warning"
                 : ""
             )}
           >
@@ -195,12 +195,13 @@ export const StatusDropdown = memo(function StatusDropdown({
           setOpen(!open);
         }}
         className={cn(
-          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors",
+          "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-semibold uppercase tracking-wider transition-colors",
           badgeClass,
           "hover:opacity-80 cursor-pointer",
           loading && "opacity-50"
         )}
         disabled={loading}
+        aria-label={`Current status: ${primary.replace(/_/g, " ")}. Click to change.`}
       >
         {primary.replace(/_/g, " ")}
         <ChevronDown className="w-2.5 h-2.5 opacity-60" />
@@ -212,7 +213,7 @@ export const StatusDropdown = memo(function StatusDropdown({
       {isDNC && (
         <span
           className={cn(
-            "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-red/10 text-red",
+            "inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-semibold bg-destructive/10 text-destructive",
             compact && "text-[8px] px-1"
           )}
           title="Do not contact"

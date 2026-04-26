@@ -13,22 +13,22 @@ export function ProgressBar({ used, limit, label, icon, labelId }: ProgressBarPr
   const isUnlimited = limit < 0;
   const pct = isUnlimited ? 0 : limit > 0 ? Math.min(100, (used / limit) * 100) : 0;
   const over = !isUnlimited && used > limit;
-  const color = over ? "bg-red" : pct > 80 ? "bg-amber" : "bg-blue";
+  const color = over ? "bg-destructive" : pct > 80 ? "bg-warning" : "bg-primary";
   const labelElemId = labelId || `progress-${label.toLowerCase().replace(/\s+/g, "-")}`;
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
-        <span id={labelElemId} className="flex items-center gap-1.5 text-text-muted">
+        <span id={labelElemId} className="flex items-center gap-1.5 text-muted-foreground">
           {icon}
           {label}
         </span>
-        <span className={cn(over && "text-red font-medium")}>
+        <span className={cn(over && "text-destructive font-medium")}>
           {isUnlimited ? `${used} / ∞` : `${used.toLocaleString()} / ${limit.toLocaleString()}`}
         </span>
       </div>
       <div
-        className="h-2 rounded-full bg-surface-2 overflow-hidden"
+        className="h-2 rounded-full bg-secondary overflow-hidden"
         role="progressbar"
         aria-labelledby={labelElemId}
         aria-valuemin={0}

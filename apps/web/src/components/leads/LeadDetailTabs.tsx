@@ -88,12 +88,12 @@ export function LeadDetailTabs({
             <TabsTrigger
               key={tab.id}
               value={tab.id}
-              className="relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-text-muted bg-transparent border border-transparent shadow-none transition-colors duration-200 data-[state=active]:text-text data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:text-text"
+              className="relative inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground bg-transparent border border-transparent shadow-none transition-colors duration-200 data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 hover:text-foreground"
             >
               <Icon className="w-3.5 h-3.5" />
               {tab.label}
               {count > 0 && (
-                <span className="ml-0.5 inline-flex items-center justify-center min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-surface-2 text-[10px] font-semibold text-text-muted border border-border/40">
+                <span className="ml-0.5 inline-flex items-center justify-center min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-secondary text-micro font-semibold text-muted-foreground border border-border/40">
                   {count}
                 </span>
               )}

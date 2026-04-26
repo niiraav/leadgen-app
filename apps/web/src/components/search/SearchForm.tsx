@@ -99,13 +99,13 @@ export function SearchForm({
   }, [defaults.businessType, onClearForm]);
 
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       {/* Row 1: Business type + Location + Search button */}
       <div className="flex flex-col sm:flex-row gap-3 mb-3">
         {/* Business type */}
         <div className="relative flex-1" ref={quickRef}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={businessType}
@@ -117,8 +117,8 @@ export function SearchForm({
             />
           </div>
           {showQuick && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-surface border border-border rounded-xl p-3 shadow-md z-20">
-              <div className="text-xs text-text-muted mb-2">Quick select</div>
+            <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl p-3 shadow-md z-20">
+              <div className="text-xs text-muted-foreground mb-2">Quick select</div>
               <div className="flex flex-wrap gap-1.5">
                 {QUICK_TYPES.map((t) => (
                   <button
@@ -127,7 +127,7 @@ export function SearchForm({
                       setBusinessType(t.label);
                       setShowQuick(false);
                     }}
-                    className="text-xs px-2.5 py-1.5 rounded-lg bg-surface-2 hover:bg-blue/10 text-text transition-colors"
+                    className="text-xs px-2.5 py-1.5 rounded-lg bg-secondary hover:bg-primary/10 text-foreground transition-colors"
                   >
                     {t.emoji} {t.label}
                   </button>
@@ -139,7 +139,7 @@ export function SearchForm({
 
         {/* Location */}
         <div className="relative sm:w-48">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             value={location}
@@ -175,8 +175,8 @@ export function SearchForm({
               onClick={() => setLeadCount(step)}
               className={`text-xs px-3 py-1.5 transition-colors ${
                 leadCount === step
-                  ? "bg-blue text-accent-text font-medium"
-                  : "bg-surface text-text-muted hover:text-text hover:bg-surface-2"
+                  ? "bg-primary text-accent-text font-medium"
+                  : "bg-card text-muted-foreground hover:text-foreground hover:bg-secondary"
               } ${step !== COUNT_STEPS[0] ? "border-l border-border" : ""}`}
             >
               {step}
@@ -193,10 +193,10 @@ export function SearchForm({
           }
           className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors flex items-center gap-1.5 ${
             websiteFilter === 'has'
-              ? "bg-blue/10 border-blue/30 text-blue"
+              ? "bg-primary/10 border-primary/30 text-primary"
               : websiteFilter === 'no'
-              ? "bg-red/10 border-red/30 text-red"
-              : "bg-surface-2 border-border text-text-muted"
+              ? "bg-destructive/10 border-destructive/30 text-destructive"
+              : "bg-secondary border-border text-muted-foreground"
           }`}
           title="Filter by website presence"
         >
@@ -212,7 +212,7 @@ export function SearchForm({
         {isDirty && (
           <button
             onClick={handleClear}
-            className="text-xs px-2 py-1.5 text-text-muted hover:text-text transition-colors flex items-center gap-1"
+            className="text-xs px-2 py-1.5 text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
           >
             <X className="w-3 h-3" />
             Clear

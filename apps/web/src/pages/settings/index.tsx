@@ -142,9 +142,9 @@ function SettingsProfilePage() {
   if (loading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-surface-2 rounded w-48" />
-        <div className="h-40 bg-surface-2 rounded" />
-        <div className="h-40 bg-surface-2 rounded" />
+        <div className="h-8 bg-secondary rounded w-48" />
+        <div className="h-40 bg-secondary rounded" />
+        <div className="h-40 bg-secondary rounded" />
       </div>
     );
   }
@@ -153,30 +153,30 @@ function SettingsProfilePage() {
     <div className="max-w-2xl mx-auto space-y-8 pb-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text tracking-tight">Profile &amp; Settings</h1>
-        <p className="text-sm text-text-muted mt-1">Customise your AI outreach and target market</p>
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Profile &amp; Settings</h1>
+        <p className="text-sm text-muted-foreground mt-1">Customise your AI outreach and target market</p>
       </div>
 
       {/* Section 1: Identity */}
       <Section title="Identity" saving={savingSection === "identity"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Full name</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Full name</label>
             <input value={fullName} onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Company name</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Company name</label>
             <input value={companyName} onChange={(e) => setCompanyName(e.target.value)}
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 min-h-[44px]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Your role</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Your role</label>
             <div className="grid grid-cols-2 gap-2">
               {ROLE_OPTIONS.map((r) => (
                 <button key={r.key} onClick={() => setRole(r.key)}
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all min-h-[44px] active:scale-[0.98] ${
-                    role === r.key ? "border-blue bg-blue/10 text-blue" : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
+                    role === r.key ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>
                   <span className="text-base">{r.emoji}</span>
                   <span>{r.label}</span>
@@ -200,7 +200,7 @@ function SettingsProfilePage() {
               return (
                 <button key={s.key} onClick={() => toggleService(s.key)}
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all min-h-[44px] active:scale-[0.98] ${
-                    selected ? "border-blue bg-blue/10 text-blue" : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
+                    selected ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>
                   <span className="text-base">{s.emoji}</span>
                   <span className="truncate">{s.label}</span>
@@ -213,15 +213,15 @@ function SettingsProfilePage() {
             <input value={customInput} onChange={(e) => setCustomInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustomService()}
               placeholder="Add custom service..."
-              className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none min-h-[44px]" />
+              className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none min-h-[44px]" />
             <button onClick={addCustomService} disabled={!customInput.trim()} className="btn btn-primary text-sm disabled:opacity-50 min-h-[44px]">Add</button>
           </div>
           {customServices.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {customServices.map((cs, i) => (
-                <span key={i} className="inline-flex items-center gap-1 rounded-full bg-blue/10 text-blue px-2.5 py-1 text-xs">
+                <span key={i} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs">
                   {cs}
-                  <button onClick={() => { const next = customServices.filter((_, j) => j !== i); setCustomServices(next); autoSave("custom_services", next); }} className="hover:text-red/70"><X className="w-3 h-3" /></button>
+                  <button onClick={() => { const next = customServices.filter((_, j) => j !== i); setCustomServices(next); autoSave("custom_services", next); }} className="hover:text-destructive/70"><X className="w-3 h-3" /></button>
                 </span>
               ))}
             </div>
@@ -237,13 +237,13 @@ function SettingsProfilePage() {
             onChange={(e) => setUsp(e.target.value)}
             onBlur={() => autoSave("usp", usp)}
             placeholder="Your one-liner pitch..."
-            className="w-full h-24 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+            className="w-full h-24 rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
           />
           <div className="flex items-center justify-between">
-            <span className={`text-xs ${usp.length > 150 ? "text-red" : "text-text-faint"}`}>
+            <span className={`text-xs ${usp.length > 150 ? "text-destructive" : "text-foreground-faint"}`}>
               {usp.length}/150
             </span>
-            <button onClick={handleGenerateUsp} disabled={uspGenerating} className="text-xs text-blue hover:underline flex items-center gap-1 min-h-[32px]">
+            <button onClick={handleGenerateUsp} disabled={uspGenerating} className="text-xs text-primary hover:underline flex items-center gap-1 min-h-[32px]">
               {uspGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
               {uspGenerating ? "Generating..." : "Generate with AI"}
             </button>
@@ -251,13 +251,13 @@ function SettingsProfilePage() {
           {uspPitches.length > 0 && (
             <div className="space-y-2">
               {uspPitches.map((p, i) => (
-                <div key={i} className="rounded-lg border border-border/40 bg-surface-2 p-3">
-                  <p className="text-xs text-text-faint mb-1">Option {i + 1}</p>
-                  <p className="text-sm text-text mb-2">{p}</p>
-                  <button onClick={() => { setUsp(p); autoSave("usp", p); setUspPitches([]); }} className="text-xs text-blue hover:underline">Use this</button>
+                <div key={i} className="rounded-lg border border-border/40 bg-secondary p-3">
+                  <p className="text-xs text-foreground-faint mb-1">Option {i + 1}</p>
+                  <p className="text-sm text-foreground mb-2">{p}</p>
+                  <button onClick={() => { setUsp(p); autoSave("usp", p); setUspPitches([]); }} className="text-xs text-primary hover:underline">Use this</button>
                 </div>
               ))}
-              <button onClick={() => setUspPitches([])} className="text-xs text-text-muted hover:text-text underline">Write my own instead</button>
+              <button onClick={() => setUspPitches([])} className="text-xs text-muted-foreground hover:text-foreground underline">Write my own instead</button>
             </div>
           )}
         </div>
@@ -267,37 +267,37 @@ function SettingsProfilePage() {
       <Section title="Outreach Style" saving={savingSection === "tone" || savingSection === "signoff" || savingSection === "cta"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Email tone</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Email tone</label>
             <div className="space-y-1.5">
               {TONE_OPTIONS.map((t) => (
                 <button key={t.key} onClick={() => { setTone(t.key); autoSave("tone", t.key); }}
-                  className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all min-h-[44px] active:scale-[0.98] ${tone === t.key ? "border-blue bg-blue/10" : "border-border/60 bg-surface-2 hover:border-border"}`}>
-                  <span className={`text-sm font-semibold ${tone === t.key ? "text-blue" : "text-text"}`}>
+                  className={`w-full text-left rounded-lg border px-3 py-2.5 transition-all min-h-[44px] active:scale-[0.98] ${tone === t.key ? "border-primary bg-primary/10" : "border-border/60 bg-secondary hover:border-border"}`}>
+                  <span className={`text-sm font-semibold ${tone === t.key ? "text-primary" : "text-foreground"}`}>
                     {tone === t.key ? "●" : "○"} {t.label}
                   </span>
-                  <p className="text-xs text-text-muted mt-0.5">{t.preview}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t.preview}</p>
                 </button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Sign off with:</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Sign off with:</label>
             <div className="flex flex-wrap gap-2">
               {SIGNOFF_OPTIONS.map((s) => (
                 <button key={s} onClick={() => { setSignoffStyle(s); autoSave("signoff_style", s); }}
                   className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                    signoffStyle === s ? "border-blue bg-blue/10 text-blue" : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
+                    signoffStyle === s ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>{s}</button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Preferred CTA:</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Preferred CTA:</label>
             <div className="space-y-1">
               {CTA_OPTIONS.map((c) => (
                 <button key={c.key} onClick={() => { setCtaPreference(c.key); autoSave("cta_preference", c.key); }}
                   className={`w-full text-left rounded-lg border px-3 py-2.5 text-sm transition-all min-h-[44px] active:scale-[0.98] ${
-                    ctaPreference === c.key ? "border-blue bg-blue/10 text-blue" : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
+                    ctaPreference === c.key ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                   }`}>
                   {ctaPreference === c.key ? "●" : "○"} {c.label}
                 </button>
@@ -311,14 +311,14 @@ function SettingsProfilePage() {
       <Section title="Target Market" saving={savingSection === "target_geography" || savingSection === "target_categories"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Target geography</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Target geography</label>
             <input value={targetGeography} onChange={(e) => setTargetGeography(e.target.value)}
               onBlur={() => autoSave("target_geography", targetGeography)}
               placeholder="e.g. Manchester, M1 1AA"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none min-h-[44px]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Target business categories</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Target business categories</label>
             <div className="flex flex-wrap gap-2">
               {SERVICE_CATEGORIES.map((s) => {
                 const selected = targetCategories.includes(s.key);
@@ -331,7 +331,7 @@ function SettingsProfilePage() {
                     autoSave("target_categories", next);
                   }}
                     className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all min-h-[36px] ${
-                      selected ? "border-blue bg-blue/10 text-blue" : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
+                      selected ? "border-primary bg-primary/10 text-primary" : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
                     }`}>
                     <span>{s.emoji}</span>
                     <span>{s.label}</span>
@@ -347,14 +347,14 @@ function SettingsProfilePage() {
       <Section title="Work Schedule" saving={savingSection === "schedule" || savingSection === "sales_cycle"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Working days</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Working days</label>
             <div className="flex gap-2">
               {DAYS_OF_WEEK.map((d) => {
                 const active = workingDays.includes(d.key);
                 return (
                   <button key={d.key} onClick={() => toggleDay(d.key)}
                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-all active:scale-90 ${
-                      active ? "bg-blue text-white" : "bg-surface-2 text-text-muted"
+                      active ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                     }`}>{d.label}</button>
                 );
               })}
@@ -362,23 +362,23 @@ function SettingsProfilePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text mb-1.5">Start time</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Start time</label>
               <input type="time" value={workingStart} onChange={(e) => { setWorkingStart(e.target.value); autoSave("working_hours_start", e.target.value); }}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text min-h-[44px]" />
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground min-h-[44px]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text mb-1.5">End time</label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">End time</label>
               <input type="time" value={workingEnd} onChange={(e) => { setWorkingEnd(e.target.value); autoSave("working_hours_end", e.target.value); }}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text min-h-[44px]" />
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground min-h-[44px]" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-2">Average sales cycle</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Average sales cycle</label>
             <div className="flex gap-2">
               {[7, 14, 30, 60].map((d) => (
                 <button key={d} onClick={() => { setSalesCycle(d); autoSave("sales_cycle_days", d); }}
                   className={`flex-1 h-10 rounded-lg text-sm font-medium transition-all active:scale-90 ${
-                    salesCycle === d ? "bg-blue text-white" : "bg-surface-2 text-text-muted"
+                    salesCycle === d ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
                   }`}>{d}d</button>
               ))}
             </div>
@@ -390,18 +390,18 @@ function SettingsProfilePage() {
       <Section title="Optional Links" saving={savingSection === "calendly" || savingSection === "linkedin"}>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">Calendly link</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Calendly link</label>
             <input type="url" value={calendlyLink} onChange={(e) => setCalendlyLink(e.target.value)}
               onBlur={() => autoSave("calendly_link", calendlyLink)}
               placeholder="https://calendly.com/your-link"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none min-h-[44px]" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-1.5">LinkedIn URL</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">LinkedIn URL</label>
             <input type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)}
               onBlur={() => autoSave("linkedin_url", linkedinUrl)}
               placeholder="https://linkedin.com/in/your-profile"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:outline-none min-h-[44px]" />
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2.5 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none min-h-[44px]" />
           </div>
         </div>
       </Section>
@@ -411,11 +411,11 @@ function SettingsProfilePage() {
 
 function Section({ title, saving, children }: { title: string; saving?: boolean; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-border/60 bg-surface p-5">
+    <div className="rounded-xl border border-border/60 bg-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-semibold text-text">{title}</h3>
+        <h3 className="text-base font-semibold text-foreground">{title}</h3>
         {saving && (
-          <span className="text-xs text-green flex items-center gap-1">
+          <span className="text-xs text-success flex items-center gap-1">
             <Check className="w-3 h-3" /> Saved
           </span>
         )}

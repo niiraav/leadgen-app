@@ -74,10 +74,10 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="h-8 w-40 bg-surface-2 rounded animate-pulse" />
+        <div className="h-8 w-40 bg-secondary rounded animate-pulse" />
         <div className="grid gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-surface-2 rounded-xl animate-pulse" />
+            <div key={i} className="h-20 bg-secondary rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -88,8 +88,8 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text tracking-tight">Sequences</h1>
-          <p className="text-sm text-text-muted mt-1">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Sequences</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Automate your outreach with multi-step email sequences
           </p>
         </div>
@@ -115,16 +115,16 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="font-semibold text-text truncate">{seq.name}</h3>
+                  <h3 className="font-semibold text-foreground truncate">{seq.name}</h3>
                   <Badge
                     variant={seq.status === "active" ? "default" : "secondary"}
-                    className="text-[10px]"
+                    className="text-micro"
                   >
                     {seq.status}
                   </Badge>
                 </div>
 
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-text-muted mt-2">
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-muted-foreground mt-2">
                   <span>{seq.step_count} steps</span>
                   <span>{seq.enrolled_count} leads enrolled</span>
                   <span>Created {new Date(seq.created_at).toLocaleDateString()}</span>
@@ -142,7 +142,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                     <button
                       onClick={() => handleToggleSequence(seq.id, "resume")}
                       disabled={actionLoading === seq.id}
-                      className="btn btn-ghost text-xs py-1 h-7 text-green"
+                      className="btn btn-ghost text-xs py-1 h-7 text-success"
                     >
                       {actionLoading === seq.id ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -156,7 +156,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                     <button
                       onClick={() => handleToggleSequence(seq.id, "pause")}
                       disabled={actionLoading === seq.id}
-                      className="btn btn-ghost text-xs py-1 h-7 text-amber"
+                      className="btn btn-ghost text-xs py-1 h-7 text-warning"
                     >
                       {actionLoading === seq.id ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -179,7 +179,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
                 </Link>
                 <button
                   onClick={() => setDeleteId(seq.id)}
-                  className="rounded-full p-2 text-red/60 hover:text-red hover:bg-red/5 transition-colors"
+                  className="rounded-full p-2 text-destructive/60 hover:text-destructive hover:bg-destructive/5 transition-colors"
                   title="Delete sequence"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -192,15 +192,15 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
 
       {/* Delete Confirmation Modal */}
       {deleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface rounded-xl border border-border/60 p-6 w-full max-w-sm mx-4">
+        <div className="fixed inset-0 bg-overlay/50 flex items-center justify-center z-50">
+          <div className="bg-card rounded-xl border border-border/60 p-6 w-full max-w-sm mx-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-red/10 flex items-center justify-center">
-                <Trash2 className="w-5 h-5 text-red" />
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-destructive" />
               </div>
               <div>
-                <h3 className="font-semibold text-text">Delete sequence?</h3>
-                <p className="text-xs text-text-muted mt-0.5">This will also delete all steps and enrollments.</p>
+                <h3 className="font-semibold text-foreground">Delete sequence?</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">This will also delete all steps and enrollments.</p>
               </div>
             </div>
             <div className="flex gap-2 justify-end mt-6">
@@ -212,7 +212,7 @@ export default function SequencesPage({ user }: { user?: { id: string; email: st
               </button>
               <button
                 onClick={confirmDelete}
-                className="btn bg-red hover:bg-red/90 text-white text-sm"
+                className="btn bg-destructive hover:bg-destructive/90 text-destructive-foreground text-sm"
               >
                 Delete
               </button>

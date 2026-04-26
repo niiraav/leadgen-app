@@ -43,15 +43,15 @@ export const NotesEditor = React.memo(function NotesEditor({ leadId, initialNote
   return (
     <div className="relative">
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-text-muted uppercase tracking-wider">Notes</label>
-        {saved && <span className="text-xs text-green">✓ Saved</span>}
+        <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</label>
+        {saved && <span className="text-xs text-success">✓ Saved</span>}
       </div>
       <textarea
         value={notes}
         onChange={handleChange}
         placeholder="Add notes about this lead..."
         rows={3}
-        className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+        className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
       />
     </div>
   );

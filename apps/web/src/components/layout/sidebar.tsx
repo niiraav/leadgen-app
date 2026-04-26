@@ -53,19 +53,19 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 hidden md:flex h-screen bg-surface border-r border-border/60 flex-col transition-all duration-300 z-40",
+        "fixed left-0 top-0 hidden md:flex h-screen bg-card border-r border-border flex-col transition-all duration-300 z-40",
         collapsed ? "w-[72px]" : "w-64"
       )}
     >
-      <div className="flex items-center h-16 px-4 border-b border-border/40">
+      <div className="flex items-center h-16 px-4 border-b border-border">
         {collapsed ? (
           <div className="mx-auto">
-            <Zap className="w-6 h-6 text-blue" />
+            <Zap className="w-6 h-6 text-primary" />
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
-            <Zap className="w-6 h-6 text-blue" />
-            <span className="font-bold text-lg text-text tracking-tight">LeadGen</span>
+            <Zap className="w-6 h-6 text-primary" />
+            <span className="font-bold text-lg text-foreground tracking-tight">LeadGen</span>
           </div>
         )}
       </div>
@@ -81,11 +81,11 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 active
-                  ? "bg-surface-2 text-text shadow-sm"
-                  : "text-text-muted hover:bg-surface-2/60 hover:text-text"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
               )}
             >
-              <Icon className={cn("w-[18px] h-[18px] shrink-0", active && "text-blue")} />
+              <Icon className={cn("size-[1.125rem] shrink-0", active && "text-primary")} />
               <motion.span
                 animate={{
                   opacity: collapsed ? 0 : 1,
@@ -98,7 +98,7 @@ export function Sidebar() {
                 {item.label}
               </motion.span>
               {!collapsed && item.href === "/replies" && unreadCount > 0 && (
-                <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                <span className="ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-micro font-bold text-destructive-foreground bg-destructive rounded-full">
                   {unreadCount}
                 </span>
               )}
@@ -107,10 +107,10 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-2 border-t border-border/40">
+      <div className="p-2 border-t border-border">
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-text-muted hover:text-text hover:bg-surface-2/60 transition-all"
+          className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />

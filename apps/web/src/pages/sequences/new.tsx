@@ -93,11 +93,11 @@ export default function NewSequencePage() {
     return (
       <div className="space-y-6 max-w-4xl">
         <div className="card text-center py-16">
-          <div className="mx-auto w-12 h-12 rounded-full bg-green/10 flex items-center justify-center mb-4">
-            <Check className="w-6 h-6 text-green" />
+          <div className="mx-auto w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-4">
+            <Check className="w-6 h-6 text-success" />
           </div>
-          <h2 className="text-lg font-bold text-text mb-2">Sequence created!</h2>
-          <p className="text-sm text-text-muted mb-6">
+          <h2 className="text-lg font-bold text-foreground mb-2">Sequence created!</h2>
+          <p className="text-sm text-muted-foreground mb-6">
             &quot;{name}&quot; is ready. Enroll leads to start automated outreach.
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -120,23 +120,23 @@ export default function NewSequencePage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-3">
-        <Link href="/sequences" className="p-2 hover:bg-surface-2 rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-text-muted" />
+        <Link href="/sequences" className="p-2 hover:bg-secondary rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-text tracking-tight">New Sequence</h1>
-          <p className="text-sm text-text-muted mt-1">Build your automated outreach flow</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">New Sequence</h1>
+          <p className="text-sm text-muted-foreground mt-1">Build your automated outreach flow</p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red">{error}</div>
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
       )}
 
       <UpgradePrompt error={upgradeError} onDismiss={() => setUpgradeError(null)} compact />
 
-      <div className="rounded-xl border border-border/60 bg-surface p-5">
-        <label className="block text-xs font-semibold text-text-muted mb-1.5 uppercase tracking-wider">
+      <div className="rounded-xl border border-border/60 bg-card p-5">
+        <label className="block text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">
           Sequence Name
         </label>
         <input
@@ -150,28 +150,28 @@ export default function NewSequencePage() {
 
       <div className="space-y-4">
         {steps.map((step, idx) => (
-          <div key={idx} className="rounded-xl border border-border/60 bg-surface p-5">
+          <div key={idx} className="rounded-xl border border-border/60 bg-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-text">Step {step.step_order}</h3>
+              <h3 className="text-sm font-semibold text-foreground">Step {step.step_order}</h3>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => moveStep(idx, "up")}
                   disabled={idx === 0}
-                  className="rounded-full p-1 text-text-faint hover:text-text hover:bg-surface-2 transition-colors disabled:opacity-30"
+                  className="rounded-full p-1 text-foreground-faint hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => moveStep(idx, "down")}
                   disabled={idx === steps.length - 1}
-                  className="rounded-full p-1 text-text-faint hover:text-text hover:bg-surface-2 transition-colors disabled:opacity-30"
+                  className="rounded-full p-1 text-foreground-faint hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-30"
                 >
                   <ArrowDown className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => removeStep(idx)}
                   disabled={steps.length <= 1}
-                  className="rounded-full p-1 text-text-faint hover:text-red hover:bg-red/5 transition-colors disabled:opacity-30"
+                  className="rounded-full p-1 text-foreground-faint hover:text-destructive hover:bg-destructive/5 transition-colors disabled:opacity-30"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -180,7 +180,7 @@ export default function NewSequencePage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">Subject</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Subject</label>
                 <input
                   type="text"
                   value={step.subject_template}
@@ -190,25 +190,25 @@ export default function NewSequencePage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-text-muted mb-1.5">Body</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Body</label>
                 <textarea
                   value={step.body_template}
                   onChange={(e) => updateStep(idx, "body_template", e.target.value)}
                   placeholder="Email body..."
-                  className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                  className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                   rows={6}
                 />
               </div>
               <div className="flex items-center gap-2">
-                <label className="text-xs text-text-muted whitespace-nowrap">Send after</label>
+                <label className="text-xs text-muted-foreground whitespace-nowrap">Send after</label>
                 <input
                   type="number"
                   value={step.delay_days}
                   onChange={(e) => updateStep(idx, "delay_days", Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-20 h-8 px-2 text-center text-xs rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  className="w-20 h-8 px-2 text-center text-xs rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                   min={0}
                 />
-                <span className="text-xs text-text-muted">day(s) after enrollment</span>
+                <span className="text-xs text-muted-foreground">day(s) after enrollment</span>
               </div>
             </div>
           </div>

@@ -3,11 +3,11 @@ import { X, Loader2, Send, Check } from "lucide-react";
 import { Portal } from "@/components/ui/portal";
 
 const CLASSIFICATION_STYLE: Record<string, { emoji: string; color: string; bg: string }> = {
-  INTERESTED: { emoji: "🟢", color: "text-green", bg: "bg-green/10 border-green/30" },
-  NOT_NOW: { emoji: "🟡", color: "text-amber", bg: "bg-amber/10 border-amber/30" },
-  UNSUBSCRIBE: { emoji: "🔴", color: "text-red", bg: "bg-red/10 border-red/30" },
-  WARM: { emoji: "🔵", color: "text-blue", bg: "bg-blue/10 border-blue/30" },
-  NEUTRAL: { emoji: "⚪", color: "text-text-muted", bg: "bg-surface-2 border-border" },
+  INTERESTED: { emoji: "🟢", color: "text-success", bg: "bg-success/10 border-green/30" },
+  NOT_NOW: { emoji: "🟡", color: "text-warning", bg: "bg-warning/10 border-amber/30" },
+  UNSUBSCRIBE: { emoji: "🔴", color: "text-destructive", bg: "bg-destructive/10 border-destructive/30" },
+  WARM: { emoji: "🔵", color: "text-primary", bg: "bg-primary/10 border-primary/30" },
+  NEUTRAL: { emoji: "⚪", color: "text-muted-foreground", bg: "bg-secondary border-border" },
 };
 
 const SUGGESTED_ACTION: Record<string, string> = {
@@ -77,24 +77,24 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
 
   return (
     <Portal>
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-surface border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-text">Log Reply — {leadName}</h2>
-          <button onClick={onClose} className="text-text-faint hover:text-text"><X className="w-5 h-5" /></button>
+          <h2 className="text-base font-semibold text-foreground">Log Reply — {leadName}</h2>
+          <button onClick={onClose} className="text-foreground-faint hover:text-foreground"><X className="w-5 h-5" /></button>
         </div>
         <div className="p-5">
           {step === "input" && (
             <>
-              <p className="text-sm text-text-muted mb-3">Paste their reply or summarize it below.</p>
-              {error && <div className="mb-3 rounded-lg bg-red/10 border border-red/20 px-4 py-2 text-sm text-red">{error}</div>}
+              <p className="text-sm text-muted-foreground mb-3">Paste their reply or summarize it below.</p>
+              {error && <div className="mb-3 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2 text-sm text-destructive">{error}</div>}
               <textarea
                 value={replyText} onChange={(e) => setReplyText(e.target.value)}
                 placeholder="e.g. Thanks for reaching out. Can you send me pricing details?"
-                className="w-full h-40 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none mb-4"
+                className="w-full h-40 rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-foreground-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none mb-4"
               />
               <div className="flex items-center justify-between">
-                <button onClick={handleSkip} className="text-xs text-text-muted hover:text-text underline">
+                <button onClick={handleSkip} className="text-xs text-muted-foreground hover:text-foreground underline">
                   Skip — just mark as replied
                 </button>
                 <button onClick={handleAnalyze} disabled={!replyText.trim()} className="btn btn-primary text-sm py-1.5 h-8 disabled:opacity-50">
@@ -106,8 +106,8 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
           )}
           {step === "loading" && (
             <div className="flex items-center justify-center gap-3 py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-blue" />
-              <span className="text-text-muted">Analysing reply sentiment...</span>
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              <span className="text-muted-foreground">Analysing reply sentiment...</span>
             </div>
           )}
           {step === "result" && result && (
@@ -118,12 +118,12 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
                   <>
                     <div className={`rounded-lg border ${style.bg} p-4 mb-4`}>
                       <div className="flex items-center gap-2 mb-2"><span className="text-lg">{style.emoji}</span><span className={`text-sm font-semibold ${style.color}`}>{result.classification}</span></div>
-                      <p className="text-xs text-text-muted">{result.reasoning}</p>
+                      <p className="text-xs text-muted-foreground">{result.reasoning}</p>
                     </div>
                     <div className="mb-4">
-                      <p className="text-xs text-text-muted mb-1">Suggested action:</p>
-                      <p className="text-sm text-text font-medium">{SUGGESTED_ACTION[result.classification] || "No change"}</p>
-                      {result.re_engage_after && <p className="text-xs text-amber mt-1">💤 Re-engage after: {new Date(result.re_engage_after).toLocaleDateString()}</p>}
+                      <p className="text-xs text-muted-foreground mb-1">Suggested action:</p>
+                      <p className="text-sm text-foreground font-medium">{SUGGESTED_ACTION[result.classification] || "No change"}</p>
+                      {result.re_engage_after && <p className="text-xs text-warning mt-1">💤 Re-engage after: {new Date(result.re_engage_after).toLocaleDateString()}</p>}
                     </div>
                     <div className="flex gap-3">
                       <button onClick={handleSkip} className="btn btn-ghost text-sm flex-1">Ignore — just log</button>

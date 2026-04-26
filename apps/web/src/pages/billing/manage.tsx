@@ -129,7 +129,7 @@ export default function BillingManagePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -174,57 +174,57 @@ export default function BillingManagePage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.push("/billing")}
-          className="p-1.5 rounded-lg hover:bg-surface-2 transition-colors text-text-muted hover:text-text"
+          className="p-1.5 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-text flex items-center gap-2">
-            <Settings className="w-5 h-5 text-blue" />
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Settings className="w-5 h-5 text-primary" />
             Manage Subscription
           </h1>
-          <p className="text-sm text-text-muted mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Cancel, reactivate, or change your plan
           </p>
         </div>
       </div>
 
       {/* --- Current Plan Card --- */}
-      <div className="rounded-xl border border-border bg-surface p-5 space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-text-muted uppercase tracking-wide">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">
               Current plan
             </p>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-bold text-text capitalize">
+              <span className="text-2xl font-bold text-foreground capitalize">
                 {status.label}
               </span>
               {status.price_monthly && (
-                <span className="text-sm text-text-muted">
+                <span className="text-sm text-muted-foreground">
                   £{status.price_monthly}/mo
                 </span>
               )}
             </div>
-            <p className="text-xs text-text-muted mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Status: <span className="capitalize">{status.subscription_status}</span>
             </p>
           </div>
           <div className="flex flex-col items-end gap-1">
             {isTrialing && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-blue/10 text-blue">
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                 <Clock className="w-3 h-3" />
                 Trial: {trialDaysLeft}d left
               </span>
             )}
             {isCancelling && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-amber/10 text-amber">
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-warning/10 text-warning">
                 <AlertTriangle className="w-3 h-3" />
                 Cancelling
               </span>
             )}
             {isSubscribed && !isCancelling && !isTrialing && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-green/10 text-green">
+              <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-success/10 text-success">
                 <CheckCircle className="w-3 h-3" />
                 Active
               </span>
@@ -234,7 +234,7 @@ export default function BillingManagePage() {
 
         {/* Renewal / Cancel date */}
         {status.subscription_ends_at && (
-          <div className="text-xs text-text-muted border-t border-border/40 pt-3">
+          <div className="text-xs text-muted-foreground border-t border-border/40 pt-3">
             {isCancelling
               ? `Cancels on ${new Date(status.subscription_ends_at).toLocaleDateString()} — you'll retain access until then`
               : `Renews on ${new Date(status.subscription_ends_at).toLocaleDateString()}`}
@@ -243,9 +243,9 @@ export default function BillingManagePage() {
 
         {/* Trial notice */}
         {isTrialing && (
-          <div className="rounded-lg border border-blue/20 bg-blue/5 px-3 py-2 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-blue shrink-0" />
-            <div className="text-xs text-text">
+          <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary shrink-0" />
+            <div className="text-xs text-foreground">
               <span className="font-medium">Trial active</span> — {trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} remaining.
               You won&apos;t be charged until the trial ends.
             </div>
@@ -255,14 +255,14 @@ export default function BillingManagePage() {
 
       {/* --- Plan Change --- */}
       {!isFree && (
-        <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
-          <h3 className="text-sm font-medium text-text">Change Plan</h3>
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <h3 className="text-sm font-medium text-foreground">Change Plan</h3>
 
           <div className="flex gap-3">
             {canUpgrade && (
               <button
                 onClick={() => handleChangePlan("upgrade")}
-                className="flex-1 rounded-lg border border-blue text-blue text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 hover:bg-blue/5 transition-colors"
+                className="flex-1 rounded-lg border border-primary text-primary text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 hover:bg-primary/5 transition-colors"
               >
                 <TrendingUp className="w-3.5 h-3.5" />
                 Upgrade
@@ -271,7 +271,7 @@ export default function BillingManagePage() {
             {canDowngrade && (
               <button
                 onClick={() => handleChangePlan("downgrade")}
-                className="flex-1 rounded-lg border border-border text-text-muted text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 hover:bg-surface-2 transition-colors"
+                className="flex-1 rounded-lg border border-border text-muted-foreground text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 hover:bg-secondary transition-colors"
               >
                 <TrendingDown className="w-3.5 h-3.5" />
                 Downgrade
@@ -280,7 +280,7 @@ export default function BillingManagePage() {
           </div>
 
           {!canUpgrade && !canDowngrade && (
-            <p className="text-xs text-text-muted">
+            <p className="text-xs text-muted-foreground">
               You&apos;re on the highest available plan.
             </p>
           )}
@@ -289,14 +289,14 @@ export default function BillingManagePage() {
 
       {/* --- Cancel / Reactivate --- */}
       {!isFree && (
-        <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
-          <h3 className="text-sm font-medium text-text">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <h3 className="text-sm font-medium text-foreground">
             {isTrialing ? "End Trial" : "Cancel Subscription"}
           </h3>
 
           {isCancelling ? (
             <>
-              <p className="text-xs text-text-muted">
+              <p className="text-xs text-muted-foreground">
                 {isTrialing
                   ? "Your trial will end immediately and you will lose Pro access."
                   : "Your subscription is set to cancel at the end of the current billing period. You can reactivate it anytime before then."}
@@ -304,7 +304,7 @@ export default function BillingManagePage() {
               <button
                 onClick={handleReactivate}
                 disabled={busy === "reactivate"}
-                className="rounded-lg bg-green/10 text-green text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-green/20 transition-colors disabled:opacity-50"
+                className="rounded-lg bg-success/10 text-success text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-success/20 transition-colors disabled:opacity-50"
               >
                 {busy === "reactivate" ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -316,16 +316,16 @@ export default function BillingManagePage() {
             </>
           ) : (
             <>
-              <p className="text-xs text-text-muted">
+              <p className="text-xs text-muted-foreground">
                 {isTrialing
                   ? "Ending your trial will downgrade you to Free immediately. You won't be charged."
                   : "Your subscription will remain active until the end of the current billing period. You won't lose access immediately."}
               </p>
               {confirmCancel ? (
                 <div className="space-y-2">
-                  <div className="rounded-lg border border-red/30 bg-red/5 px-3 py-2 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-red shrink-0" />
-                    <span className="text-xs text-text">
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                    <span className="text-xs text-foreground">
                       Are you sure? Click again to confirm cancellation.
                     </span>
                   </div>
@@ -333,7 +333,7 @@ export default function BillingManagePage() {
                     <button
                       onClick={handleCancel}
                       disabled={busy === "cancel"}
-                      className="rounded-lg bg-red/10 text-red text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-red/20 transition-colors disabled:opacity-50"
+                      className="rounded-lg bg-destructive/10 text-destructive text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-destructive/20 transition-colors disabled:opacity-50"
                     >
                       {busy === "cancel" ? (
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -344,7 +344,7 @@ export default function BillingManagePage() {
                     </button>
                     <button
                       onClick={() => setConfirmCancel(false)}
-                      className="rounded-lg border border-border text-text-muted text-xs font-medium px-4 py-2.5 hover:bg-surface-2 transition-colors"
+                      className="rounded-lg border border-border text-muted-foreground text-xs font-medium px-4 py-2.5 hover:bg-secondary transition-colors"
                     >
                       Go Back
                     </button>
@@ -353,7 +353,7 @@ export default function BillingManagePage() {
               ) : (
                 <button
                   onClick={handleCancel}
-                  className="rounded-lg border border-red/30 text-red text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-red/5 transition-colors"
+                  className="rounded-lg border border-destructive/30 text-destructive text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:bg-destructive/5 transition-colors"
                 >
                   <AlertTriangle className="w-3.5 h-3.5" />
                   {isTrialing ? "End Trial" : "Cancel Subscription"}
@@ -366,18 +366,18 @@ export default function BillingManagePage() {
 
       {/* --- Billing History (Stripe Portal) --- */}
       {isSubscribed && status.stripe_customer_id && (
-        <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
-          <h3 className="text-sm font-medium text-text flex items-center gap-1.5">
-            <CreditCard className="w-4 h-4 text-text-muted" />
+        <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+          <h3 className="text-sm font-medium text-foreground flex items-center gap-1.5">
+            <CreditCard className="w-4 h-4 text-muted-foreground" />
             Billing History & Invoices
           </h3>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-muted-foreground">
             View past invoices, update payment methods, and download receipts via the Stripe portal.
           </p>
           <button
             onClick={handlePortal}
             disabled={busy === "portal"}
-            className="rounded-lg border border-border text-text-muted text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:border-blue/40 hover:text-blue transition-colors disabled:opacity-50"
+            className="rounded-lg border border-border text-muted-foreground text-xs font-medium px-4 py-2.5 flex items-center gap-1.5 hover:border-primary/40 hover:text-primary transition-colors disabled:opacity-50"
           >
             {busy === "portal" ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -390,9 +390,9 @@ export default function BillingManagePage() {
       )}
 
       {/* --- Security note --- */}
-      <div className="rounded-xl border border-border/40 bg-surface/50 p-4 flex items-start gap-2.5">
-        <Shield className="w-4 h-4 text-text-muted shrink-0 mt-0.5" />
-        <div className="text-xs text-text-muted">
+      <div className="rounded-xl border border-border/40 bg-card/50 p-4 flex items-start gap-2.5">
+        <Shield className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+        <div className="text-xs text-muted-foreground">
           All payments are securely processed through Stripe. We never store your
           card details. Cancelled subscriptions remain active until the end of
           the billing period — no immediate access revocation.

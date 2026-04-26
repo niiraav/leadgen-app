@@ -76,7 +76,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 richColors
                 closeButton
                 toastOptions={{
-                  className: "bg-surface border-border text-text",
+                  className: "bg-card border-border text-foreground",
                 }}
               />
             </ProfileProvider>
@@ -90,7 +90,7 @@ export default function App({ Component, pageProps }: AppProps) {
   if (!sessionChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg">
-        <div className="w-8 h-8 border-2 border-blue/30 border-t-blue rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-primary/30 border-t-blue rounded-full animate-spin" />
       </div>
     );
   }
@@ -117,7 +117,7 @@ export default function App({ Component, pageProps }: AppProps) {
               richColors
               closeButton
               toastOptions={{
-                className: "bg-surface border-border text-text",
+                className: "bg-card border-border text-foreground",
               }}
             />
           </ProfileProvider>

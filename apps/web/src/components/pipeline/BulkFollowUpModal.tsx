@@ -56,22 +56,22 @@ export default function BulkFollowUpModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-surface rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50">
+      <div className="bg-card rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
             Set follow-up
           </h3>
-          <button onClick={onCancel} className="text-text-faint hover:text-text">
+          <button onClick={onCancel} aria-label="Close modal" className="text-foreground-faint hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-secondary/50 border border-border/50">
-          <Users className="w-3.5 h-3.5 text-text-muted shrink-0" />
-          <p className="text-xs text-text-muted">
-            <span className="font-medium text-text">{count}</span> lead{count > 1 ? "s" : ""}{" "}
+          <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{count}</span> lead{count > 1 ? "s" : ""}{" "}
             missing a follow-up date
           </p>
         </div>
@@ -81,10 +81,10 @@ export default function BulkFollowUpModal({
             <button
               key={opt.days}
               onClick={() => handleQuick(opt.days)}
-              className={`flex-1 py-1.5 px-2 rounded-md text-[11px] font-medium border transition-colors ${
+              className={`flex-1 py-1.5 px-2 rounded-md text-micro-sm font-medium border transition-colors focus-ring ${
                 quickDays === opt.days
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-surface-2 text-text-muted border-border hover:bg-secondary"
+                  : "bg-secondary text-muted-foreground border-border hover:bg-secondary"
               }`}
             >
               {opt.label}
@@ -93,7 +93,7 @@ export default function BulkFollowUpModal({
         </div>
 
         <div className="relative mb-5">
-          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
           <input
             type="date"
             value={selectedDate}

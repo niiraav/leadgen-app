@@ -1,5 +1,11 @@
 import { PipelineLead } from "@/hooks/usePipelineBoard";
 import { getColumnDef, getLeadColumn, followUpHealth, formatCompactDealValue } from "@leadgen/shared";
+import { Badge } from "@/components/ui/badge";
+import {
+  PIPELINE_STAGE_VARIANTS,
+  ENGAGEMENT_STATUS_VARIANTS,
+  LOSS_REASON_VARIANTS,
+} from "@/lib/status-colors";
 
 interface PipelineCardOverlayProps {
   lead: PipelineLead;
@@ -12,7 +18,7 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
   const renderStateSignal = () => {
     if ((lead.unreadReplyCount ?? 0) > 0) {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-destructive">
+        <span className="inline-flex items-center gap-1 text-micro font-semibold text-destructive">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
@@ -37,7 +43,7 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
           ? "Due today"
           : new Date(lead.followUpDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
       return (
-        <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${colorClass}`}>
+        <span className={`inline-flex items-center gap-1 text-micro font-medium ${colorClass}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${health === "red" ? "bg-destructive" : health === "amber" ? "bg-warning" : "bg-muted-foreground"}`} />
           {label}
         </span>
@@ -46,7 +52,7 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
 
     if (lead.status === "lost") {
       return (
-        <span className="inline-flex items-center text-[10px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center text-micro font-medium text-muted-foreground">
           Lost
         </span>
       );
@@ -62,7 +68,7 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
       items.push(
         <span
           key="intent"
-          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary"
+          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-micro font-medium bg-primary/10 text-primary"
         >
           {String(lead.latestReply.intent).replace(/_/g, " ")}
         </span>
@@ -73,7 +79,7 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
       items.push(
         <span
           key="deal"
-          className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-primary"
+          className="inline-flex items-center gap-0.5 text-micro font-semibold text-primary"
         >
           {formatCompactDealValue(lead.dealValue)}
         </span>
@@ -81,13 +87,15 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
     }
 
     if (columnId === "lost" && lead.lossReason) {
+      const lossVariant = LOSS_REASON_VARIANTS[lead.lossReason as keyof typeof LOSS_REASON_VARIANTS] ?? "secondary";
       items.push(
-        <span
+        <Badge
           key="loss"
-          className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200"
+          variant={lossVariant}
+          className="text-micro rounded-md"
         >
           {lead.lossReason.replace(/_/g, " ")}
-        </span>
+        </Badge>
       );
     }
 
@@ -98,25 +106,30 @@ export default function PipelineCardOverlay({ lead }: PipelineCardOverlayProps) 
   return (
     <div
       className="
-        w-[280px] rounded-lg border border-primary/30 bg-surface p-3
-        shadow-2xl shadow-black/20
+        w-72 rounded-lg border border-primary/30 bg-card p-3
+        shadow-2xl
         rotate-2 scale-[1.02]
         cursor-grabbing
       "
     >
       <div className="flex items-center justify-between gap-2 min-w-0">
-        <h4 className="text-sm font-semibold text-text truncate flex-1 min-w-0">
+        <h4 className="text-sm font-semibold text-foreground truncate flex-1 min-w-0">
           {lead.business_name}
         </h4>
       </div>
 
       <div className="mt-1">
-        <span
-          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
-          style={{ backgroundColor: column?.color ?? "#6b7280" }}
-        >
-          {column?.title ?? lead.status}
-        </span>
+        {((): React.ReactNode => {
+          const variant =
+            column?.field === "pipeline_stage"
+              ? PIPELINE_STAGE_VARIANTS[column.id as keyof typeof PIPELINE_STAGE_VARIANTS]
+              : ENGAGEMENT_STATUS_VARIANTS[column?.id as keyof typeof ENGAGEMENT_STATUS_VARIANTS];
+          return (
+            <Badge variant={variant ?? "secondary"} className="text-micro">
+              {column?.title ?? lead.status}
+            </Badge>
+          );
+        })()}
       </div>
 
       {renderStateSignal() && <div className="mt-1">{renderStateSignal()}</div>}

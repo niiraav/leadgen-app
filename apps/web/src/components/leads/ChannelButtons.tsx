@@ -51,7 +51,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
     <>
       <div className="flex items-center gap-1.5">
         {doNotContact && (
-          <span className={`${btnClass} bg-amber-50 text-amber-500`} title="Do not contact">
+          <span className={`${btnClass} bg-warning/10 text-warning`} title="Do not contact">
             <AlertTriangle className={compact ? "w-3.5 h-3.5" : "w-4 h-4"} />
           </span>
         )}
@@ -60,7 +60,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
             onClick={(e) => { if (!doNotContact) { e.stopPropagation(); onEmailCompose(); } }}
             title={doNotContact ? "Cannot email — do not contact" : "Compose email"}
             disabled={doNotContact}
-            className={`${btnClass} bg-blue/10 text-blue hover:bg-blue/20 transition-colors ${dncBtnClass}`}
+            className={`${btnClass} bg-primary/10 text-primary hover:bg-primary/20 transition-colors ${dncBtnClass}`}
           >
             <Mail className={compact ? "w-3.5 h-3.5" : "w-4 h-4"} />
           </button>
@@ -116,7 +116,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
               }}
               title={doNotContact ? "Cannot SMS — do not contact" : "SMS / Message"}
               disabled={doNotContact}
-              className={`${btnClass} bg-blue/10 text-blue hover:bg-blue/20 transition-colors ${dncBtnClass}`}
+              className={`${btnClass} bg-primary/10 text-primary hover:bg-primary/20 transition-colors ${dncBtnClass}`}
             >
               <Icon path={mdiMessageText} size={iconSize} />
             </button>
@@ -127,7 +127,7 @@ export const ChannelButtons = React.memo(function ChannelButtons({
                 href={`tel:${phone}`}
                 onClick={(e) => e.stopPropagation()}
                 title="Call"
-                className={`${btnClass} bg-surface-2 text-text-faint hover:text-text transition-colors`}
+                className={`${btnClass} bg-secondary text-foreground-faint hover:text-foreground transition-colors`}
               >
                 <Phone className="w-4 h-4" />
               </a>

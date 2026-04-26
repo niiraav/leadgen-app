@@ -52,7 +52,7 @@ export default function BillingSuccessPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-blue" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -80,33 +80,33 @@ export default function BillingSuccessPage() {
     <div className="max-w-md mx-auto py-20 flex flex-col items-center text-center space-y-6">
       {/* Animated checkmark */}
       <div className="relative">
-        <div className="w-20 h-20 rounded-full bg-green/10 flex items-center justify-center">
-          <CheckCircle className="w-10 h-10 text-green" />
+        <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center">
+          <CheckCircle className="w-10 h-10 text-success" />
         </div>
         {/* Decorative sparkles */}
-        <Sparkles className="w-4 h-4 text-amber absolute -top-1 -right-1 animate-pulse" />
-        <Sparkles className="w-3 h-3 text-blue absolute -bottom-1 -left-1 animate-pulse delay-500" />
+        <Sparkles className="w-4 h-4 text-warning absolute -top-1 -right-1 animate-pulse" />
+        <Sparkles className="w-3 h-3 text-primary absolute -bottom-1 -left-1 animate-pulse delay-500" />
       </div>
 
       {/* Success message */}
       <div>
-        <h1 className="text-2xl font-bold text-text">
+        <h1 className="text-2xl font-bold text-foreground">
           Payment successful!
         </h1>
-        <p className="text-sm text-text-muted mt-2">
-          Your <span className="capitalize font-medium text-text">{planName}</span> plan is now active.
+        <p className="text-sm text-muted-foreground mt-2">
+          Your <span className="capitalize font-medium text-foreground">{planName}</span> plan is now active.
         </p>
       </div>
 
       {/* Trial notice */}
       {isTrialing && (
-        <div className="w-full rounded-xl border border-blue/20 bg-blue/5 px-4 py-3 flex items-center gap-2.5">
-          <Clock className="w-4 h-4 text-blue shrink-0" />
+        <div className="w-full rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-2.5">
+          <Clock className="w-4 h-4 text-primary shrink-0" />
           <div className="text-left">
-            <p className="text-xs font-medium text-text">
+            <p className="text-xs font-medium text-foreground">
               Your 14-day free trial starts now
             </p>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               You won&apos;t be charged until the trial ends
             </p>
           </div>
@@ -116,7 +116,7 @@ export default function BillingSuccessPage() {
       {/* Go to dashboard */}
       <button
         onClick={() => router.push("/dashboard")}
-        className="w-full rounded-lg bg-blue text-white text-sm font-medium py-3 flex items-center justify-center gap-2 hover:bg-blue/90 transition-colors"
+        className="w-full rounded-lg bg-primary text-primary-foreground text-sm font-medium py-3 flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
       >
         Go to Dashboard
         <ArrowRight className="w-4 h-4" />
@@ -125,7 +125,7 @@ export default function BillingSuccessPage() {
       {/* Subtle link to manage subscription */}
       <button
         onClick={() => router.push("/billing/manage")}
-        className="text-xs text-text-muted hover:text-text underline"
+        className="text-xs text-muted-foreground hover:text-foreground underline"
       >
         Manage subscription
       </button>

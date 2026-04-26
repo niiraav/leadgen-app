@@ -154,8 +154,8 @@ export default function PipelinePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text tracking-tight">Pipeline</h1>
-          <p className="text-sm text-text-muted mt-1">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Pipeline</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {board.isLoading ? "Loading..." : `${board.leads.length} leads in your pipeline`}
           </p>
         </div>
@@ -169,7 +169,7 @@ export default function PipelinePage() {
       {healthLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-24 rounded-xl border border-border/40 bg-surface animate-pulse" />
+            <div key={i} className="h-24 rounded-xl border border-border/40 bg-card animate-pulse" />
           ))}
         </div>
       ) : healthSummary ? (
@@ -206,7 +206,7 @@ export default function PipelinePage() {
       {/* Search + Filters + View Toggle */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
           <input
             type="text"
             value={board.searchQuery}
@@ -217,7 +217,8 @@ export default function PipelinePage() {
           {board.searchQuery && (
             <button
               onClick={() => onSearchChange("")}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text"
+              aria-label="Clear search"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-foreground-faint hover:text-foreground"
             >
               <X className="w-4 h-4" />
             </button>
@@ -228,10 +229,10 @@ export default function PipelinePage() {
             <button
               key={pill.id}
               onClick={() => onFilterChange(pill.id)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-all min-h-[32px] ${
+              className={`rounded-full border px-3 py-1 text-xs font-medium whitespace-nowrap transition-all min-h-8 focus-ring ${
                 board.activeFilter === pill.id
                   ? "border-primary bg-primary/10 text-primary"
-                  : "border-border/60 bg-surface-2 text-text-muted hover:text-text"
+                  : "border-border/60 bg-secondary text-muted-foreground hover:text-foreground"
               }`}
             >
               {pill.label}
@@ -239,16 +240,16 @@ export default function PipelinePage() {
           ))}
         </div>
         {/* View mode toggle */}
-        <div className="flex items-center gap-1 bg-surface-2 rounded-lg border border-border p-0.5 flex-shrink-0">
+        <div className="flex items-center gap-1 bg-secondary rounded-lg border border-border p-0.5 flex-shrink-0">
           <button
             onClick={() => {
               board.setViewMode("board");
               updateUrl({ search: board.searchQuery, filter: board.activeFilter, view: "board" });
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors focus-ring ${
               board.viewMode === "board"
-                ? "bg-surface text-text shadow-sm"
-                : "text-text-faint hover:text-text"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-foreground-faint hover:text-foreground"
             }`}
           >
             <LayoutGrid className="w-3.5 h-3.5" />
@@ -259,10 +260,10 @@ export default function PipelinePage() {
               board.setViewMode("list");
               updateUrl({ search: board.searchQuery, filter: board.activeFilter, view: "list" });
             }}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors focus-ring ${
               board.viewMode === "list"
-                ? "bg-surface text-text shadow-sm"
-                : "text-text-faint hover:text-text"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-foreground-faint hover:text-foreground"
             }`}
           >
             <ListIcon className="w-3.5 h-3.5" />
@@ -276,9 +277,9 @@ export default function PipelinePage() {
         {board.isLoading ? (
           <div className="flex gap-4 overflow-x-auto pb-4">
             {PIPELINE_COLUMNS.map((col) => (
-              <div key={col.id} className="min-w-[272px] w-[272px] flex-shrink-0">
-                <div className="h-6 rounded bg-surface-2 animate-pulse mb-2" />
-                <div className="h-32 rounded-lg bg-surface-2 animate-pulse" />
+              <div key={col.id} className="min-w-72 w-72 flex-shrink-0">
+                <div className="h-6 rounded bg-secondary animate-pulse mb-2" />
+                <div className="h-32 rounded-lg bg-secondary animate-pulse" />
               </div>
             ))}
           </div>

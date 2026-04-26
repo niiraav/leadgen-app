@@ -38,7 +38,7 @@ const FIELD_LABELS: Record<string, string> = {
 export const ActivityLog = React.memo(function ActivityLog({ activities }: { activities: { id: string; type: string; description: string; created_at: string; field?: string | null }[] }) {
   if (!activities || activities.length === 0) {
     return (
-      <div className="text-center py-6 text-sm text-text-faint">
+      <div className="text-center py-6 text-sm text-foreground-faint">
         No activity yet
       </div>
     );
@@ -55,12 +55,12 @@ export const ActivityLog = React.memo(function ActivityLog({ activities }: { act
     <div className="space-y-3">
       {activities.map((a) => (
         <div key={a.id} className="flex items-start gap-3 text-sm">
-          <div className="w-2 h-2 rounded-full bg-blue mt-1.5 shrink-0" />
+          <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
           <div className="flex-1 min-w-0">
-            <div className="text-text">
+            <div className="text-foreground">
               {activityLabel(a)}
             </div>
-            <div className="text-xs text-text-faint">
+            <div className="text-xs text-foreground-faint">
               {formatTime(a.created_at)}
             </div>
           </div>

@@ -98,13 +98,13 @@ const PIPELINE_BADGE_CONFIG: Record<string, { label: string; className: string }
   qualified:        { label: 'Qualified',       className: 'bg-purple-100 text-purple-700' },
   proposal_sent:    { label: 'Proposal Sent',   className: 'bg-violet-100 text-violet-700' },
   converted:        { label: 'Converted',       className: 'bg-teal-100 text-teal-700' },
-  lost:             { label: 'Lost',            className: 'bg-red-100 text-red-400' },
+  lost:             { label: 'Lost',            className: 'bg-destructive-100 text-destructive-400' },
 };
 
 const ENGAGEMENT_BADGE_CONFIG: Record<string, { label: string; className: string }> = {
-  new:              { label: 'New',              className: 'bg-blue-100 text-blue-700' },
-  contacted:        { label: 'Contacted',        className: 'bg-amber-100 text-amber-700' },
-  replied:          { label: 'Replied',          className: 'bg-green-100 text-green-700' },
+  new:              { label: 'New',              className: 'bg-primary-100 text-primary-700' },
+  contacted:        { label: 'Contacted',        className: 'bg-warning-100 text-warning-700' },
+  replied:          { label: 'Replied',          className: 'bg-success-100 text-success-700' },
   interested:       { label: 'Interested',       className: 'bg-emerald-100 text-emerald-700' },
   not_interested:   { label: 'Not Interested',  className: 'bg-gray-100 text-gray-500' },
   out_of_office:    { label: 'Out of Office',   className: 'bg-yellow-100 text-yellow-600' },
@@ -112,19 +112,19 @@ const ENGAGEMENT_BADGE_CONFIG: Record<string, { label: string; className: string
 
 // Phase 4: legacy fallback for old rows without domain columns
 const LEGACY_BADGE_CONFIG: Record<string, { label: string; className: string }> = {
-  new:              { label: 'New',              className: 'bg-blue-100 text-blue-700' },
-  contacted:        { label: 'Contacted',        className: 'bg-amber-100 text-amber-700' },
-  replied:          { label: 'Replied',          className: 'bg-green-100 text-green-700' },
+  new:              { label: 'New',              className: 'bg-primary-100 text-primary-700' },
+  contacted:        { label: 'Contacted',        className: 'bg-warning-100 text-warning-700' },
+  replied:          { label: 'Replied',          className: 'bg-success-100 text-success-700' },
   interested:       { label: 'Interested',       className: 'bg-emerald-100 text-emerald-700' },
   not_interested:   { label: 'Not Interested',  className: 'bg-gray-100 text-gray-500' },
   qualified:        { label: 'Qualified',        className: 'bg-purple-100 text-purple-700' },
   proposal_sent:    { label: 'Proposal Sent',    className: 'bg-violet-100 text-violet-700' },
   converted:        { label: 'Converted',        className: 'bg-teal-100 text-teal-700' },
   closed:           { label: 'Closed',           className: 'bg-gray-100 text-gray-400' },
-  lost:             { label: 'Lost',             className: 'bg-red-100 text-red-400' },
+  lost:             { label: 'Lost',             className: 'bg-destructive-100 text-destructive-400' },
   archived:         { label: 'Archived',        className: 'bg-gray-50 text-gray-400' },
   out_of_office:    { label: 'Out of Office',   className: 'bg-yellow-100 text-yellow-600' },
-  do_not_contact:   { label: 'Do Not Contact',  className: 'bg-red-100 text-red-600' },
+  do_not_contact:   { label: 'Do Not Contact',  className: 'bg-destructive-100 text-destructive-600' },
 };
 
 // Phase 4: classify a LeadStatus value into its domain
@@ -165,9 +165,9 @@ function formatRelativeTime(timestamp: Date): string {
 // ── Reply intent chip config ─────────────────────────────────────
 
 const REPLY_INTENT_CHIP: Record<ReplyIntent, { label: string; className: string }> = {
-  interested:     { label: 'Interested',  className: 'bg-green-100 text-green-700' },
-  question:       { label: 'Question',    className: 'bg-blue-100 text-blue-700' },
-  objection:      { label: 'Objection',   className: 'bg-amber-100 text-amber-700' },
+  interested:     { label: 'Interested',  className: 'bg-success-100 text-success-700' },
+  question:       { label: 'Question',    className: 'bg-primary-100 text-primary-700' },
+  objection:      { label: 'Objection',   className: 'bg-warning-100 text-warning-700' },
   not_now:        { label: 'Not now',     className: 'bg-yellow-100 text-yellow-600' },
   not_interested: { label: 'Not interested', className: 'bg-gray-100 text-gray-500' },
 };
@@ -198,9 +198,9 @@ function handleAutoStatusUpdate(
 
 function scoreColor(score: number | undefined): string {
   if (score === undefined) return 'text-gray-400';
-  if (score >= SCORE_THRESHOLDS.GREEN) return 'text-green-600';
-  if (score >= SCORE_THRESHOLDS.AMBER) return 'text-amber-500';
-  return 'text-red-500';
+  if (score >= SCORE_THRESHOLDS.GREEN) return 'text-success-600';
+  if (score >= SCORE_THRESHOLDS.AMBER) return 'text-warning-500';
+  return 'text-destructive-500';
 }
 
 // ── Log Form sub-component ───────────────────────────────────────
@@ -274,7 +274,7 @@ function LogForm({
         type="button"
         onClick={handleSubmit}
         disabled={submitted}
-        className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
       >
         Log activity
       </button>
@@ -285,7 +285,7 @@ function LogForm({
             <button
               type="button"
               onClick={handleStatusYes}
-              className="rounded bg-amber-500 px-3 py-1 text-xs font-medium text-white hover:bg-amber-600"
+              className="rounded bg-warning-500 px-3 py-1 text-xs font-medium text-white hover:bg-warning-600"
             >
               Yes
             </button>
@@ -363,14 +363,14 @@ function EmailCell({
             <p className="text-xs text-gray-500 mb-3">Enrich this lead to find an email address.</p>
             <button
               onClick={() => onEnrichClick(lead)}
-              className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 mb-2"
+              className="w-full rounded bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 mb-2"
             >
               Enrich lead
             </button>
             <button
               type="button"
               onClick={() => setShowLogForm(!showLogForm)}
-              className="text-xs text-blue-600 hover:underline w-full text-left"
+              className="text-xs text-primary-600 hover:underline w-full text-left"
             >
               Log email manually
             </button>
@@ -428,7 +428,7 @@ function EmailCell({
             <Popover.Trigger asChild>
               <button className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900">
                 <Mail className="w-4 h-4" />
-                <CheckCircle className="w-3 h-3 text-green-500" />
+                <CheckCircle className="w-3 h-3 text-success-500" />
                 <span className="truncate max-w-[120px]">{email.address}</span>
               </button>
             </Popover.Trigger>
@@ -462,8 +462,8 @@ function EmailCell({
                 disabled={lead.doNotContact}
                 className={`w-full rounded px-3 py-1.5 text-sm font-medium ${
                   lead.doNotContact
-                    ? 'bg-red-200 text-red-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                    ? 'bg-destructive-200 text-destructive-400 cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >
                 {lead.doNotContact ? 'Do Not Contact' : 'Send email'}
@@ -473,7 +473,7 @@ function EmailCell({
                 disabled={lead.doNotContact}
                 className={`w-full rounded border px-3 py-1.5 text-sm font-medium ${
                   lead.doNotContact
-                    ? 'border-red-200 text-red-400 cursor-not-allowed'
+                    ? 'border-destructive-200 text-destructive-400 cursor-not-allowed'
                     : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -482,7 +482,7 @@ function EmailCell({
               <button
                 type="button"
                 onClick={() => setShowLogForm(!showLogForm)}
-                className="text-xs text-blue-600 hover:underline w-full text-left"
+                className="text-xs text-primary-600 hover:underline w-full text-left"
               >
                 Log external email
               </button>
@@ -518,7 +518,7 @@ function EmailCell({
             <Popover.Trigger asChild>
               <button className="flex items-center gap-1 text-sm text-gray-700 hover:text-gray-900">
                 <Mail className="w-4 h-4" />
-                <AlertTriangle className="w-3 h-3 text-amber-500" />
+                <AlertTriangle className="w-3 h-3 text-warning-500" />
                 <span className="truncate max-w-[120px]">{email.address}</span>
               </button>
             </Popover.Trigger>
@@ -540,8 +540,8 @@ function EmailCell({
             align="start"
             sideOffset={5}
           >
-            <div className="rounded bg-amber-50 border border-amber-200 px-3 py-2 mb-3">
-              <p className="text-xs text-amber-700">
+            <div className="rounded bg-warning-50 border border-amber-200 px-3 py-2 mb-3">
+              <p className="text-xs text-warning-700">
                 This email address may not be reliably deliverable. Send with caution.
               </p>
             </div>
@@ -556,8 +556,8 @@ function EmailCell({
                 disabled={lead.doNotContact}
                 className={`w-full rounded px-3 py-1.5 text-sm font-medium ${
                   lead.doNotContact
-                    ? 'bg-red-200 text-red-400 cursor-not-allowed'
-                    : 'bg-amber-500 text-white hover:bg-amber-600'
+                    ? 'bg-destructive-200 text-destructive-400 cursor-not-allowed'
+                    : 'bg-warning-500 text-white hover:bg-warning-600'
                 }`}
               >
                 {lead.doNotContact ? 'Do Not Contact' : 'Send anyway'}
@@ -567,7 +567,7 @@ function EmailCell({
                 disabled={lead.doNotContact}
                 className={`w-full rounded border px-3 py-1.5 text-sm font-medium ${
                   lead.doNotContact
-                    ? 'border-red-200 text-red-400 cursor-not-allowed'
+                    ? 'border-destructive-200 text-destructive-400 cursor-not-allowed'
                     : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
               >
@@ -576,7 +576,7 @@ function EmailCell({
               <button
                 type="button"
                 onClick={() => setShowLogForm(!showLogForm)}
-                className="text-xs text-blue-600 hover:underline w-full text-left"
+                className="text-xs text-primary-600 hover:underline w-full text-left"
               >
                 Log external email
               </button>
@@ -612,7 +612,7 @@ function EmailCell({
             <Popover.Trigger asChild>
               <button className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-500">
                 <Mail className="w-4 h-4" />
-                <XCircle className="w-3 h-3 text-red-500" />
+                <XCircle className="w-3 h-3 text-destructive-500" />
                 <span className="truncate max-w-[120px] line-through">{email.address}</span>
               </button>
             </Popover.Trigger>
@@ -634,13 +634,13 @@ function EmailCell({
             align="start"
             sideOffset={5}
           >
-            <div className="rounded bg-red-50 border border-red-200 px-3 py-2 mb-3">
-              <p className="text-xs text-red-700">This email is invalid. Do not send.</p>
+            <div className="rounded bg-destructive-50 border border-destructive-200 px-3 py-2 mb-3">
+              <p className="text-xs text-destructive-700">This email is invalid. Do not send.</p>
             </div>
             <p className="font-mono text-xs text-gray-400 line-through mb-3">{email.address}</p>
             <button
               onClick={() => onEnrichClick(lead)}
-              className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+              className="w-full rounded bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700"
             >
               Enrich lead
             </button>
@@ -685,13 +685,13 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <AlertTriangle className="w-12 h-12 text-amber-400 mb-4" />
+        <AlertTriangle className="w-12 h-12 text-warning-400 mb-4" />
         <h3 className="text-lg font-semibold text-gray-700 mb-1">Failed to load leads</h3>
         <p className="text-sm text-gray-400 mb-4">{error}</p>
         {onRetry && (
           <button
             onClick={onRetry}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
           >
             <RefreshCw className="w-4 h-4" />
             Retry
@@ -779,7 +779,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
         {onSearchClick && (
           <button
             onClick={onSearchClick}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
           >
             <Search className="w-4 h-4" />
             Search for leads
@@ -821,7 +821,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                 <tr
                   key={lead.id}
                   className={`group border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${
-                    isSelected ? 'bg-blue-50/40' : ''
+                    isSelected ? 'bg-primary-50/40' : ''
                   }`}
                 >
                   {/* Col 1 — Select */}
@@ -831,7 +831,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                       checked={isSelected}
                       onChange={() => toggleRow(lead.id)}
                       aria-label="Select lead"
-                      className={`rounded border-gray-300 text-blue-600 focus:ring-primary transition-opacity ${
+                      className={`rounded border-gray-300 text-primary-600 focus:ring-primary transition-opacity ${
                         isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                       }`}
                     />
@@ -972,7 +972,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                       {/* do_not_contact restriction badge */}
                       {lead.doNotContact && (
                         <span
-                          className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-600"
+                          className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-destructive-100 text-destructive-600"
                           aria-label="Do Not Contact"
                         >
                           DNC
@@ -1042,7 +1042,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                         {lead.lastActivity.replyIntent && (() => {
                           const chip = REPLY_INTENT_CHIP[lead.lastActivity.replyIntent!];
                           return chip ? (
-                            <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium leading-tight ${chip.className}`}>
+                            <span className={`inline-block rounded-full px-1.5 py-0.5 text-micro font-medium leading-tight ${chip.className}`}>
                               {chip.label}
                             </span>
                           ) : null;
@@ -1075,7 +1075,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                 onWhatsAppClick(lead);
                                 handleAutoStatusUpdate(lead, 'whatsapp', onStatusChange, onLogActivity);
                               }}
-                              className="text-green-500 hover:text-green-600"
+                              className="text-success-500 hover:text-success-600"
                               aria-label="Send WhatsApp"
                             >
                               <MessageCircle className="w-4 h-4" />
@@ -1180,7 +1180,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
                                   <DropdownMenu.Item
-                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-300 cursor-not-allowed outline-none"
+                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-destructive-300 cursor-not-allowed outline-none"
                                     disabled
                                     onSelect={(e) => e.preventDefault()}
                                   >
@@ -1189,7 +1189,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                   </DropdownMenu.Item>
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
-                                  <Tooltip.Content className="rounded bg-red-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
+                                  <Tooltip.Content className="rounded bg-destructive-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
                                     Do Not Contact — sends blocked
                                     <Tooltip.Arrow className="fill-red-900" />
                                   </Tooltip.Content>
@@ -1259,7 +1259,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
                                   <DropdownMenu.Item
-                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-300 cursor-not-allowed outline-none"
+                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-destructive-300 cursor-not-allowed outline-none"
                                     disabled
                                     onSelect={(e) => e.preventDefault()}
                                   >
@@ -1268,7 +1268,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                   </DropdownMenu.Item>
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
-                                  <Tooltip.Content className="rounded bg-red-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
+                                  <Tooltip.Content className="rounded bg-destructive-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
                                     Do Not Contact — sends blocked
                                     <Tooltip.Arrow className="fill-red-900" />
                                   </Tooltip.Content>
@@ -1311,7 +1311,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               <Tooltip.Root>
                                 <Tooltip.Trigger asChild>
                                   <DropdownMenu.Item
-                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-300 cursor-not-allowed outline-none"
+                                    className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-destructive-300 cursor-not-allowed outline-none"
                                     disabled
                                     onSelect={(e) => e.preventDefault()}
                                   >
@@ -1320,7 +1320,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                   </DropdownMenu.Item>
                                 </Tooltip.Trigger>
                                 <Tooltip.Portal>
-                                  <Tooltip.Content className="rounded bg-red-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
+                                  <Tooltip.Content className="rounded bg-destructive-900 px-2 py-1 text-xs text-white shadow-lg z-50" sideOffset={5}>
                                     Do Not Contact — enrollment blocked
                                     <Tooltip.Arrow className="fill-red-900" />
                                   </Tooltip.Content>
@@ -1359,7 +1359,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                   alignOffset={-5}
                                 >
                                   {/* Engagement status section */}
-                                  <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Engagement</div>
+                                  <div className="px-2 py-1 text-micro font-semibold text-gray-400 uppercase tracking-wider">Engagement</div>
                                   {engagementStatusOptions.map((s) => (
                                     <DropdownMenu.Item
                                       key={s}
@@ -1371,12 +1371,12 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                       }}
                                     >
                                       <span>{ENGAGEMENT_BADGE_CONFIG[s]?.label ?? s}</span>
-                                      {(lead.engagementStatus ?? lead.status) === s && <Check className="w-3 h-3 text-blue-600" />}
+                                      {(lead.engagementStatus ?? lead.status) === s && <Check className="w-3 h-3 text-primary-600" />}
                                     </DropdownMenu.Item>
                                   ))}
                                   <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
                                   {/* Pipeline stage section */}
-                                  <div className="px-2 py-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Pipeline</div>
+                                  <div className="px-2 py-1 text-micro font-semibold text-gray-400 uppercase tracking-wider">Pipeline</div>
                                   {pipelineStatusOptions.map((s) => (
                                     <DropdownMenu.Item
                                       key={s}
@@ -1388,7 +1388,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                       }}
                                     >
                                       <span>{PIPELINE_BADGE_CONFIG[s]?.label ?? s}</span>
-                                      {lead.pipelineStage === s && <Check className="w-3 h-3 text-blue-600" />}
+                                      {lead.pipelineStage === s && <Check className="w-3 h-3 text-primary-600" />}
                                     </DropdownMenu.Item>
                                   ))}
                                   <DropdownMenu.Separator className="h-px bg-gray-100 my-1" />
@@ -1396,7 +1396,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                   {warningStatuses.map((s) => (
                                     <DropdownMenu.Item
                                       key={s}
-                                      className="flex items-center justify-between rounded px-2 py-1.5 text-sm text-gray-400 hover:bg-red-50 hover:text-red-600 cursor-pointer outline-none"
+                                      className="flex items-center justify-between rounded px-2 py-1.5 text-sm text-gray-400 hover:bg-destructive-50 hover:text-destructive-600 cursor-pointer outline-none"
                                       onSelect={() => {
                                         onStatusChange(lead.id, s);
                                         onLogActivity(lead.id, { label: 'Status changed', timestamp: new Date() });
@@ -1404,7 +1404,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                       }}
                                     >
                                       <span>{LEGACY_BADGE_CONFIG[s]?.label ?? s}</span>
-                                      {lead.status === s && <Check className="w-3 h-3 text-blue-600" />}
+                                      {lead.status === s && <Check className="w-3 h-3 text-primary-600" />}
                                     </DropdownMenu.Item>
                                   ))}
                                 </DropdownMenu.SubContent>
@@ -1469,7 +1469,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                                       setConfirmingRemove(null);
                                       closePopover();
                                     }}
-                                    className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
+                                    className="rounded bg-destructive-600 px-2 py-1 text-xs font-medium text-white hover:bg-destructive-700"
                                   >
                                     Remove
                                   </button>
@@ -1486,7 +1486,7 @@ export function SavedLeadsTable(props: SavedLeadsTableProps) {
                               </div>
                             ) : (
                               <DropdownMenu.Item
-                                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 cursor-pointer outline-none"
+                                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm text-destructive-600 hover:bg-destructive-50 cursor-pointer outline-none"
                                 onSelect={(e) => {
                                   e.preventDefault(); // prevent menu from closing
                                   setConfirmingRemove(lead.id);

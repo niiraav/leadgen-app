@@ -23,7 +23,19 @@ export default function PipelineBoardMobile({
   onClearSelection,
 }: PipelineBoardMobileProps) {
   return (
-    <div className="flex flex-col gap-6 pb-6" onClick={() => onClearSelection?.()}>
+    <div
+      className="flex flex-col gap-6 pb-6"
+      role="button"
+      aria-label="Clear selection"
+      tabIndex={0}
+      onClick={() => onClearSelection?.()}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClearSelection?.();
+        }
+      }}
+    >
       {columns.map((column) => {
         const leads = leadsByColumn[column.id] ?? [];
         return (
@@ -33,10 +45,10 @@ export default function PipelineBoardMobile({
                 className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: column.color }}
               />
-              <h3 className="text-xs font-semibold text-text uppercase tracking-wide">
+              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
                 {column.title}
               </h3>
-              <span className="text-xs font-medium text-text-faint tabular-nums ml-auto">
+              <span className="text-xs font-medium text-foreground-faint tabular-nums ml-auto">
                 {leads.length}
               </span>
             </div>
@@ -58,7 +70,7 @@ export default function PipelineBoardMobile({
                         e.stopPropagation();
                         onStatusChange(lead.id, e.target.value);
                       }}
-                      className="mt-1 w-full h-8 px-2 text-xs rounded-md bg-surface-2 border border-border"
+                      className="mt-1 w-full h-8 px-2 text-xs rounded-md bg-secondary border border-border"
                     >
                       {columns.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -70,8 +82,8 @@ export default function PipelineBoardMobile({
                 </div>
               ))}
               {leads.length === 0 && (
-                <div className="rounded-md border border-dashed border-gray-200 bg-gray-50/30 h-12 flex items-center justify-center">
-                  <span className="text-[10px] text-text-faint">No leads</span>
+                <div className="rounded-md border border-dashed border-border bg-secondary/50 h-12 flex items-center justify-center">
+                  <span className="text-micro text-foreground-faint">No leads</span>
                 </div>
               )}
             </div>

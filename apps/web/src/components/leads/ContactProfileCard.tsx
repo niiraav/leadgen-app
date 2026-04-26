@@ -14,12 +14,12 @@ import type { Lead } from "@leadgen/shared";
 
 // ─── Email status config ───────────────────────────────────────────────────
 const EMAIL_STATUS_CONFIG: Record<string, { label: string; className: string; tooltip: string }> = {
-  valid:       { label: "Valid",       className: "text-green",       tooltip: "Email address verified and deliverable" },
-  invalid:     { label: "Invalid",     className: "text-red",         tooltip: "Email address does not exist" },
-  "catch-all": { label: "Catch-all",   className: "text-amber",       tooltip: "Domain accepts all emails, deliverability uncertain" },
-  accept_all:  { label: "Accept-all",  className: "text-amber",       tooltip: "Domain accepts all emails, deliverability uncertain" },
+  valid:       { label: "Valid",       className: "text-success",       tooltip: "Email address verified and deliverable" },
+  invalid:     { label: "Invalid",     className: "text-destructive",         tooltip: "Email address does not exist" },
+  "catch-all": { label: "Catch-all",   className: "text-warning",       tooltip: "Domain accepts all emails, deliverability uncertain" },
+  accept_all:  { label: "Accept-all",  className: "text-warning",       tooltip: "Domain accepts all emails, deliverability uncertain" },
   disposable:  { label: "Disposable",  className: "text-orange",      tooltip: "Disposable/temporary email provider" },
-  unknown:     { label: "Unknown",     className: "text-text-faint",  tooltip: "Could not verify email" },
+  unknown:     { label: "Unknown",     className: "text-foreground-faint",  tooltip: "Could not verify email" },
 };
 
 // ─── Tooltip wrapper (native title for WCAG, styled hover for visual) ────────
@@ -57,9 +57,9 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center gap-3 text-sm">
-      <Icon className="w-4 h-4 text-text-faint shrink-0" />
+      <Icon className="w-4 h-4 text-foreground-faint shrink-0" />
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="text-text truncate">{children}</span>
+        <span className="text-foreground truncate">{children}</span>
         {action}
       </div>
     </div>
@@ -88,12 +88,12 @@ function SocialRow({
           value={editValue || ""}
           onChange={(e) => onEditChange?.(e.target.value)}
           placeholder={`https://${label.toLowerCase().replace(/\s+/g, "")}...`}
-          className="flex-1 rounded-lg border border-border bg-surface-2 px-2 py-1 text-xs text-text focus:outline-none min-h-[28px]"
+          className="flex-1 rounded-lg border border-border bg-secondary px-2 py-1 text-xs text-foreground focus:outline-none min-h-[28px]"
         />
-        <TooltipButton label="Save" onClick={onSave} className="text-green hover:bg-green/5">
+        <TooltipButton label="Save" onClick={onSave} className="text-success hover:bg-success/5">
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
         </TooltipButton>
-        <TooltipButton label="Cancel" onClick={onCancel} className="text-text-faint hover:text-text hover:bg-surface-2">
+        <TooltipButton label="Cancel" onClick={onCancel} className="text-foreground-faint hover:text-foreground hover:bg-secondary">
           <X className="w-3.5 h-3.5" />
         </TooltipButton>
       </div>
@@ -105,7 +105,7 @@ function SocialRow({
         href={href.startsWith("http") ? href : `https://${href}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-1.5 text-xs text-blue hover:underline"
+        className="flex items-center gap-1.5 text-xs text-primary hover:underline"
       >
         {icon}
         <span>{label}</span>
@@ -116,9 +116,9 @@ function SocialRow({
   return (
     <button
       onClick={onAdd}
-      className="flex items-center gap-1.5 text-xs text-text-faint hover:text-blue transition-colors"
+      className="flex items-center gap-1.5 text-xs text-foreground-faint hover:text-primary transition-colors"
     >
-      <span className="text-text-faint">+</span>
+      <span className="text-foreground-faint">+</span>
       <span>Add {label}</span>
     </button>
   );
@@ -349,17 +349,17 @@ export default function ContactProfileCard({
       <div className="p-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text">Contact & Profile</h3>
+          <h3 className="text-sm font-semibold text-foreground">Contact & Profile</h3>
           {!editing ? (
-            <TooltipButton label="Edit contact info" onClick={startEditing} className="text-text-faint hover:text-blue hover:bg-blue/5">
+            <TooltipButton label="Edit contact info" onClick={startEditing} className="text-foreground-faint hover:text-primary hover:bg-primary/5">
               <Pencil className="w-3.5 h-3.5" />
             </TooltipButton>
           ) : (
             <div className="flex items-center gap-1">
-              <TooltipButton label="Save changes" onClick={saveEdit} disabled={saving} className="text-green hover:bg-green/5">
+              <TooltipButton label="Save changes" onClick={saveEdit} disabled={saving} className="text-success hover:bg-success/5">
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
               </TooltipButton>
-              <TooltipButton label="Cancel editing" onClick={() => setEditing(false)} className="text-text-faint hover:text-red hover:bg-red/5">
+              <TooltipButton label="Cancel editing" onClick={() => setEditing(false)} className="text-foreground-faint hover:text-destructive hover:bg-destructive/5">
                 <X className="w-3.5 h-3.5" />
               </TooltipButton>
             </div>
@@ -378,7 +378,7 @@ export default function ContactProfileCard({
               { key: "address", label: "Address", type: "text" },
             ].map((field) => (
               <div key={field.key}>
-                <label className="text-xs text-text-muted mb-1 block">{field.label}</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{field.label}</label>
                 <input
                   type={field.type}
                   value={editForm[field.key as keyof typeof editForm]}
@@ -389,12 +389,12 @@ export default function ContactProfileCard({
               </div>
             ))}
             <div>
-              <label className="text-xs text-text-muted mb-1 block">Notes</label>
+              <label className="text-xs text-muted-foreground mb-1 block">Notes</label>
               <textarea
                 value={editForm.notes}
                 onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                 placeholder="Add notes..."
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 rows={3}
               />
             </div>
@@ -409,17 +409,17 @@ export default function ContactProfileCard({
                   <div className="flex items-center gap-1.5 shrink-0">
                     {/* Status badge */}
                     {lead.email_status === "valid" && (
-                      <span className="text-green text-xs" title="Verified deliverable">✓</span>
+                      <span className="text-success text-xs" title="Verified deliverable">✓</span>
                     )}
                     {lead.email_status === "catch-all" && (
-                      <span className="text-amber text-xs" title="Catch-all domain">⚠</span>
+                      <span className="text-warning text-xs" title="Catch-all domain">⚠</span>
                     )}
                     {lead.email_status === "invalid" && (
-                      <span className="text-red text-xs" title="Invalid email">✗</span>
+                      <span className="text-destructive text-xs" title="Invalid email">✗</span>
                     )}
                     {lead.contact_email_type && (
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
-                        lead.contact_email_type === "direct" ? "bg-green/10 text-green" : "bg-surface-2 text-text-muted"
+                      <span className={`text-micro font-medium px-1.5 py-0.5 rounded-md ${
+                        lead.contact_email_type === "direct" ? "bg-success/10 text-success" : "bg-secondary text-muted-foreground"
                       }`}>
                         {lead.contact_email_type === "direct" ? "Direct" : "Generic"}
                       </span>
@@ -430,7 +430,7 @@ export default function ContactProfileCard({
                         label="Verify email deliverability"
                         onClick={() => setConfirmVerify(true)}
                         disabled={verifying}
-                        className="text-blue hover:bg-blue/5"
+                        className="text-primary hover:bg-primary/5"
                       >
                         {verifying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Search className="w-3 h-3" />}
                       </TooltipButton>
@@ -441,8 +441,8 @@ export default function ContactProfileCard({
 
               {/* Verify confirmation */}
               {confirmVerify && (
-                <div className="rounded-lg bg-surface-2 p-2 text-xs space-y-2 ml-7">
-                  <p className="text-text">Use 1 verification credit?</p>
+                <div className="rounded-lg bg-secondary p-2 text-xs space-y-2 ml-7">
+                  <p className="text-foreground">Use 1 verification credit?</p>
                   <div className="flex gap-2">
                     <button onClick={() => { setConfirmVerify(false); verifyEmail(); }} disabled={verifying}
                       className="btn btn-primary text-xs flex-1 disabled:opacity-50">
@@ -466,7 +466,7 @@ export default function ContactProfileCard({
                     href={displayWebsite.startsWith("http") ? displayWebsite : `https://${displayWebsite}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue hover:underline flex items-center gap-1"
+                    className="text-primary hover:underline flex items-center gap-1"
                   >
                     {displayWebsite.replace(/^https?:\/\//, "")}
                     <ExternalLink className="w-3 h-3" />
@@ -495,7 +495,7 @@ export default function ContactProfileCard({
               {/* Loss Reason — only shown for lost leads */}
               {(lead.status === "lost" || lead.pipelineStage === "lost") && lead.lossReason && (
                 <InfoRow icon={Frown} label="Lost reason">
-                  <span className="text-red font-medium">
+                  <span className="text-destructive font-medium">
                     {({
                       no_response: "No response",
                       wrong_timing: "Wrong timing",
@@ -511,7 +511,7 @@ export default function ContactProfileCard({
               {lead.contact_full_name && (
                 <InfoRow icon={Sparkles} label="Contact name">
                   {lead.contact_full_name}
-                  {lead.contact_title && <span className="text-text-muted text-xs"> · {lead.contact_title}</span>}
+                  {lead.contact_title && <span className="text-muted-foreground text-xs"> · {lead.contact_title}</span>}
                 </InfoRow>
               )}
 
@@ -523,7 +523,7 @@ export default function ContactProfileCard({
 
               {/* Empty state */}
               {!displayEmail && !displayPhone && !displayWebsite && !lead.city && !lead.address && !lead.category && !lead.contact_full_name && (
-                <div className="text-xs text-text-muted py-1">
+                <div className="text-xs text-muted-foreground py-1">
                   No contact details yet.
                 </div>
               )}
@@ -534,23 +534,23 @@ export default function ContactProfileCard({
               && !lead.contact_enriched_at && (
               <div className="mt-4 pt-4 border-t border-border/40">
                 {lead.contact_enrichment_status === "failed" && (
-                  <div className="rounded-lg bg-red/5 border border-red/20 p-2.5 mb-2 text-xs text-red space-y-1">
+                  <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-2.5 mb-2 text-xs text-destructive space-y-1">
                     <p className="font-medium">Enrichment failed</p>
-                    {lead.contact_enrichment_error && <p className="text-text-muted">{lead.contact_enrichment_error}</p>}
+                    {lead.contact_enrichment_error && <p className="text-muted-foreground">{lead.contact_enrichment_error}</p>}
                   </div>
                 )}
 
                 {previewLoading ? (
-                  <div className="flex items-center gap-2 text-xs text-text-muted">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Loader2 className="w-3 h-3 animate-spin" /> Checking for contacts...
                   </div>
                 ) : contactPreview && contactPreview.total_contacts > 0 && !contactPreview.already_enriched ? (
-                  <div className="rounded-lg bg-blue/5 border border-blue/20 p-3 mb-2 space-y-2">
-                    <div className="flex items-center gap-1.5 text-sm text-text font-medium">
-                      <Sparkles className="w-3.5 h-3.5 text-blue" />
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 mb-2 space-y-2">
+                    <div className="flex items-center gap-1.5 text-sm text-foreground font-medium">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
                       {contactPreview.total_contacts} contact{contactPreview.total_contacts > 1 ? "s" : ""} found
                     </div>
-                    <div className="text-xs text-text-muted italic">Unlock to view all contact details</div>
+                    <div className="text-xs text-muted-foreground italic">Unlock to view all contact details</div>
                   </div>
                 ) : null}
 
@@ -561,14 +561,14 @@ export default function ContactProfileCard({
                       <button
                         onClick={() => { setEnrichmentVisible(true); setConfirmEnrich(true); }}
                         disabled={enrichingContact}
-                        className="btn btn-ghost text-xs w-full text-blue"
+                        className="btn btn-ghost text-xs w-full text-primary"
                       >
                         {enrichingContact ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1 inline" /> : <Search className="w-3.5 h-3.5 mr-1 inline" />}
                         Unlock contact details
                       </button>
                     ) : (
-                      <div className="rounded-lg bg-surface-2 p-2 text-xs space-y-2">
-                        <p className="text-text">Use 1 enrichment credit to unlock?</p>
+                      <div className="rounded-lg bg-secondary p-2 text-xs space-y-2">
+                        <p className="text-foreground">Use 1 enrichment credit to unlock?</p>
                         <div className="flex gap-2">
                           <button onClick={handleEnrichContact} disabled={enrichingContact}
                             className="btn btn-primary text-xs flex-1 disabled:opacity-50">
@@ -579,7 +579,7 @@ export default function ContactProfileCard({
                         </div>
                       </div>
                     )}
-                    <p className="text-[10px] text-text-faint text-center">
+                    <p className="text-micro text-foreground-faint text-center">
                       Finds direct email, phone, LinkedIn and owner name · Uses 1 credit
                     </p>
                   </div>
@@ -587,16 +587,16 @@ export default function ContactProfileCard({
               </div>
             )}
 
-            {enrichResult && <p className="text-xs text-text-muted mt-2">{enrichResult}</p>}
+            {enrichResult && <p className="text-xs text-muted-foreground mt-2">{enrichResult}</p>}
 
             {/* ── Owner ── */}
             <div className="mt-4 pt-4 border-t border-border/40">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold text-text-faint uppercase tracking-wider">Owner</span>
+                <span className="text-micro font-semibold text-foreground-faint uppercase tracking-wider">Owner</span>
                 <TooltipButton
                   label={lead.owner_name ? "Edit owner" : "Add owner"}
                   onClick={() => setShowOwnerEdit(true)}
-                  className="text-text-faint hover:text-blue hover:bg-blue/5"
+                  className="text-foreground-faint hover:text-primary hover:bg-primary/5"
                 >
                   <Pencil className="w-3 h-3" />
                 </TooltipButton>
@@ -605,60 +605,60 @@ export default function ContactProfileCard({
               {showOwnerEdit ? (
                 <div className="space-y-2">
                   <div>
-                    <label className="text-xs text-text-muted mb-1 block">Full name</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">Full name</label>
                     <input
                       value={ownerName}
                       onChange={(e) => setOwnerName(e.target.value)}
                       placeholder="e.g. John Smith"
-                      className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]"
+                      className="w-full rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-foreground focus:outline-none min-h-[28px]"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-text-muted mb-1 block">First name</label>
+                    <label className="text-xs text-muted-foreground mb-1 block">First name</label>
                     <input
                       value={ownerFirstName}
                       onChange={(e) => setOwnerFirstName(e.target.value)}
                       placeholder="e.g. John"
-                      className="w-full rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs text-text focus:outline-none min-h-[28px]"
+                      className="w-full rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-xs text-foreground focus:outline-none min-h-[28px]"
                     />
                   </div>
                   <div className="flex items-center gap-2">
                     <button onClick={handleSaveOwner} className="btn btn-primary text-xs py-0.5 h-6 min-h-[24px]">Save</button>
-                    <button onClick={() => setShowOwnerEdit(false)} className="text-xs text-text-muted hover:text-text underline">Cancel</button>
+                    <button onClick={() => setShowOwnerEdit(false)} className="text-xs text-muted-foreground hover:text-foreground underline">Cancel</button>
                   </div>
                 </div>
               ) : lead.owner_name || lead.owner_first_name ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-text font-medium">
+                  <span className="text-sm text-foreground font-medium">
                     {lead.owner_first_name || lead.owner_name}
                   </span>
                   {lead.owner_name_source && (
-                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-surface-2 text-text-muted">
+                    <span className="text-micro font-medium px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground">
                       {lead.owner_name_source === "gmb_reviews" || lead.owner_name_source === "reviews" ? "from reviews" : "manual"}
                     </span>
                   )}
                   {lead.owner_name_source === "reviews" && (
-                    <span className="text-text-faint" title="AI-extracted from reviews — please verify">
+                    <span className="text-foreground-faint" title="AI-extracted from reviews — please verify">
                       <Info className="w-3 h-3" />
                     </span>
                   )}
                 </div>
               ) : (
-                <span className="text-sm text-text-faint italic">Unknown</span>
+                <span className="text-sm text-foreground-faint italic">Unknown</span>
               )}
             </div>
 
             {/* ── Social & Web ── */}
             <div className="mt-4 pt-4 border-t border-border/40">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-semibold text-text-faint uppercase tracking-wider">Social & Web</span>
-                {socialError && <span className="text-xs text-red">{socialError}</span>}
+                <span className="text-micro font-semibold text-foreground-faint uppercase tracking-wider">Social & Web</span>
+                {socialError && <span className="text-xs text-destructive">{socialError}</span>}
               </div>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                 {/* Google Maps */}
                 {lead.gmb_url ? (
                   <a href={lead.gmb_url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-xs text-blue hover:underline">
+                    className="flex items-center gap-1.5 text-xs text-primary hover:underline">
                     <MapPin className="w-3 h-3" />
                     Google Maps <ExternalLink className="w-2.5 h-2.5" />
                   </a>
@@ -711,7 +711,7 @@ export default function ContactProfileCard({
 
                 {/* Twitter / X */}
                 <SocialRow
-                  icon={<span className="text-text font-bold text-xs">𝕏</span>}
+                  icon={<span className="text-foreground font-bold text-xs">𝕏</span>}
                   label="Twitter / X"
                   href={lead.twitter_handle}
                   onAdd={() => { setSocialEditing("twitter_handle"); setSocialValues((v) => ({ ...v, twitter_handle: "" })); }}

@@ -38,19 +38,19 @@ const intentEmoji: Record<string, string> = {
 
 function intentColor(intent: string) {
   const map: Record<string, string> = {
-    interested: "bg-green/10 text-green",
-    question: "bg-blue/10 text-blue",
-    objection: "bg-amber/10 text-amber",
-    "not_interested": "bg-red/10 text-red",
+    interested: "bg-success/10 text-success",
+    question: "bg-primary/10 text-primary",
+    objection: "bg-warning/10 text-warning",
+    "not_interested": "bg-destructive/10 text-destructive",
     "not_now": "bg-purple/10 text-purple",
   };
-  return map[intent] || "bg-surface-2 text-text-muted";
+  return map[intent] || "bg-secondary text-muted-foreground";
 }
 
 function hotScoreColor(score: number) {
-  if (score >= SCORE_THRESHOLDS.GREEN) return "bg-green";
-  if (score >= SCORE_THRESHOLDS.AMBER) return "bg-amber";
-  return "bg-red";
+  if (score >= SCORE_THRESHOLDS.GREEN) return "bg-success";
+  if (score >= SCORE_THRESHOLDS.AMBER) return "bg-warning";
+  return "bg-destructive";
 }
 
 function relativeTime(dateStr: string) {
@@ -123,16 +123,16 @@ export default function HotLeadsWidget() {
     return (
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text">Hot Leads</h3>
-          <Loader2 className="w-4 h-4 text-text-muted animate-spin" />
+          <h3 className="text-sm font-semibold text-foreground">Hot Leads</h3>
+          <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse flex items-center gap-3">
-              <div className="w-8 h-8 bg-surface-2 rounded-lg" />
+              <div className="w-8 h-8 bg-secondary rounded-lg" />
               <div className="flex-1 space-y-2">
-                <div className="h-3 w-32 bg-surface-2 rounded" />
-                <div className="h-2 w-24 bg-surface-2 rounded" />
+                <div className="h-3 w-32 bg-secondary rounded" />
+                <div className="h-2 w-24 bg-secondary rounded" />
               </div>
             </div>
           ))}
@@ -145,10 +145,10 @@ export default function HotLeadsWidget() {
     return (
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text">Hot Leads</h3>
-          <Flame className="w-4 h-4 text-text-muted" />
+          <h3 className="text-sm font-semibold text-foreground">Hot Leads</h3>
+          <Flame className="w-4 h-4 text-muted-foreground" />
         </div>
-        <p className="text-xs text-red">Failed to load replies.</p>
+        <p className="text-xs text-destructive">Failed to load replies.</p>
       </Card>
     );
   }
@@ -157,8 +157,8 @@ export default function HotLeadsWidget() {
     return (
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text">Hot Leads</h3>
-          <Flame className="w-4 h-4 text-amber" />
+          <h3 className="text-sm font-semibold text-foreground">Hot Leads</h3>
+          <Flame className="w-4 h-4 text-warning" />
         </div>
         <EmptyState
           icon={MessageSquare}
@@ -175,14 +175,14 @@ export default function HotLeadsWidget() {
       {/* Header with count badge */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-text">Hot Leads</h3>
+          <h3 className="text-sm font-semibold text-foreground">Hot Leads</h3>
           {unactionedCount > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-amber/10 text-amber text-[10px] font-bold px-2 py-0.5">
+            <span className="inline-flex items-center justify-center rounded-full bg-warning/10 text-warning text-micro font-bold px-2 py-0.5">
               {unactionedCount} need{unactionedCount === 1 ? "" : "s"} attention
             </span>
           )}
         </div>
-        <Flame className="w-4 h-4 text-amber" />
+        <Flame className="w-4 h-4 text-warning" />
       </div>
 
       {/* Leads list */}
@@ -194,7 +194,7 @@ export default function HotLeadsWidget() {
           return (
             <div
               key={reply.id}
-              className="flex items-start gap-3 py-2 px-1 rounded-lg hover:bg-surface-2/50 transition-colors"
+              className="flex items-start gap-3 py-2 px-1 rounded-lg hover:bg-secondary/50 transition-colors"
             >
               {/* Intent emoji */}
               <div
@@ -206,29 +206,29 @@ export default function HotLeadsWidget() {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-text truncate">
+                  <span className="text-sm font-medium text-foreground truncate">
                     {businessName}
                   </span>
-                  <span className="text-[10px] text-text-faint shrink-0">
+                  <span className="text-micro text-foreground-faint shrink-0">
                     {relativeTime(reply.received_at)}
                   </span>
                 </div>
 
                 {reply.key_phrase && (
-                  <p className="text-xs text-text-muted italic mt-0.5 truncate">
+                  <p className="text-xs text-muted-foreground italic mt-0.5 truncate">
                     "{reply.key_phrase}"
                   </p>
                 )}
 
                 {/* Hot score bar */}
                 <div className="flex items-center gap-2 mt-1.5">
-                  <div className="flex-1 h-1.5 bg-surface-2 rounded-full overflow-hidden">
+                  <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full ${hotScoreColor(reply.hot_score)}`}
                       style={{ width: `${Math.max(reply.hot_score, 4)}%` }}
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-text-muted w-6 text-right">
+                  <span className="text-micro font-bold text-muted-foreground w-6 text-right">
                     {reply.hot_score}
                   </span>
                 </div>
@@ -242,7 +242,7 @@ export default function HotLeadsWidget() {
       <div className="pt-3 mt-3 border-t border-border/40">
         <Link
           href="/replies"
-          className="flex items-center gap-1 text-xs text-blue hover:text-blue/80 font-medium transition-colors"
+          className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 font-medium transition-colors"
         >
           View all replies
           <ArrowRight className="w-3 h-3" />

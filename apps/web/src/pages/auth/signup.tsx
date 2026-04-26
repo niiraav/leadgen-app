@@ -40,21 +40,21 @@ export default function SignupPage() {
       <div className="min-h-screen flex items-center justify-center bg-bg p-6">
         <div className="w-full max-w-md">
           <div className="flex items-center justify-center gap-2.5 mb-8">
-            <Zap className="w-8 h-8 text-blue" />
-            <span className="font-bold text-xl text-text tracking-tight">LeadGen</span>
+            <Zap className="w-8 h-8 text-primary" />
+            <span className="font-bold text-xl text-foreground tracking-tight">LeadGen</span>
           </div>
-          <div className="rounded-xl border border-green/20 bg-green/5 p-8 text-center">
-            <div className="w-12 h-12 rounded-full bg-green/10 flex items-center justify-center mx-auto mb-4">
-              <svg className="w-6 h-6 text-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="rounded-xl border border-green/20 bg-success/5 p-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h2 className="text-lg font-bold text-text mb-2">Check your email</h2>
-            <p className="text-sm text-text-muted">
+            <h2 className="text-lg font-bold text-foreground mb-2">Check your email</h2>
+            <p className="text-sm text-muted-foreground">
               We&apos;ve sent a confirmation link to <strong>{email}</strong>.
               Click the link to activate your account, then sign in.
             </p>
-            <a href="/auth/login" className="inline-block mt-6 text-sm text-blue hover:underline">
+            <a href="/auth/login" className="inline-block mt-6 text-sm text-primary hover:underline">
               ← Back to sign in
             </a>
           </div>
@@ -67,23 +67,23 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-bg p-6">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <Zap className="w-8 h-8 text-blue" />
-          <span className="font-bold text-xl text-text tracking-tight">LeadGen</span>
+          <Zap className="w-8 h-8 text-primary" />
+          <span className="font-bold text-xl text-foreground tracking-tight">LeadGen</span>
         </div>
 
-        <div className="rounded-xl border border-border/60 bg-surface p-8">
-          <h1 className="text-xl font-bold text-text mb-1">Create account</h1>
-          <p className="text-sm text-text-muted mb-6">Start managing your leads</p>
+        <div className="rounded-xl border border-border/60 bg-card p-8">
+          <h1 className="text-xl font-bold text-foreground mb-1">Create account</h1>
+          <p className="text-sm text-muted-foreground mb-6">Start managing your leads</p>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red/10 border border-red/20 px-4 py-3 text-sm text-red">
+            <div className="mb-4 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSignup} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">Email</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Email</label>
               <input
                 type="email"
                 value={email}
@@ -94,7 +94,7 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1.5">Password</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Password</label>
               <input
                 type="password"
                 value={password}
@@ -121,9 +121,9 @@ export default function SignupPage() {
             </button>
           </form>
 
-          <p className="text-xs text-text-muted mt-6 text-center">
+          <p className="text-xs text-muted-foreground mt-6 text-center">
             Already have an account?{" "}
-            <a href="/auth/login" className="text-blue hover:underline">
+            <a href="/auth/login" className="text-primary hover:underline">
               Sign in
             </a>
           </p>

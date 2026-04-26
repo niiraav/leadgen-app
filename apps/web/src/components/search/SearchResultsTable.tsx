@@ -87,11 +87,11 @@ function OverflowMenu({
         ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
-        className="p-1 rounded hover:bg-surface-2 text-text-muted hover:text-text transition-colors disabled:opacity-50"
+        className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
         aria-label="More actions"
       >
         {isEnriching ? (
-          <Loader2 className="w-4 h-4 animate-spin text-amber" />
+          <Loader2 className="w-4 h-4 animate-spin text-warning" />
         ) : (
           <MoreHorizontal className="w-4 h-4" />
         )}
@@ -100,7 +100,7 @@ function OverflowMenu({
         <div
           ref={menuRef}
           style={{ position: "fixed", top: menuPos.top, left: menuPos.left, zIndex: 100 }}
-          className="rounded-lg border border-border bg-surface p-1 shadow-md min-w-[180px]"
+          className="rounded-lg border border-border bg-card p-1 shadow-md min-w-[180px]"
         >
           <button
             onClick={() => {
@@ -108,12 +108,12 @@ function OverflowMenu({
               setOpen(false);
             }}
             disabled={isEnriching}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-text hover:bg-surface-2 cursor-pointer disabled:opacity-50"
+            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-foreground hover:bg-secondary cursor-pointer disabled:opacity-50"
           >
             {isEnriching ? (
-              <Loader2 className="w-4 h-4 animate-spin text-amber" />
+              <Loader2 className="w-4 h-4 animate-spin text-warning" />
             ) : (
-              <Zap className="w-4 h-4 text-amber" />
+              <Zap className="w-4 h-4 text-warning" />
             )}
             {isEnriching ? "Enriching…" : "Save & Enrich — 2 credits"}
           </button>
@@ -231,7 +231,7 @@ export function SearchResultsTable({
     className?: string;
   }) => (
     <th
-      className={`px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider text-left cursor-pointer select-none hover:text-text transition-colors ${className}`}
+      className={`px-3 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider text-left cursor-pointer select-none hover:text-foreground transition-colors ${className}`}
       onClick={() => handleSort(column)}
     >
       <div className="flex items-center gap-1">
@@ -245,19 +245,19 @@ export function SearchResultsTable({
     <div>
       {/* Results count */}
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-text">
+        <h3 className="text-sm font-medium text-foreground">
           {results.length} result{results.length !== 1 ? "s" : ""} found
         </h3>
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-border/60 bg-surface">
+      <div className="overflow-x-auto rounded-xl border border-border/60 bg-card">
         {/* Bulk action bar */}
         {(selected.size > 0 || batchSaved) && (
-          <div className="flex items-center justify-between px-3 py-2 bg-surface-2 border-b border-border/40">
-            <span className="text-sm text-text">
+          <div className="flex items-center justify-between px-3 py-2 bg-secondary border-b border-border/40">
+            <span className="text-sm text-foreground">
               {batchSaved ? (
-                <span className="text-green font-medium">Saved</span>
+                <span className="text-success font-medium">Saved</span>
               ) : (
                 <>
                   <strong>{selected.size}</strong> selected
@@ -266,10 +266,10 @@ export function SearchResultsTable({
             </span>
             <div className="flex items-center gap-2">
               {!canAfford && !batchSaved && (
-                <span className="text-xs text-red">Lead limit exceeded</span>
+                <span className="text-xs text-destructive">Lead limit exceeded</span>
               )}
               {batchSaved ? (
-                <span className="inline-flex items-center rounded bg-green px-2 py-1 text-xs font-medium text-white">
+                <span className="inline-flex items-center rounded bg-success px-2 py-1 text-xs font-medium text-success-foreground">
                   <Check className="w-3 h-3 mr-1" />
                   Saved
                 </span>
@@ -287,7 +287,7 @@ export function SearchResultsTable({
                     }, 2500);
                   }}
                   disabled={savingId !== null || !canAfford}
-                  className="inline-flex items-center rounded bg-blue px-2 py-1 text-xs font-medium text-white hover:bg-blue/90 disabled:opacity-50 transition-colors"
+                  className="inline-flex items-center rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   Save {selected.size} lead{selected.size > 1 ? "s" : ""}
                 </button>
@@ -297,7 +297,7 @@ export function SearchResultsTable({
                   setBatchSaved(false);
                   setSelected(new Set());
                 }}
-                className="text-xs text-text-muted hover:text-text px-2 py-1"
+                className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
               >
                 Clear
               </button>
@@ -306,8 +306,8 @@ export function SearchResultsTable({
         )}
 
         <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-surface">
-            <tr className="border-b border-border/40 bg-surface text-left">
+          <thead className="sticky top-0 z-10 bg-card">
+            <tr className="border-b border-border/40 bg-card text-left">
               <th className="w-10 px-2 py-3">
                 <input
                   type="checkbox"
@@ -316,22 +316,22 @@ export function SearchResultsTable({
                     nonDuplicateResults.length > 0
                   }
                   onChange={toggleAll}
-                  className="rounded border-border-strong text-blue focus:ring-primary"
+                  className="rounded border-border-strong text-primary focus:ring-primary"
                 />
               </th>
               <SortableHeader label="Business" column="business" />
-              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
+              <th className="px-3 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                 Category
               </th>
               <SortableHeader label="Location" column="location" />
               <SortableHeader label="Rating" column="rating" />
-              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
+              <th className="px-3 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                 Links
               </th>
-              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
+              <th className="px-3 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                 Phone
               </th>
-              <th className="px-3 py-3 font-medium text-text-muted text-xs uppercase tracking-wider">
+              <th className="px-3 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -350,7 +350,7 @@ export function SearchResultsTable({
                 whileHover={{ x: 3 }}
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 className={`group border-b border-border/20 transition-colors ${
-                  selected.has(r.place_id) ? "bg-blue/5" : ""
+                  selected.has(r.place_id) ? "bg-primary/5" : ""
                 } ${r.duplicate ? "opacity-50" : ""}`}
               >
                 {/* Checkbox */}
@@ -361,7 +361,7 @@ export function SearchResultsTable({
                       checked={selected.has(r.place_id)}
                       onChange={() => toggleSelect(r.place_id)}
                       aria-label="Select lead"
-                      className={`rounded border-border-strong text-blue focus:ring-primary transition-opacity ${
+                      className={`rounded border-border-strong text-primary focus:ring-primary transition-opacity ${
                         selected.has(r.place_id)
                           ? "opacity-100"
                           : "opacity-0 group-hover:opacity-100"
@@ -378,17 +378,17 @@ export function SearchResultsTable({
                         onClick={() => {
                           window.location.href = `/leads/${r.existingLeadId}`;
                         }}
-                        className="font-medium text-text truncate max-w-[200px] hover:underline text-left"
+                        className="font-medium text-foreground truncate max-w-[200px] hover:underline text-left"
                       >
                         {r.name}
                       </button>
                     ) : (
-                      <span className="font-medium text-text truncate max-w-[200px]">
+                      <span className="font-medium text-foreground truncate max-w-[200px]">
                         {r.name}
                       </span>
                     )}
                     {r.duplicate && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-2 text-text-muted shrink-0">
+                      <span className="text-micro px-1.5 py-0.5 rounded-full bg-secondary text-muted-foreground shrink-0">
                         Saved
                       </span>
                     )}
@@ -396,16 +396,16 @@ export function SearchResultsTable({
                 </td>
 
                 {/* Category */}
-                <td className="px-3 py-3 text-text-muted text-sm">{r.category}</td>
+                <td className="px-3 py-3 text-muted-foreground text-sm">{r.category}</td>
 
                 {/* Location */}
-                <td className="px-3 py-3 text-text-muted text-sm">{r.city}</td>
+                <td className="px-3 py-3 text-muted-foreground text-sm">{r.city}</td>
 
                 {/* Rating */}
                 <td className="px-3 py-3">
-                  <span className="text-sm text-text">
+                  <span className="text-sm text-foreground">
                     {r.rating.toFixed(1)}{" "}
-                    <span className="text-text-muted">({r.reviews})</span>
+                    <span className="text-muted-foreground">({r.reviews})</span>
                   </span>
                 </td>
 
@@ -416,22 +416,22 @@ export function SearchResultsTable({
                       href={r.site}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center text-blue hover:text-blue"
+                      className="inline-flex items-center justify-center text-primary hover:text-primary"
                       title={r.site}
                     >
                       <Link className="w-5 h-5" />
                     </a>
                   ) : (
-                    <span className="text-text-muted">—</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </td>
 
                 {/* Phone */}
                 <td className="px-3 py-3 text-sm">
                   {r.phone ? (
-                    <span className="text-text">{r.phone}</span>
+                    <span className="text-foreground">{r.phone}</span>
                   ) : (
-                    <span className="text-text-muted">—</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
                 </td>
 
@@ -443,7 +443,7 @@ export function SearchResultsTable({
                       <button
                         onClick={() => onSaveOne(r)}
                         disabled={savingId !== null}
-                        className="rounded bg-blue px-2 py-1 text-xs font-medium text-white hover:bg-blue/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
+                        className="rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                       >
                         {savingId === r.place_id ? (
                           <>
@@ -466,7 +466,7 @@ export function SearchResultsTable({
                     <div className="flex items-center gap-1">
                       <a
                         href={`/leads/${r.existingLeadId}`}
-                        className="rounded bg-green px-2 py-1 text-xs font-medium text-white hover:bg-green/90 transition-colors inline-flex items-center gap-1"
+                        className="rounded bg-success px-2 py-1 text-xs font-medium text-success-foreground hover:bg-success/90 transition-colors inline-flex items-center gap-1"
                       >
                         Open
                       </a>
@@ -476,7 +476,7 @@ export function SearchResultsTable({
                             initial={saveSuccessPop.initial}
                             animate={saveSuccessPop.animate}
                             exit={saveSuccessPop.exit}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-green"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-success"
                           >
                             <Check className="w-3.5 h-3.5" />
                           </motion.div>

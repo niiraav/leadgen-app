@@ -9,7 +9,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border/60 bg-surface p-5 transition-all duration-200",
+        "rounded-lg border border-border bg-card p-5 transition-all duration-200",
         className
       )}
       {...props}
@@ -35,7 +35,7 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn("text-lg font-semibold tracking-tight text-text", className)}
+      className={cn("text-lg font-semibold tracking-tight text-foreground", className)}
       {...props}
     />
   );
@@ -47,7 +47,7 @@ export function CardDescription({
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn("text-sm text-text-muted", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -66,7 +66,7 @@ export function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("flex items-center pt-4 border-t border-border/40", className)}
+      className={cn("flex items-center pt-4 border-t border-border", className)}
       {...props}
     />
   );
@@ -99,7 +99,7 @@ export function KPICard({
   return (
     <motion.div
       className={cn(
-        "rounded-lg border border-border/60 bg-surface p-5 hover:shadow-sm transition-all duration-200",
+        "rounded-lg border border-border bg-card p-5 hover:shadow-sm transition-all duration-200",
         className
       )}
       whileHover={{ y: -1 }}
@@ -107,14 +107,14 @@ export function KPICard({
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-text-muted">{title}</p>
-          <p className="text-3xl font-bold text-text tracking-tight">{value}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-3xl font-bold text-foreground tracking-tight">{value}</p>
           {secondaryValue && (
-            <p className="text-xs text-text-faint mt-0.5">{secondaryValue}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{secondaryValue}</p>
           )}
         </div>
         {icon && (
-          <div className="rounded-full bg-surface-2 p-2.5 text-text-muted">
+          <div className="rounded-full bg-secondary p-2.5 text-muted-foreground">
             {icon}
           </div>
         )}
@@ -124,14 +124,14 @@ export function KPICard({
           <span
             className={cn(
               "text-xs font-semibold",
-              changeType === "positive" && "text-green",
-              changeType === "negative" && "text-red",
-              changeType === "neutral" && "text-text-muted"
+              changeType === "positive" && "text-success",
+              changeType === "negative" && "text-destructive",
+              changeType === "neutral" && "text-muted-foreground"
             )}
           >
             {change}
           </span>
-          <span className="text-xs text-text-faint">vs last week</span>
+          <span className="text-xs text-muted-foreground">vs last week</span>
         </div>
       )}
     </motion.div>
@@ -145,35 +145,35 @@ import { HotScoreBadge } from "@/components/ui/badge";
 
 // Phase 4: badge color maps for domain-specific status fields
 const PIPELINE_BADGE_COLORS: Record<string, string> = {
-  qualified: "bg-purple/10 text-purple",
-  proposal_sent: "bg-violet/10 text-violet",
-  converted: "bg-green/10 text-green",
-  lost: "bg-red/10 text-red",
+  qualified: "bg-primary/10 text-primary",
+  proposal_sent: "bg-primary/10 text-primary",
+  converted: "bg-success/10 text-success",
+  lost: "bg-destructive/10 text-destructive",
 };
 
 const ENGAGEMENT_BADGE_COLORS: Record<string, string> = {
-  new: "bg-blue/10 text-blue",
-  contacted: "bg-amber/10 text-amber",
-  replied: "bg-green/10 text-green",
-  interested: "bg-emerald/10 text-emerald",
-  not_interested: "bg-gray-200/10 text-gray-500",
-  out_of_office: "bg-yellow/10 text-yellow-600",
+  new: "bg-primary/10 text-primary",
+  contacted: "bg-warning/10 text-warning",
+  replied: "bg-success/10 text-success",
+  interested: "bg-success/10 text-success",
+  not_interested: "bg-muted/10 text-muted-foreground",
+  out_of_office: "bg-warning/10 text-warning",
 };
 
 // Phase 4: legacy fallback for old rows without domain columns
 const LEGACY_BADGE_COLORS: Record<string, string> = {
-  new: "bg-blue/10 text-blue",
-  contacted: "bg-amber/10 text-amber",
-  replied: "bg-green/10 text-green",
-  interested: "bg-emerald/10 text-emerald",
-  not_interested: "bg-gray-200/10 text-gray-500",
-  qualified: "bg-purple/10 text-purple",
-  proposal_sent: "bg-violet/10 text-violet",
-  converted: "bg-green/10 text-green",
-  closed: "bg-gray-100/10 text-gray-400",
-  lost: "bg-red/10 text-red",
-  archived: "bg-gray-50/10 text-gray-400",
-  out_of_office: "bg-yellow/10 text-yellow-600",
+  new: "bg-primary/10 text-primary",
+  contacted: "bg-warning/10 text-warning",
+  replied: "bg-success/10 text-success",
+  interested: "bg-success/10 text-success",
+  not_interested: "bg-muted/10 text-muted-foreground",
+  qualified: "bg-primary/10 text-primary",
+  proposal_sent: "bg-primary/10 text-primary",
+  converted: "bg-success/10 text-success",
+  closed: "bg-muted/10 text-muted-foreground",
+  lost: "bg-destructive/10 text-destructive",
+  archived: "bg-muted/10 text-muted-foreground",
+  out_of_office: "bg-warning/10 text-warning",
 };
 
 export function LeadCard({
@@ -206,27 +206,27 @@ export function LeadCard({
     <Link
       href={`/leads/${lead.id}`}
       className={cn(
-        "block rounded-lg border border-border/60 bg-surface p-4 hover:border-border-strong transition-all duration-200 cursor-pointer group",
-        lead.doNotContact && "border-red/30",
+        "block rounded-lg border border-border bg-card p-4 hover:border-border transition-all duration-200 cursor-pointer group",
+        lead.doNotContact && "border-destructive/30",
         className
       )}
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h4 className="font-semibold text-text text-sm truncate group-hover:text-blue transition-colors">
+            <h4 className="font-semibold text-foreground text-sm truncate group-hover:text-primary transition-colors">
               {lead.name}
             </h4>
             <HotScoreBadge score={lead.hotScore} />
           </div>
-          <p className="text-xs text-text-muted mt-0.5">{lead.title} at {lead.company}</p>
-          <p className="text-xs text-text-faint mt-0.5">{lead.email}</p>
-          <p className="text-xs text-text-faint mt-0.5">{lead.location}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{lead.title} at {lead.company}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{lead.email}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{lead.location}</p>
         </div>
         <div className="text-right shrink-0">
           {/* Phase 4: do_not_contact warning badge */}
           {lead.doNotContact && (
-            <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-red/10 text-red mb-1">
+            <span className="inline-block rounded-full px-2 py-0.5 text-micro font-semibold uppercase tracking-wider bg-destructive/10 text-destructive mb-1">
               Do Not Contact
             </span>
           )}
@@ -234,10 +234,10 @@ export function LeadCard({
           {(primaryBadge || fallbackBadge) && (
             <span
               className={cn(
-                "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                "inline-block rounded-full px-2 py-0.5 text-micro font-semibold uppercase tracking-wider",
                 primaryBadge
-                  ? PIPELINE_BADGE_COLORS[primaryBadge] || "bg-gray-100/10 text-gray-500"
-                  : LEGACY_BADGE_COLORS[fallbackBadge!] || "bg-gray-100/10 text-gray-500"
+                  ? PIPELINE_BADGE_COLORS[primaryBadge] || "bg-muted/10 text-muted-foreground"
+                  : LEGACY_BADGE_COLORS[fallbackBadge!] || "bg-muted/10 text-muted-foreground"
               )}
             >
               {primaryBadge || fallbackBadge}
@@ -247,14 +247,14 @@ export function LeadCard({
           {secondaryBadge && (
             <span
               className={cn(
-                "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ml-1",
-                ENGAGEMENT_BADGE_COLORS[secondaryBadge] || "bg-gray-100/10 text-gray-500"
+                "inline-block rounded-full px-2 py-0.5 text-micro font-semibold uppercase tracking-wider ml-1",
+                ENGAGEMENT_BADGE_COLORS[secondaryBadge] || "bg-muted/10 text-muted-foreground"
               )}
             >
               {secondaryBadge}
             </span>
           )}
-          <p className="text-[10px] text-text-faint mt-1.5">
+          <p className="text-micro text-muted-foreground mt-1.5">
             {lead.addedAt}
           </p>
         </div>

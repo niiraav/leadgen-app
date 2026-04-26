@@ -1,6 +1,12 @@
 import { PipelineLead, SelectModifiers } from "@/hooks/usePipelineBoard";
 import { getColumnDef, getLeadColumn, followUpHealth, formatCompactDealValue } from "@leadgen/shared";
 import { ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  PIPELINE_STAGE_VARIANTS,
+  ENGAGEMENT_STATUS_VARIANTS,
+  LOSS_REASON_VARIANTS,
+} from "@/lib/status-colors";
 
 interface PipelineListViewProps {
   leads: PipelineLead[];
@@ -43,10 +49,10 @@ function ListCard({
     const health = followUpHealth(lead.followUpDate);
     const colorClass =
       health === "red"
-        ? "bg-red-50 text-red-600 border-red-200"
+        ? "bg-destructive/10 text-destructive border-destructive/20"
         : health === "amber"
-        ? "bg-amber-50 text-amber-600 border-amber-200"
-        : "bg-green-50 text-green-600 border-green-200";
+        ? "bg-warning/10 text-warning border-warning/20"
+        : "bg-success/10 text-success border-success/20";
     const label =
       health === "red"
         ? "Overdue"
@@ -54,8 +60,8 @@ function ListCard({
         ? "Due today"
         : new Date(lead.followUpDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     return (
-      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border ${colorClass}`}>
-        <span className={`w-1.5 h-1.5 rounded-full ${health === "red" ? "bg-red-500" : health === "amber" ? "bg-amber-500" : "bg-green-500"}`} />
+      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro-sm font-medium border ${colorClass}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${health === "red" ? "bg-destructive" : health === "amber" ? "bg-warning" : "bg-success"}`} />
         {label}
       </span>
     );
@@ -67,7 +73,7 @@ function ListCard({
 
     if ((lead.unreadReplyCount ?? 0) > 0) {
       items.push(
-        <span key="reply" className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium bg-destructive/10 text-destructive border border-destructive/20">
+        <span key="reply" className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro-sm font-medium bg-destructive/10 text-destructive border border-destructive/20">
           <span className="relative flex h-1.5 w-1.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-destructive" />
@@ -79,7 +85,7 @@ function ListCard({
 
     if (lead.latestReply?.intent) {
       items.push(
-        <span key="intent" className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-primary/10 text-primary border border-primary/20">
+        <span key="intent" className="inline-flex items-center rounded-full px-2 py-0.5 text-micro-sm font-medium bg-primary/10 text-primary border border-primary/20">
           {String(lead.latestReply.intent).replace(/_/g, " ")}
         </span>
       );
@@ -87,17 +93,18 @@ function ListCard({
 
     if (lead.dealValue && lead.dealValue > 0) {
       items.push(
-        <span key="deal" className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold text-primary border border-primary/20 bg-primary/5">
+        <span key="deal" className="inline-flex items-center rounded-full px-2 py-0.5 text-micro-sm font-semibold text-primary border border-primary/20 bg-primary/5">
           {formatCompactDealValue(lead.dealValue)}
         </span>
       );
     }
 
     if (lead.lossReason) {
+      const lossVariant = LOSS_REASON_VARIANTS[lead.lossReason as keyof typeof LOSS_REASON_VARIANTS] ?? "secondary";
       items.push(
-        <span key="loss" className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+        <Badge key="loss" variant={lossVariant} className="text-micro-sm">
           {lead.lossReason.replace(/_/g, " ")}
-        </span>
+        </Badge>
       );
     }
 
@@ -110,7 +117,7 @@ function ListCard({
       className={`
         relative group cursor-pointer select-none
         rounded-2xl border p-4 transition-colors
-        ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-surface hover:border-primary/30 hover:bg-primary/[0.02]"}
+        ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/30 hover:bg-primary/[0.02]"}
         ${isRecentlyMoved ? "border-primary/35 bg-primary/5 shadow-sm" : ""}
       `}
       style={{ borderLeftColor: column?.color ?? undefined, borderLeftWidth: "4px" }}
@@ -125,7 +132,7 @@ function ListCard({
       >
         <div
           className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-            isSelected ? "bg-primary border-primary" : "bg-surface border-border group-hover:border-primary/40"
+            isSelected ? "bg-primary border-primary" : "bg-card border-border group-hover:border-primary/40"
           }`}
         >
           {isSelected && (
@@ -141,24 +148,29 @@ function ListCard({
         <div className="min-w-0 flex-1">
           {/* Header row: name + badges */}
           <div className="flex items-center gap-2 flex-wrap">
-            <h4 className="text-sm font-semibold text-text truncate">{lead.business_name}</h4>
-            <span
-              className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white flex-shrink-0"
-              style={{ backgroundColor: column?.color ?? "#6b7280" }}
-            >
-              {column?.title ?? lead.status}
-            </span>
+            <h4 className="text-sm font-semibold text-foreground truncate">{lead.business_name}</h4>
+            {((): React.ReactNode => {
+              const variant =
+                column?.field === "pipeline_stage"
+                  ? PIPELINE_STAGE_VARIANTS[column.id as keyof typeof PIPELINE_STAGE_VARIANTS]
+                  : ENGAGEMENT_STATUS_VARIANTS[column?.id as keyof typeof ENGAGEMENT_STATUS_VARIANTS];
+              return (
+                <Badge variant={variant ?? "secondary"} className="text-micro flex-shrink-0">
+                  {column?.title ?? lead.status}
+                </Badge>
+              );
+            })()}
             {followUpChip}
             {lead.hot_score > 0 && (
-              <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-orange-50 text-orange-600 border border-orange-200">
+              <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-micro font-medium bg-warning/10 text-warning border border-warning/20">
                 ★ {lead.hot_score}
               </span>
             )}
           </div>
 
           {/* Meta row */}
-          <div className="flex items-center gap-2 mt-1.5 text-xs text-text-faint">
-            {lead.category && <span className="font-medium text-text-muted">{lead.category}</span>}
+          <div className="flex items-center gap-2 mt-1.5 text-xs text-foreground-faint">
+            {lead.category && <span className="font-medium text-muted-foreground">{lead.category}</span>}
             {lead.city && <span>· {lead.city}</span>}
             {lead.email && <span>· {lead.email}</span>}
           </div>
@@ -170,7 +182,7 @@ function ListCard({
         </div>
 
         {/* Right: chevron */}
-        <ChevronRight className="w-4 h-4 text-text-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
+        <ChevronRight className="w-4 h-4 text-foreground-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
       </div>
     </div>
   );
@@ -186,14 +198,18 @@ export default function PipelineListView({
 }: PipelineListViewProps) {
   if (leads.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-sm text-text-faint">
+      <div className="flex items-center justify-center h-48 text-sm text-foreground-faint">
         No leads match the current filters.
       </div>
     );
   }
 
   return (
-    <div className="space-y-2 pb-4" onClick={() => onClearSelection?.()}>
+    <button
+      type="button"
+      className="space-y-2 pb-4 w-full text-left"
+      onClick={() => onClearSelection?.()}
+    >
       {leads.map((lead) => (
         <ListCard
           key={lead.id}
@@ -204,6 +220,6 @@ export default function PipelineListView({
           onSelect={onSelect}
         />
       ))}
-    </div>
+    </button>
   );
 }

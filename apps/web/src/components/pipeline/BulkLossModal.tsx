@@ -41,27 +41,27 @@ export default function BulkLossModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-surface rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50">
+      <div className="bg-card rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-destructive" />
             Mark as lost
           </h3>
-          <button onClick={onCancel} className="text-text-faint hover:text-text">
+          <button onClick={onCancel} aria-label="Close modal" className="text-foreground-faint hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
 
         <div className="flex items-center gap-2 mb-4 px-3 py-2.5 rounded-lg bg-destructive/5 border border-destructive/10">
           <Users className="w-3.5 h-3.5 text-destructive/60 shrink-0" />
-          <p className="text-xs text-text-muted">
-            <span className="font-medium text-text">{count}</span> lead{count > 1 ? "s" : ""}{" "}
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{count}</span> lead{count > 1 ? "s" : ""}{" "}
             will be marked as lost
           </p>
         </div>
 
-        <p className="text-xs text-text-muted mb-4">
+        <p className="text-xs text-muted-foreground mb-4">
           Why are these {count > 1 ? "leads" : "lead"} lost?
         </p>
 
@@ -70,10 +70,10 @@ export default function BulkLossModal({
             <button
               key={value}
               onClick={() => setReason(value)}
-              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors ${
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-medium border transition-colors focus-ring ${
                 reason === value
                   ? "bg-destructive/10 border-destructive/30 text-destructive"
-                  : "bg-surface-2 border-border text-text-muted hover:bg-secondary"
+                  : "bg-secondary border-border text-muted-foreground hover:bg-secondary"
               }`}
             >
               {label}
@@ -82,10 +82,10 @@ export default function BulkLossModal({
         </div>
 
         {touched && !reason && (
-          <p className="text-[11px] text-destructive mb-3">Please select a reason</p>
+          <p className="text-micro-sm text-destructive mb-3">Please select a reason</p>
         )}
 
-        <label className="block text-[11px] font-medium text-text-muted mb-1.5">
+        <label className="block text-micro-sm font-medium text-muted-foreground mb-1.5">
           Additional notes (optional, applies to all)
         </label>
         <textarea

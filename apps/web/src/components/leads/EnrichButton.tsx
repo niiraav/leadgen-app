@@ -41,7 +41,7 @@ export function EnrichButton({ leadId, enriched = false, onEnriched }: EnrichBut
     <>
       <button
         onClick={() => setShowConfirm(true)}
-        className="flex items-center gap-1 text-xs bg-blue/10 text-blue border border-blue/20 rounded-full px-2 py-1 hover:bg-blue/20 transition-colors"
+        className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-1 hover:bg-primary/20 transition-colors"
         title="Enrich contact details"
       >
         {loading ? (
@@ -53,13 +53,13 @@ export function EnrichButton({ leadId, enriched = false, onEnriched }: EnrichBut
 
       {showConfirm && (
         <Portal>
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
+        <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
           <div
-            className="bg-surface border border-border/60 rounded-xl w-full max-w-xs"
+            className="bg-card border border-border/60 rounded-xl w-full max-w-xs"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 text-center">
-              <p className="text-sm text-text font-medium">Use 1 enrichment credit?</p>
+              <p className="text-sm text-foreground font-medium">Use 1 enrichment credit?</p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => setShowConfirm(false)}

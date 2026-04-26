@@ -17,12 +17,12 @@ interface VerifyEmailButtonProps {
 }
 
 const STATUS_BADGE: Record<string, { label: string; className: string; icon?: typeof Check }> = {
-  valid:       { label: "Valid",       className: "text-green",  icon: Check },
-  invalid:     { label: "Invalid",     className: "text-red",    icon: X },
-  "catch-all": { label: "Catch-all",   className: "text-amber",  icon: AlertTriangle },
-  accept_all:  { label: "Accept-all",  className: "text-amber",  icon: AlertTriangle },
+  valid:       { label: "Valid",       className: "text-success",  icon: Check },
+  invalid:     { label: "Invalid",     className: "text-destructive",    icon: X },
+  "catch-all": { label: "Catch-all",   className: "text-warning",  icon: AlertTriangle },
+  accept_all:  { label: "Accept-all",  className: "text-warning",  icon: AlertTriangle },
   disposable:  { label: "Disposable",  className: "text-orange",  icon: ShieldAlert },
-  unknown:     { label: "Unknown",     className: "text-text-faint", icon: AlertTriangle },
+  unknown:     { label: "Unknown",     className: "text-foreground-faint", icon: AlertTriangle },
 };
 
 export function VerifyEmailButton({
@@ -110,7 +110,7 @@ export function VerifyEmailButton({
       <button
         onClick={() => setShowConfirm(true)}
         disabled={loading}
-        className="flex items-center gap-1 text-xs bg-blue/10 text-blue border border-blue/20 rounded-full px-2 py-1 hover:bg-blue/20 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full px-2 py-1 hover:bg-primary/20 transition-colors disabled:opacity-50"
         title="Verify email address"
       >
         {loading ? (
@@ -121,25 +121,25 @@ export function VerifyEmailButton({
       </button>
 
       {error && !showConfirm && !upgradeError && (
-        <span className="text-xs text-red ml-1">{error}</span>
+        <span className="text-xs text-destructive ml-1">{error}</span>
       )}
 
       {upgradeError && (
-        <span className="text-xs text-amber ml-1 cursor-pointer hover:underline" onClick={() => { window.location.href = "/billing"; }}>
+        <span className="text-xs text-warning ml-1 cursor-pointer hover:underline" onClick={() => { window.location.href = "/billing"; }}>
           Start free trial to verify emails →
         </span>
       )}
 
       {showConfirm && (
         <Portal>
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
+        <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
           <div
-            className="bg-surface border border-border/60 rounded-xl w-full max-w-xs"
+            className="bg-card border border-border/60 rounded-xl w-full max-w-xs"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 text-center">
-              <p className="text-sm text-text font-medium">Use 1 verification credit?</p>
-              <p className="text-xs text-text-faint mt-1 break-all">Email: {email}</p>
+              <p className="text-sm text-foreground font-medium">Use 1 verification credit?</p>
+              <p className="text-xs text-foreground-faint mt-1 break-all">Email: {email}</p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={() => setShowConfirm(false)}

@@ -13,7 +13,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        /* === shadcn semantic tokens === */
+        /* === shadcn semantic tokens — canonical === */
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -55,15 +55,19 @@ module.exports = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        overlay: "hsl(var(--overlay) / <alpha-value>)",
 
-        /* === Legacy tokens (retained for gradual migration) === */
+        /* === Legacy aliases (DEPRECATED — keep until migration complete) === */
         bg: "var(--bg)",
         surface: "var(--surface)",
         "surface-2": "var(--surface-2)",
+        "surface-raised": "var(--surface-raised)",
         "border-strong": "var(--border-strong)",
+        "border-subtle": "var(--border-subtle)",
         text: "var(--text)",
         "text-muted": "var(--text-muted)",
         "text-faint": "var(--text-faint)",
+        "text-disabled": "var(--text-disabled)",
         blue: "var(--blue)",
         green: "var(--green)",
         amber: "var(--amber)",
@@ -72,10 +76,31 @@ module.exports = {
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
+      fontSize: {
+        micro: ["0.625rem", { lineHeight: "1rem" }],
+        "micro-sm": ["0.6875rem", { lineHeight: "1rem" }],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "var(--radius-xl)",
+        "2xl": "var(--radius-2xl)",
+        "3xl": "var(--radius-3xl)",
+        "4xl": "var(--radius-4xl)",
+      },
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+      },
+      transitionTimingFunction: {
+        default: "var(--ease-default)",
+      },
+      transitionDuration: {
+        fast: "var(--duration-fast)",
+        base: "var(--duration-base)",
+        slow: "var(--duration-slow)",
       },
     },
   },

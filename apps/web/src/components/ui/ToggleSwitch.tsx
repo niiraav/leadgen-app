@@ -26,7 +26,7 @@ export function ToggleSwitch({
   return (
     <div className="flex items-center gap-3">
       {labelLeft && (
-        <span className={cn("text-sm", !checked ? "text-text font-medium" : "text-text-muted")}>
+        <span className={cn("text-sm", !checked ? "text-foreground font-medium" : "text-muted-foreground")}>
           {labelLeft}
         </span>
       )}
@@ -37,9 +37,9 @@ export function ToggleSwitch({
         id={id}
         onClick={() => onChange(!checked)}
         className={cn(
-          "relative rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+          "relative rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card",
           trackSize,
-          checked ? "bg-blue" : "bg-surface-2"
+          checked ? "bg-primary" : "bg-secondary"
         )}
       >
         <span
@@ -52,7 +52,7 @@ export function ToggleSwitch({
         />
       </button>
       {labelRight && (
-        <span className={cn("text-sm", checked ? "text-text font-medium" : "text-text-muted")}>
+        <span className={cn("text-sm", checked ? "text-foreground font-medium" : "text-muted-foreground")}>
           {labelRight}
         </span>
       )}

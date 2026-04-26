@@ -59,21 +59,24 @@ export function BottomNav() {
     <>
       {/* Drawer Backdrop */}
       {moreOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 md:hidden backdrop-blur-sm" onClick={onBackdropClick} />
+        <div className="fixed inset-0 bg-overlay/60 z-50 md:hidden backdrop-blur-sm" onClick={onBackdropClick} />
       )}
 
       {/* Drawer Sheet */}
       <div
         ref={setSheetRef}
-        className={`fixed left-0 right-0 bottom-16 z-50 md:hidden bg-surface border-t border-border/60 rounded-t-2xl transition-transform duration-300 ease-out`}
+        className={`fixed left-0 right-0 bottom-16 z-50 md:hidden bg-card border-t border-border rounded-t-lg transition-transform duration-300 ease-out`}
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
       >
         {moreOpen && (
           <div className={`transform transition-transform duration-300 ${moreOpen ? "translate-y-0" : "translate-y-full"}`}>
             <div className="p-4 max-h-[60vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-text">More</h3>
-                <button onClick={() => setMoreOpen(false)} className="p-2 text-text-faint hover:text-text transition-colors">
+                <h3 className="text-sm font-semibold text-foreground">More</h3>
+                <button
+                  onClick={() => setMoreOpen(false)}
+                  className="p-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -90,9 +93,9 @@ export function BottomNav() {
                           router.push(item.href);
                         }
                       }}
-                      className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-text hover:bg-surface-2/50 transition-colors min-h-[44px] active:scale-[0.98]"
+                      className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary/50 transition-colors min-h-11 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <Icon className="w-5 h-5 text-text-muted" />
+                      <Icon className="w-5 h-5 text-muted-foreground" />
                       {item.label}
                     </button>
                   );
@@ -104,7 +107,7 @@ export function BottomNav() {
       </div>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-surface/95 backdrop-blur-md border-t border-border/60" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card/95 backdrop-blur-md border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex items-center justify-around h-16">
           {mainTabs.map((tab) => {
             const Icon = tab.icon;
@@ -118,10 +121,10 @@ export function BottomNav() {
                   if (isMore) setMoreOpen(true);
                   else router.push(tab.href);
                 }}
-                className={`flex flex-col items-center justify-center min-w-[64px] h-full transition-colors active:scale-90 duration-100 ${active ? "text-blue" : "text-text-muted"}`}
+                className={`flex flex-col items-center justify-center min-w-16 h-full transition-colors active:scale-90 duration-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg ${active ? "text-primary" : "text-muted-foreground"}`}
               >
                 <Icon className={`w-6 h-6 ${active ? "stroke-[2.5px]" : "stroke-2"}`} />
-                <span className="text-[10px] font-medium mt-0.5">{tab.label}</span>
+                <span className="text-micro font-medium mt-0.5">{tab.label}</span>
               </button>
             );
           })}

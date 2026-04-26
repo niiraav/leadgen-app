@@ -148,18 +148,21 @@ export function TopBar({ userEmail }: TopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 h-14 md:h-16 border-b border-border/60 bg-surface px-4 md:px-6 flex items-center justify-between shrink-0">
+    <header className="sticky top-0 z-30 h-14 md:h-16 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between shrink-0">
       {/* Left: Page Title (mobile) */}
-      <h1 className="text-sm font-semibold text-text md:hidden truncate max-w-[200px]">
+      <h1 className="text-sm font-semibold text-foreground md:hidden truncate max-w-[12.5rem]">
         {title}
       </h1>
 
       {/* Left: Search (desktop only) */}
       <div className="hidden md:flex items-center gap-2">
-        <Link href="/search/google-maps" className="flex items-center gap-2 px-3 py-1.5 text-xs text-text-faint bg-surface-2 border border-border rounded-lg hover:text-text transition-colors">
+        <Link
+          href="/search/google-maps"
+          className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground bg-secondary border border-border rounded-lg hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
           <Search className="w-3.5 h-3.5" />
           Search
-          <kbd className="text-[10px] text-text-faint ml-1">⌘K</kbd>
+          <kbd className="text-micro text-muted-foreground ml-1">⌘K</kbd>
         </Link>
       </div>
 
@@ -168,7 +171,7 @@ export function TopBar({ userEmail }: TopBarProps) {
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="hidden md:flex rounded-full p-2 text-text-muted hover:text-text hover:bg-surface-2 transition-colors"
+          className="hidden md:flex rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           title="Toggle theme"
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -181,14 +184,14 @@ export function TopBar({ userEmail }: TopBarProps) {
               setNotifOpen(!notifOpen);
               if (!notifOpen) fetchNotifications();
             }}
-            className="hidden md:flex rounded-full p-2 text-text-muted hover:text-text hover:bg-surface-2 transition-colors relative"
+            className="hidden md:flex rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             title="Notifications"
           >
             <motion.div key={bellKey} animate={unreadCount > 0 ? bellShake : {}}>
               <Bell className="w-4 h-4" />
             </motion.div>
             {unreadCount > 0 && (
-              <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-blue rounded-full text-[10px] font-bold text-white flex items-center justify-center px-1">
+              <span className="absolute top-0.5 right-0.5 min-w-[16px] h-4 bg-primary rounded-full text-micro font-bold text-primary-foreground flex items-center justify-center px-1">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -202,15 +205,15 @@ export function TopBar({ userEmail }: TopBarProps) {
                 animate="visible"
                 exit="exit"
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute right-0 top-full mt-2 w-80 max-h-96 rounded-lg border border-border/60 bg-surface shadow-md z-50 flex flex-col"
+                className="absolute right-0 top-full mt-2 w-80 max-h-96 rounded-lg border border-border bg-card shadow-md z-50 flex flex-col"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border/40">
-                  <span className="text-sm font-semibold text-text">Notifications</span>
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+                  <span className="text-sm font-semibold text-foreground">Notifications</span>
                   {unreadCount > 0 && (
                     <button
                       onClick={handleMarkAllRead}
-                      className="text-[11px] text-blue hover:underline flex items-center gap-1"
+                      className="text-micro-sm text-primary hover:underline flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
                     >
                       <CheckCheck className="w-3 h-3" />
                       Mark all read
@@ -221,7 +224,7 @@ export function TopBar({ userEmail }: TopBarProps) {
                 {/* List */}
                 <div className="overflow-y-auto flex-1">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-8 text-center text-sm text-text-muted">
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                       No notifications yet
                     </div>
                   ) : (
@@ -229,14 +232,14 @@ export function TopBar({ userEmail }: TopBarProps) {
                       <button
                         key={n.id}
                         onClick={() => handleNotifClick(n)}
-                        className={`w-full text-left px-4 py-3 border-b border-border/20 hover:bg-surface-2/60 transition-colors ${!n.read ? "bg-blue/5" : ""}`}
+                        className={`w-full text-left px-4 py-3 border-b border-border hover:bg-secondary/60 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${!n.read ? "bg-primary/5" : ""}`}
                       >
                         <div className="flex items-start gap-2">
-                          {!n.read && <span className="mt-1.5 w-2 h-2 bg-blue rounded-full shrink-0" />}
+                          {!n.read && <span className="mt-1.5 w-2 h-2 bg-primary rounded-full shrink-0" />}
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${!n.read ? "font-medium text-text" : "text-text-muted"}`}>{n.title}</p>
-                            {n.body && <p className="text-xs text-text-muted mt-0.5 truncate">{n.body}</p>}
-                            <p className="text-[10px] text-text-faint mt-1">{timeAgo(n.created_at)}</p>
+                            <p className={`text-sm ${!n.read ? "font-medium text-foreground" : "text-muted-foreground"}`}>{n.title}</p>
+                            {n.body && <p className="text-xs text-muted-foreground mt-0.5 truncate">{n.body}</p>}
+                            <p className="text-micro text-muted-foreground mt-1">{timeAgo(n.created_at)}</p>
                           </div>
                         </div>
                       </button>
@@ -252,12 +255,12 @@ export function TopBar({ userEmail }: TopBarProps) {
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-2 hover:bg-surface-2 rounded-full px-2 py-1 transition-colors"
+            className="flex items-center gap-2 hover:bg-secondary rounded-full px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <div className="w-8 h-8 rounded-full bg-blue/10 flex items-center justify-center">
-              <span className="text-xs font-semibold text-blue">{userInitial}</span>
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-xs font-semibold text-primary">{userInitial}</span>
             </div>
-            <ChevronDown className={`hidden md:block w-3.5 h-3.5 text-text-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`hidden md:block w-3.5 h-3.5 text-muted-foreground transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
           </button>
 
           <AnimatePresence>
@@ -268,16 +271,23 @@ export function TopBar({ userEmail }: TopBarProps) {
                 animate="visible"
                 exit="exit"
                 transition={{ duration: 0.15, ease: "easeOut" }}
-                className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border/60 bg-surface shadow-md py-1 z-50"
+                className="absolute right-0 top-full mt-2 w-52 rounded-lg border border-border bg-card shadow-md py-1 z-50"
               >
-                <div className="px-4 py-2 border-b border-border/40">
-                  <p className="text-sm font-medium text-text truncate">{userEmail}</p>
+                <div className="px-4 py-2 border-b border-border">
+                  <p className="text-sm font-medium text-foreground truncate">{userEmail}</p>
                 </div>
-                <Link href="/settings" onClick={() => setDropdownOpen(false)} className="w-full px-4 py-2.5 text-sm text-text hover:bg-surface-2 transition-colors flex items-center gap-2">
+                <Link
+                  href="/settings"
+                  onClick={() => setDropdownOpen(false)}
+                  className="w-full px-4 py-2.5 text-sm text-foreground hover:bg-secondary transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
                   <User className="w-4 h-4" />
                   Account
                 </Link>
-                <button onClick={handleSignOut} className="w-full px-4 py-2.5 text-sm text-red hover:bg-red/5 transition-colors flex items-center gap-2">
+                <button
+                  onClick={handleSignOut}
+                  className="w-full px-4 py-2.5 text-sm text-destructive hover:bg-destructive/5 transition-colors flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
                   <LogOut className="w-4 h-4" />
                   Sign out
                 </button>

@@ -78,7 +78,7 @@ interface UsageData {
 
 function TrialBadge() {
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue/10 text-blue uppercase tracking-wide">
+    <span className="inline-flex items-center gap-1 text-micro font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
       <Clock className="w-3 h-3" />
       14-day free trial
     </span>
@@ -98,7 +98,7 @@ function TrialCountdown({ trialEndsAt }: { trialEndsAt: string }) {
   const urgent = daysLeft <= 3;
 
   return (
-    <div className={`flex items-center gap-1.5 text-xs ${urgent ? "text-red font-medium" : "text-amber"}`}>
+    <div className={`flex items-center gap-1.5 text-xs ${urgent ? "text-destructive font-medium" : "text-warning"}`}>
       <Clock className="w-3.5 h-3.5" />
       Trial: {daysLeft} day{daysLeft !== 1 ? "s" : ""} remaining
     </div>
@@ -107,7 +107,7 @@ function TrialCountdown({ trialEndsAt }: { trialEndsAt: string }) {
 
 function CancelNotice({ endsAt }: { endsAt: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-xs text-amber">
+    <div className="flex items-center gap-1.5 text-xs text-warning">
       <AlertTriangle className="w-3.5 h-3.5" />
       Cancels on {new Date(endsAt).toLocaleDateString()}
     </div>
@@ -211,41 +211,41 @@ export default function BillingPage() {
     return (
       <div className="max-w-5xl mx-auto pb-8 space-y-8">
         <div className="space-y-2">
-          <div className="h-7 w-48 bg-surface-2 rounded animate-pulse" />
-          <div className="h-4 w-72 bg-surface-2 rounded animate-pulse" />
+          <div className="h-7 w-48 bg-secondary rounded animate-pulse" />
+          <div className="h-4 w-72 bg-secondary rounded animate-pulse" />
         </div>
-        <div className="rounded-xl border border-border/40 bg-surface/50 p-5 space-y-4">
+        <div className="rounded-xl border border-border/40 bg-card/50 p-5 space-y-4">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <div className="h-3 w-24 bg-surface-2 rounded animate-pulse" />
-              <div className="h-7 w-32 bg-surface-2 rounded animate-pulse" />
+              <div className="h-3 w-24 bg-secondary rounded animate-pulse" />
+              <div className="h-7 w-32 bg-secondary rounded animate-pulse" />
             </div>
-            <div className="h-3 w-16 bg-surface-2 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-secondary rounded animate-pulse" />
           </div>
           <div className="space-y-3 pt-3 border-t border-border/30">
-            <div className="h-6 bg-surface-2 rounded animate-pulse" />
-            <div className="h-6 bg-surface-2 rounded animate-pulse" />
-            <div className="h-6 bg-surface-2 rounded animate-pulse" />
-            <div className="h-6 bg-surface-2 rounded animate-pulse" />
+            <div className="h-6 bg-secondary rounded animate-pulse" />
+            <div className="h-6 bg-secondary rounded animate-pulse" />
+            <div className="h-6 bg-secondary rounded animate-pulse" />
+            <div className="h-6 bg-secondary rounded animate-pulse" />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border/40 bg-surface/50 p-5 space-y-3 animate-pulse">
-            <div className="h-5 w-24 bg-surface-2 rounded" />
-            <div className="h-8 w-16 bg-surface-2 rounded" />
+          <div className="rounded-xl border border-border/40 bg-card/50 p-5 space-y-3 animate-pulse">
+            <div className="h-5 w-24 bg-secondary rounded" />
+            <div className="h-8 w-16 bg-secondary rounded" />
             <div className="space-y-2">
-              <div className="h-3 w-full bg-surface-2 rounded" />
-              <div className="h-3 w-full bg-surface-2 rounded" />
-              <div className="h-3 w-full bg-surface-2 rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
             </div>
           </div>
-          <div className="rounded-xl border border-border/40 bg-surface/50 p-5 space-y-3 animate-pulse">
-            <div className="h-5 w-24 bg-surface-2 rounded" />
-            <div className="h-8 w-16 bg-surface-2 rounded" />
+          <div className="rounded-xl border border-border/40 bg-card/50 p-5 space-y-3 animate-pulse">
+            <div className="h-5 w-24 bg-secondary rounded" />
+            <div className="h-8 w-16 bg-secondary rounded" />
             <div className="space-y-2">
-              <div className="h-3 w-full bg-surface-2 rounded" />
-              <div className="h-3 w-full bg-surface-2 rounded" />
-              <div className="h-3 w-full bg-surface-2 rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
+              <div className="h-3 w-full bg-secondary rounded" />
             </div>
           </div>
         </div>
@@ -280,30 +280,30 @@ export default function BillingPage() {
       <div className="max-w-5xl mx-auto pb-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-text flex items-center gap-2">
-          <CreditCard className="w-5 h-5 text-blue" />
+        <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <CreditCard className="w-5 h-5 text-primary" />
           Billing & Plan
         </h1>
-        <p className="text-sm text-text-muted mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Manage your subscription and view monthly usage
         </p>
       </div>
 
       {/* --- First-login dismissible trial banner --- */}
       {isFree && showFirstLoginBanner && (
-        <div className="rounded-xl border border-blue/20 bg-blue/5 p-4 flex items-start gap-3">
-          <Clock className="w-5 h-5 text-blue shrink-0 mt-0.5" />
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3">
+          <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-text">
+            <p className="text-sm font-medium text-foreground">
               Start your free 14-day trial
             </p>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Get full access to all Pro features. No credit card required to start — cancel anytime.
             </p>
             <div className="flex items-center gap-2 mt-2">
               <button
                 onClick={() => router.push("/billing/upgrade")}
-                className="text-xs font-medium text-blue hover:underline"
+                className="text-xs font-medium text-primary hover:underline"
               >
                 Learn more →
               </button>
@@ -311,7 +311,7 @@ export default function BillingPage() {
           </div>
           <button
             onClick={dismissFirstLoginBanner}
-            className="p-1 rounded hover:bg-blue/10 text-text-muted hover:text-text shrink-0"
+            className="p-1 rounded hover:bg-primary/10 text-muted-foreground hover:text-foreground shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -320,18 +320,18 @@ export default function BillingPage() {
 
       {/* --- Current Plan Summary --- */}
       {status && (
-        <div className="rounded-xl border border-border bg-surface p-5 space-y-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div className="rounded-xl border border-border bg-card p-5 space-y-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-text-muted uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">
                 Current plan
               </p>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-bold text-text capitalize">
+                <span className="text-2xl font-bold text-foreground capitalize">
                   {status.label}
                 </span>
                 {status.price_monthly && (
-                  <span className="text-sm text-text-muted">
+                  <span className="text-sm text-muted-foreground">
                     {annual
                       ? `£${status.price_annual}/mo`
                       : `£${status.price_monthly}/mo`}
@@ -352,7 +352,7 @@ export default function BillingPage() {
               )}
               {/* Renewal / expiry date */}
               {status.subscription_ends_at && !isCancelling && (
-                <p className="text-xs text-text-muted mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {status.subscription_status === "active"
                     ? `Renews ${new Date(status.subscription_ends_at).toLocaleDateString()}`
                     : status.subscription_status === "cancelled"
@@ -366,7 +366,7 @@ export default function BillingPage() {
               {isSubscribed && status.stripe_customer_id && (
                 <button
                   onClick={() => router.push("/billing/manage")}
-                  className="flex items-center gap-1.5 text-xs text-blue hover:underline"
+                  className="flex items-center gap-1.5 text-xs text-primary hover:underline"
                 >
                   <Settings className="w-3 h-3" />
                   Manage
@@ -376,7 +376,7 @@ export default function BillingPage() {
                 <button
                   onClick={handleManage}
                   disabled={busy === "manage"}
-                  className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                 >
                   {busy === "manage" ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -424,7 +424,7 @@ export default function BillingPage() {
       {/* --- Plan Comparison --- */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-text">
+          <h2 className="text-base font-semibold text-foreground">
             {isFree ? "Choose a plan" : "Compare plans"}
           </h2>
           {/* Monthly / Annual toggle */}
@@ -436,7 +436,7 @@ export default function BillingPage() {
             labelRight={
               <span>
                 Annual{" "}
-                <span className="text-green font-medium">
+                <span className="text-success font-medium">
                   Save £{OUTREACH_TIER.annualSavings}/yr
                 </span>
               </span>
@@ -455,26 +455,26 @@ export default function BillingPage() {
                 key={plan.id}
                 className={`rounded-xl border p-5 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 relative ${
                   plan.popular
-                    ? "border-blue/40 bg-blue/5"
-                    : "border-border/60 bg-surface"
-                } ${isCurrentPlan ? "ring-2 ring-blue/20" : ""}`}
+                    ? "border-primary/40 bg-primary/5"
+                    : "border-border/60 bg-card"
+                } ${isCurrentPlan ? "ring-2 ring-primary/20" : ""}`}
               >
                 {plan.popular && (
-                  <span className="absolute -top-2.5 left-4 bg-blue text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
+                  <span className="absolute -top-2.5 left-4 bg-primary text-primary-foreground text-micro font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
                     Popular
                   </span>
                 )}
 
                 <div className="mb-4">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-text">{plan.name}</h3>
+                    <h3 className="font-semibold text-foreground">{plan.name}</h3>
                     <TrialBadge />
                   </div>
                   <div className="flex items-baseline gap-1 mt-1">
-                    <span className="text-2xl font-bold text-text">
+                    <span className="text-2xl font-bold text-foreground">
                       {price}
                     </span>
-                    <span className="text-sm text-text-muted">{note}</span>
+                    <span className="text-sm text-muted-foreground">{note}</span>
                   </div>
                 </div>
 
@@ -482,16 +482,16 @@ export default function BillingPage() {
                   {plan.features.map((f) => (
                     <li
                       key={f}
-                      className="flex items-start gap-2 text-xs text-text-muted"
+                      className="flex items-start gap-2 text-xs text-muted-foreground"
                     >
-                      <Check className="w-3.5 h-3.5 text-green shrink-0 mt-0.5" />
+                      <Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
                       {f}
                     </li>
                   ))}
                 </ul>
 
                 {isCurrentPlan ? (
-                  <div className="w-full rounded-lg bg-green/10 text-green text-xs font-medium py-2.5 text-center flex items-center justify-center gap-1.5">
+                  <div className="w-full rounded-lg bg-success/10 text-success text-xs font-medium py-2.5 text-center flex items-center justify-center gap-1.5">
                     <Check className="w-3.5 h-3.5" />
                     Current plan
                   </div>
@@ -499,7 +499,7 @@ export default function BillingPage() {
                   <button
                     onClick={() => handleSubscribe()}
                     disabled={busy === "subscribe"}
-                    className="w-full rounded-lg bg-blue text-white text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-blue/90 transition-colors"
+                    className="w-full rounded-lg bg-primary text-primary-foreground text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-primary/90 transition-colors"
                   >
                     {busy === "subscribe" ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -512,7 +512,7 @@ export default function BillingPage() {
                   <button
                     onClick={() => handleSubscribe()}
                     disabled={busy === "subscribe"}
-                    className="w-full rounded-lg border border-blue text-blue text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-blue/5 transition-colors"
+                    className="w-full rounded-lg border border-primary text-primary text-xs font-medium py-2.5 flex items-center justify-center gap-1.5 disabled:opacity-50 hover:bg-primary/5 transition-colors"
                   >
                     {busy === "subscribe" ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -530,22 +530,22 @@ export default function BillingPage() {
 
       {/* --- Free plan --- */}
       {isFree && (
-        <div className="rounded-xl border border-border/60 bg-surface p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
+        <div className="rounded-xl border border-border/60 bg-card p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-medium text-text">Free</h3>
-              <p className="text-xs text-text-muted mt-0.5">
+              <h3 className="font-medium text-foreground">Free</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {FREE_PLAN_NOTE}
               </p>
             </div>
-            <span className="text-xs text-text-muted">Current</span>
+            <span className="text-xs text-muted-foreground">Current</span>
           </div>
         </div>
       )}
 
       {/* --- Coming Soon --- */}
-      <div className="rounded-xl border border-border/40 bg-surface/50 p-5">
-        <h3 className="text-sm font-medium text-text-muted mb-2">
+      <div className="rounded-xl border border-border/40 bg-card/50 p-5">
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
           Coming soon on Gapr Pro
         </h3>
         <ul className="space-y-1.5">
@@ -555,7 +555,7 @@ export default function BillingPage() {
             "API access",
             "CRM integrations",
           ].map((f) => (
-            <li key={f} className="text-xs text-text-muted flex items-center gap-2">
+            <li key={f} className="text-xs text-muted-foreground flex items-center gap-2">
               <Settings className="w-3 h-3 opacity-50" />
               {f}
             </li>

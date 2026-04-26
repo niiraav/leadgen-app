@@ -1,4 +1,5 @@
 import { withAuth } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { toast } from "sonner";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
@@ -349,31 +350,33 @@ export default function LeadsPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-text tracking-tight">My Leads</h1>
-            <p className="text-sm text-text-muted mt-1">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">My Leads</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               {loading ? "Loading..." : `${totalCount} leads`}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={handleGlobalExport} className="btn btn-secondary text-xs py-1.5 h-9">
+            <Button variant="secondary" size="sm" onClick={handleGlobalExport}>
               <Download className="w-3.5 h-3.5" />
               Export
-            </button>
-            <Link href="/leads/import" className="btn btn-secondary text-xs py-1.5 h-9">
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/leads/import">
               <Plus className="w-3.5 h-3.5" />
               Import
             </Link>
-            <button onClick={() => setShowAddModal(true)} className="btn btn-primary text-xs py-1.5 h-9">
+            </Button>
+            <Button size="sm" onClick={() => setShowAddModal(true)}>
               <Plus className="w-3.5 h-3.5" />
               Add Lead
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <div className="relative flex-1 min-w-52">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search leads..."
@@ -388,7 +391,7 @@ export default function LeadsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-9 px-3 text-sm rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-h-[36px]"
+            className="h-9 px-3 text-sm rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer min-h-[36px]"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -400,11 +403,11 @@ export default function LeadsPage() {
 
         {/* Error state */}
         {error && (
-          <div className="rounded-xl border border-red/20 bg-red/5 p-4 text-sm text-red mb-4">
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive mb-4">
             {error}
-            <button onClick={triggerRefetch} className="ml-3 underline hover:no-underline">
+            <Button onClick={triggerRefetch} className="ml-3 underline hover:no-underline">
               Retry
-            </button>
+            </Button>
           </div>
         )}
 
@@ -415,34 +418,38 @@ export default function LeadsPage() {
         <div className="flex-1 min-w-0 flex flex-col">
           {/* Bulk action bar */}
           {selectedIds.size > 0 && (
-            <div className="shrink-0 mb-3 p-3 rounded-xl bg-blue/5 border border-blue/20 flex items-center justify-between gap-3 z-20">
-              <span className="text-sm text-text whitespace-nowrap">
+            <div className="shrink-0 mb-3 p-3 rounded-lg bg-primary/5 border border-primary/20 flex items-center justify-between gap-3 z-20">
+              <span className="text-sm text-foreground whitespace-nowrap">
                 <strong>{selectedIds.size}</strong> selected
               </span>
               <div className="flex items-center gap-2 flex-wrap justify-end">
-                <BulkStatusDropdown onApply={handleBulkStatusChange} />
-                <button
+                <BulkStatusDropdown onSelect={handleBulkStatusChange} />
+                <Button
                   onClick={handleBulkExportSelected}
-                  className="btn btn-secondary text-xs py-1.5 h-9"
+                  variant="secondary"
+                  size="sm"
                 >
                   <Download className="w-3.5 h-3.5" />
                   Export
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleBulkMarkDNC}
-                  className="btn btn-ghost text-xs py-1.5 h-9 text-red hover:bg-red/5"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/5"
                 >
                   Mark DNC
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleBulkAddToSequence}
-                  className="btn btn-secondary text-xs py-1.5 h-9"
+                  variant="secondary"
+                  size="sm"
                 >
                   Add to sequence
-                </button>
-                <button onClick={handleClearSelection} className="btn btn-ghost text-xs py-1.5 h-9">
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleClearSelection}>
                   Clear
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -450,7 +457,7 @@ export default function LeadsPage() {
             {loading && leads.length === 0 ? (
               <div className="space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-14 rounded-xl border border-border/60 bg-surface animate-pulse" />
+                  <div key={i} className="h-14 rounded-lg border border-border bg-card animate-pulse" />
                 ))}
               </div>
             ) : (
@@ -476,18 +483,19 @@ export default function LeadsPage() {
 
         {/* Pagination / Load more */}
         {!loading && leads.length > 0 && (
-          <div className="flex items-center justify-between text-xs text-text-faint py-2 mt-1 shrink-0">
+          <div className="flex items-center justify-between text-xs text-muted-foreground py-2 mt-1 shrink-0">
             <span>
               Showing {leads.length} of {totalCount} leads
             </span>
             {leadsQuery.hasNextPage && (
-              <button
+              <Button
                 onClick={() => leadsQuery.fetchNextPage()}
                 disabled={leadsQuery.isFetchingNextPage}
-                className="btn btn-ghost text-xs h-8 disabled:opacity-50"
+                variant="ghost"
+                size="sm"
               >
                 {leadsQuery.isFetchingNextPage ? "Loading..." : "Load more"}
-              </button>
+              </Button>
             )}
           </div>
         )}
@@ -622,17 +630,17 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
   const showScanPrompt = !loading && !scanning && fullLead && !fullLead.review_summary && (fullLead.place_id || fullLead.business_name);
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-text">Compose Email to {lead.business_name}</h2>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <h2 className="text-base font-semibold text-foreground">Compose Email to {lead.business_name}</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <div className="p-5 space-y-3">
           {loading && (
-            <div className="text-sm text-text-muted flex items-center gap-2">
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               Generating email…
             </div>
@@ -640,50 +648,51 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
 
           {/* Review scan prompt */}
           {showScanPrompt && (
-            <div className="bg-amber/5 border border-amber/20 rounded-lg p-3 space-y-2">
-              <p className="text-xs text-amber">
+            <div className="bg-warning/5 border border-warning/20 rounded-lg p-3 space-y-2">
+              <p className="text-xs text-warning">
                 Scan customer reviews to discover what makes this business unique and personalize your outreach.
               </p>
-              <button
+              <Button
                 onClick={handleScanReviews}
                 disabled={scanning}
-                className="btn btn-primary text-xs py-1.5 h-8 flex items-center gap-1.5"
+                size="sm"
+                className="flex items-center gap-1.5"
               >
                 <Star className="w-3.5 h-3.5" />
                 Scan reviews for insights
-              </button>
-              {scanError && <p className="text-xs text-red mt-1">{scanError}</p>}
+              </Button>
+              {scanError && <p className="text-xs text-destructive mt-1">{scanError}</p>}
             </div>
           )}
 
           {scanning && (
-            <div className="text-sm text-text-muted flex items-center gap-2">
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               Scanning reviews…
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Subject</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Subject</label>
             <input
-              className="w-full rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Body</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Body</label>
             <textarea
-              className="w-full h-40 rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+              className="w-full h-40 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
               value={body}
               onChange={(e) => setBody(e.target.value)}
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button onClick={onClose} className="btn btn-ghost text-sm flex-1">
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Close
-            </button>
-            <button
+            </Button>
+            <Button
               disabled={logging}
               onClick={async () => {
                 setLogging(true);
@@ -697,15 +706,16 @@ function ComposeModal({ lead, onClose }: { lead: LeadsTableRow; onClose: () => v
                   setLogging(false);
                 }
               }}
-              className="btn btn-secondary text-sm flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-50"
+              variant="secondary"
+              className="flex-1 inline-flex items-center justify-center gap-2"
             >
               <NotebookPen className="w-4 h-4" />
               {logging ? "Logging..." : "Log as sent"}
-            </button>
+            </Button>
             <a
               href={mailto}
               onClick={onClose}
-              className="btn btn-primary text-sm flex-1 text-center inline-flex items-center justify-center gap-2"
+              className="flex-1 inline-flex items-center justify-center gap-2"
             >
               <Mail className="w-4 h-4" />
               Open in Email Client
@@ -788,30 +798,30 @@ function MessagePickerModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface border border-border/60 rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-text">
+          <h2 className="text-base font-semibold text-foreground">
             {channel === "whatsapp" ? "Send WhatsApp" : "Send SMS"} to {lead.business_name}
           </h2>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <div className="p-5 space-y-3">
-          {loading && <div className="text-sm text-text-muted">Loading templates…</div>}
+          {loading && <div className="text-sm text-muted-foreground">Loading templates…</div>}
 
           {quota.limit !== -1 && (
-            <div className="text-xs text-text-muted">
+            <div className="text-xs text-muted-foreground">
               Daily quota: {quota.used} / {quota.limit} used
             </div>
           )}
 
           {templates.length > 0 && (
             <div>
-              <label className="block text-xs font-medium text-text-muted mb-1">Template</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">Template</label>
               <select
-                className="w-full rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={selectedTpl ?? ""}
                 onChange={(e) => handleTemplateChange(e.target.value)}
               >
@@ -825,9 +835,9 @@ function MessagePickerModal({
           )}
 
           <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">Message</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Message</label>
             <textarea
-              className="w-full h-32 rounded-md border border-border/60 bg-surface-2 px-3 py-2 text-sm text-text placeholder:text-text-faint focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+              className="w-full h-32 rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your message…"
@@ -835,17 +845,17 @@ function MessagePickerModal({
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button onClick={onClose} className="btn btn-ghost text-sm flex-1">
+            <Button variant="ghost" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSend}
               disabled={sending || !message.trim()}
-              className="btn btn-primary text-sm flex-1 inline-flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center gap-2"
             >
               {channel === "whatsapp" ? <WhatsAppIcon className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
               {sending ? "Sending…" : "Send"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -865,37 +875,37 @@ function SequencePickerModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface border border-border/60 rounded-xl w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-text">Add to Sequence</h2>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <h2 className="text-base font-semibold text-foreground">Add to Sequence</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <div className="p-4 space-y-2 max-h-[320px] overflow-auto">
           {sequences.length === 0 && (
-            <p className="text-sm text-text-muted">
+            <p className="text-sm text-muted-foreground">
               No sequences yet.{" "}
-              <Link href="/sequences/new" className="text-blue hover:underline">
+              <Link href="/sequences/new" className="text-primary hover:underline">
                 Create one
               </Link>
             </p>
           )}
           {sequences.map((s) => (
-            <button
+            <Button
               key={s.id}
               onClick={() => onSelect(s.id)}
-              className="w-full text-left p-3 rounded-lg bg-surface-2 hover:bg-blue/5 border border-border/40 text-sm text-text transition-colors"
+              className="w-full text-left p-3 rounded-lg bg-secondary hover:bg-primary/5 border border-border/40 text-sm text-foreground transition-colors"
             >
               {s.name}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="p-4 border-t border-border/40 flex justify-end">
-          <button onClick={onClose} className="btn btn-ghost text-xs">
+          <Button onClick={onClose} variant="ghost" size="sm">
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -915,13 +925,13 @@ function NoteModal({
 }) {
   const [text, setText] = useState("");
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface border border-border/60 rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-text">Add Note</h2>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <h2 className="text-base font-semibold text-foreground">Add Note</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <div className="p-5">
           <textarea
@@ -932,16 +942,16 @@ function NoteModal({
           />
         </div>
         <div className="p-4 border-t border-border/40 flex justify-end gap-2">
-          <button onClick={onClose} className="btn btn-ghost text-xs">
+          <Button onClick={onClose} variant="ghost" size="sm">
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => onSave(text)}
             disabled={!text.trim()}
-            className="btn btn-primary text-xs disabled:opacity-50"
+            size="sm"
           >
             Save
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -984,91 +994,91 @@ function AddLeadModal({ onClose, onAdded }: { onClose: () => void; onAdded: () =
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-surface border border-border/60 rounded-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-overlay/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-card border border-border rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
-          <h2 className="text-base font-semibold text-text">Add Lead</h2>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <h2 className="text-base font-semibold text-foreground">Add Lead</h2>
+          <Button onClick={onClose} className="text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           {error && (
-            <div className="rounded-lg bg-red/10 border border-red/20 px-4 py-2 text-sm text-red">
+            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2 text-sm text-destructive">
               {error}
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Business name *</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Business name *</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Email</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Phone</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Phone</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-text mb-1">Category</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Category</label>
               <input
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text mb-1">City</label>
+              <label className="block text-sm font-medium text-foreground mb-1">City</label>
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-text mb-1">Website</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Website</label>
             <input
               type="url"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="https://"
-              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="btn btn-ghost text-sm flex-1">
+            <Button variant="ghost" type="button" onClick={onClose} className="flex-1">
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={saving || !name.trim()}
-              className="btn btn-primary text-sm flex-1 disabled:opacity-50"
+              className="flex-1"
             >
               {saving ? "Saving…" : "Add Lead"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

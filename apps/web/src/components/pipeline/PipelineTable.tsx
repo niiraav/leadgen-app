@@ -23,6 +23,11 @@ import {
   formatCompactDealValue,
   PIPELINE_COLUMNS,
 } from "@leadgen/shared";
+import { Badge } from "@/components/ui/badge";
+import {
+  PIPELINE_STAGE_VARIANTS,
+  ENGAGEMENT_STATUS_VARIANTS,
+} from "@/lib/status-colors";
 import type { PipelineLead, SelectModifiers } from "@/hooks/usePipelineBoard";
 import MessagePicker from "@/components/leads/MessagePicker";
 
@@ -84,20 +89,26 @@ function SortHeader({
   return (
     <th
       className={cn(
-        "px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted select-none",
-        onSort && "cursor-pointer hover:text-text",
+        "px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground select-none cursor-pointer hover:text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30 focus:rounded",
         className
       )}
       onClick={() => onSort?.(sortKey)}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSort?.(sortKey);
+        }
+      }}
     >
       <span className="inline-flex items-center gap-1">
         {label}
         {active && (
           <span className="inline-flex">
             {order === "asc" ? (
-              <ArrowUp className="w-4 h-4 text-text" />
+              <ArrowUp className="w-4 h-4 text-foreground" />
             ) : (
-              <ArrowDown className="w-4 h-4 text-text" />
+              <ArrowDown className="w-4 h-4 text-foreground" />
             )}
           </span>
         )}
@@ -118,6 +129,19 @@ function StageDropdown({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const currentId = getLeadColumn(lead);
+  const col = getColumnDef(currentId);
+  const variant =
+    col?.field === "pipeline_stage"
+      ? PIPELINE_STAGE_VARIANTS[col.id as keyof typeof PIPELINE_STAGE_VARIANTS]
+      : ENGAGEMENT_STATUS_VARIANTS[col?.id as keyof typeof ENGAGEMENT_STATUS_VARIANTS];
+  const badgeClasses: Record<string, string> = {
+    default: "bg-primary text-primary-foreground",
+    secondary: "bg-secondary text-secondary-foreground",
+    success: "bg-success text-success-foreground",
+    warning: "bg-warning text-warning-foreground",
+    destructive: "bg-destructive text-destructive-foreground",
+    outline: "border border-border bg-background text-foreground",
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -135,13 +159,12 @@ function StageDropdown({
           e.stopPropagation();
           setOpen((v) => !v);
         }}
-        className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-white hover:opacity-90 transition-opacity"
-        style={{ backgroundColor: getColumnDef(currentId)?.color ?? "#6b7280" }}
+        className={`inline-flex items-center rounded-full px-2 py-0.5 text-micro-sm font-medium hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary/30 ${badgeClasses[variant ?? "secondary"]}`}
       >
         {getColumnDef(currentId)?.title ?? lead.status}
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 w-44 rounded-lg border border-border/60 bg-surface shadow-lg py-1">
+        <div className="absolute top-full left-0 mt-1 z-50 w-44 rounded-lg border border-border/60 bg-card shadow-lg py-1">
           {PIPELINE_COLUMNS.map((col) => (
             <button
               key={col.id}
@@ -153,8 +176,8 @@ function StageDropdown({
               className={cn(
                 "w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors",
                 col.id === currentId
-                  ? "bg-primary/5 text-text"
-                  : "text-text-muted hover:bg-surface-2 hover:text-text"
+                  ? "bg-primary/5 text-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
               )}
             >
               <span
@@ -177,28 +200,28 @@ function SkeletonRow() {
   return (
     <tr className="animate-pulse h-14">
       <td className="px-3 py-3 w-10">
-        <div className="w-4 h-4 rounded bg-surface-2" />
+        <div className="w-4 h-4 rounded bg-secondary" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3.5 w-40 bg-surface-2 rounded" />
+        <div className="h-3.5 w-40 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-5 w-24 bg-surface-2 rounded-full" />
+        <div className="h-5 w-24 bg-secondary rounded-full" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-5 w-20 bg-surface-2 rounded-full" />
+        <div className="h-5 w-20 bg-secondary rounded-full" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3 w-16 bg-surface-2 rounded" />
+        <div className="h-3 w-16 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3 w-28 bg-surface-2 rounded" />
+        <div className="h-3 w-28 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
         <div className="flex justify-end gap-2">
-          <div className="w-5 h-5 bg-surface-2 rounded" />
-          <div className="w-5 h-5 bg-surface-2 rounded" />
-          <div className="w-5 h-5 bg-surface-2 rounded" />
+          <div className="w-5 h-5 bg-secondary rounded" />
+          <div className="w-5 h-5 bg-secondary rounded" />
+          <div className="w-5 h-5 bg-secondary rounded" />
         </div>
       </td>
     </tr>
@@ -241,10 +264,10 @@ export const PipelineTable = memo(function PipelineTable({
 
   return (
     <>
-      <div className="overflow-x-auto rounded-xl border border-border/60 bg-surface">
+      <div className="overflow-x-auto rounded-xl border border-border/60 bg-card">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-surface">
-            <tr className="border-b border-border/40 bg-surface">
+          <thead className="sticky top-0 z-10 bg-card">
+            <tr className="border-b border-border/40 bg-card">
               {/* Select all */}
               <th className="px-3 py-3 w-10 text-left">
                 {onSelectAll && leads.length > 0 && (
@@ -253,9 +276,9 @@ export const PipelineTable = memo(function PipelineTable({
                     className={cn(
                       "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                       allSelected
-                        ? "bg-accent border-accent text-accent-text"
+                        ? "bg-primary border-primary text-primary-foreground"
                         : someSelected
-                          ? "bg-accent/30 border-accent"
+                          ? "bg-primary/30 border-primary"
                           : "border-border hover:border-border-strong"
                     )}
                     aria-label="Select all"
@@ -275,7 +298,7 @@ export const PipelineTable = memo(function PipelineTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[200px]"
+                className="min-w-52"
               />
               <SortHeader
                 label="Stage"
@@ -283,7 +306,7 @@ export const PipelineTable = memo(function PipelineTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[140px]"
+                className="min-w-36"
               />
               <SortHeader
                 label="Follow-up"
@@ -291,7 +314,7 @@ export const PipelineTable = memo(function PipelineTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[120px]"
+                className="min-w-32"
               />
               <SortHeader
                 label="Value"
@@ -299,12 +322,12 @@ export const PipelineTable = memo(function PipelineTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[100px]"
+                className="min-w-24"
               />
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted min-w-[160px]">
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground min-w-40">
                 Last Activity
               </th>
-              <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-muted w-[140px]">
+              <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-36">
                 Actions
               </th>
             </tr>
@@ -319,14 +342,14 @@ export const PipelineTable = memo(function PipelineTable({
 
                   // Follow-up chip
                   const followUpChip = (() => {
-                    if (!lead.followUpDate) return <span className="text-text-faint">—</span>;
+                    if (!lead.followUpDate) return <span className="text-foreground-faint">—</span>;
                     const health = followUpHealth(lead.followUpDate);
                     const colorClass =
                       health === "red"
-                        ? "bg-red-50 text-red-600 border-red-200"
+                        ? "bg-destructive/10 text-destructive border-destructive/20"
                         : health === "amber"
-                        ? "bg-amber-50 text-amber-600 border-amber-200"
-                        : "bg-green-50 text-green-600 border-green-200";
+                        ? "bg-warning/10 text-warning border-warning/20"
+                        : "bg-success/10 text-success border-success/20";
                     const label =
                       health === "red"
                         ? "Overdue"
@@ -334,8 +357,8 @@ export const PipelineTable = memo(function PipelineTable({
                         ? "Due today"
                         : new Date(lead.followUpDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
                     return (
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border ${colorClass}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${health === "red" ? "bg-red-500" : health === "amber" ? "bg-amber-500" : "bg-green-500"}`} />
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro-sm font-medium border ${colorClass}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${health === "red" ? "bg-destructive" : health === "amber" ? "bg-warning" : "bg-success"}`} />
                         {label}
                       </span>
                     );
@@ -347,10 +370,10 @@ export const PipelineTable = memo(function PipelineTable({
                       variants={rowStaggerItem}
                       className={cn(
                         "border-b border-border/20 transition-colors group relative h-14",
-                        !isSelected && !isDNC && "hover:bg-surface-2",
-                        isSelected && "bg-blue/5",
-                        isDNC && "bg-red/[0.06]",
-                        isRecentlyMoved && "bg-amber-50/60"
+                        !isSelected && !isDNC && "hover:bg-secondary",
+                        isSelected && "bg-primary/5",
+                        isDNC && "bg-destructive/[0.06]",
+                        isRecentlyMoved && "bg-warning/10"
                       )}
                       onClick={() => onRowClick?.(lead)}
                     >
@@ -372,7 +395,7 @@ export const PipelineTable = memo(function PipelineTable({
                           className={cn(
                             "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
                             isSelected
-                              ? "bg-accent border-accent text-accent-text"
+                              ? "bg-primary border-primary text-primary-foreground"
                               : "border-border hover:border-border-strong"
                           )}
                           aria-label={isSelected ? "Deselect row" : "Select row"}
@@ -389,12 +412,12 @@ export const PipelineTable = memo(function PipelineTable({
                       <td className="px-3 py-0">
                         <div className="flex items-center gap-1.5 py-3">
                           {isDNC && (
-                            <span className="inline-flex text-red shrink-0">
+                            <span className="inline-flex text-destructive shrink-0">
                               <Ban className="w-4 h-4" />
                             </span>
                           )}
                         <span
-                          className="text-text text-sm hover:text-blue transition-colors hover:underline underline-offset-2 truncate max-w-[220px] cursor-pointer"
+                          className="text-foreground text-sm hover:text-primary transition-colors hover:underline underline-offset-2 truncate max-w-56 cursor-pointer"
                         >
                           {lead.business_name}
                         </span>
@@ -406,12 +429,18 @@ export const PipelineTable = memo(function PipelineTable({
                         {onStageChange ? (
                           <StageDropdown lead={lead} onChange={onStageChange} />
                         ) : (
-                          <span
-                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                            style={{ backgroundColor: getColumnDef(getLeadColumn(lead))?.color ?? "#6b7280" }}
-                          >
-                            {getColumnDef(getLeadColumn(lead))?.title ?? lead.status}
-                          </span>
+                          (() => {
+                            const col = getColumnDef(getLeadColumn(lead));
+                            const variant =
+                              col?.field === "pipeline_stage"
+                                ? PIPELINE_STAGE_VARIANTS[col.id as keyof typeof PIPELINE_STAGE_VARIANTS]
+                                : ENGAGEMENT_STATUS_VARIANTS[col?.id as keyof typeof ENGAGEMENT_STATUS_VARIANTS];
+                            return (
+                              <Badge variant={variant ?? "secondary"} className="text-micro-sm">
+                                {col?.title ?? lead.status}
+                              </Badge>
+                            );
+                          })()
                         )}
                       </td>
 
@@ -425,7 +454,7 @@ export const PipelineTable = memo(function PipelineTable({
                             {formatCompactDealValue(lead.dealValue)}
                           </span>
                         ) : (
-                          <span className="text-text-faint">—</span>
+                          <span className="text-foreground-faint">—</span>
                         )}
                       </td>
 
@@ -433,12 +462,12 @@ export const PipelineTable = memo(function PipelineTable({
                       <td className="px-3 py-3">
                         {lead.lastActivity ? (
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-sm text-text-muted">
+                            <span className="text-sm text-muted-foreground">
                               {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-text-faint">—</span>
+                          <span className="text-sm text-foreground-faint">—</span>
                         )}
                       </td>
 
@@ -448,7 +477,7 @@ export const PipelineTable = memo(function PipelineTable({
                           {lead.email ? (
                             <Link
                               href={`/leads/${lead.id}?action=compose`}
-                              className="p-1.5 rounded-md text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                               title="Send email"
                             >
                               {lead.email_status === "valid" ? (
@@ -458,7 +487,7 @@ export const PipelineTable = memo(function PipelineTable({
                               )}
                             </Link>
                           ) : (
-                            <span className="p-1.5 rounded-md opacity-30 text-text-faint">
+                            <span className="p-1.5 rounded-md opacity-30 text-foreground-faint">
                               <Mail className="w-5 h-5" />
                             </span>
                           )}
@@ -468,13 +497,14 @@ export const PipelineTable = memo(function PipelineTable({
                                 setPickerLead(lead);
                                 setPickerChannel("whatsapp");
                               }}
-                              className="p-1.5 rounded-md text-text-muted hover:text-green-600 hover:bg-green-50 transition-colors"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-success hover:bg-success/10 transition-colors"
                               title="WhatsApp templates"
+                              aria-label="WhatsApp templates"
                             >
                               <WhatsAppIcon className="w-5 h-5" />
                             </button>
                           ) : (
-                            <span className="p-1.5 rounded-md opacity-30 text-text-faint">
+                            <span className="p-1.5 rounded-md opacity-30 text-foreground-faint">
                               <WhatsAppIcon className="w-5 h-5" />
                             </span>
                           )}
@@ -483,8 +513,9 @@ export const PipelineTable = memo(function PipelineTable({
                               setPickerLead(lead);
                               setPickerChannel("sms");
                             }}
-                            className="p-1.5 rounded-md text-text-muted hover:text-blue hover:bg-blue/10 transition-colors"
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                             title="SMS templates"
+                            aria-label="SMS templates"
                           >
                             <MessageSquare className="w-5 h-5" />
                           </button>

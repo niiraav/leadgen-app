@@ -1,4 +1,5 @@
-import type { ReplyIntent } from '@leadgen/shared';
+import type { ReplyIntent } from "@leadgen/shared";
+import { REPLY_INTENT_CHIP as _REPLY_INTENT_CHIP } from "./status-colors";
 
 // ── Relative time formatting ──────────────────────────────────────────────
 
@@ -26,10 +27,4 @@ export function formatRelativeTime(timestamp: Date | string): string {
 
 // ── Reply intent chip config ──────────────────────────────────────────────
 
-export const REPLY_INTENT_CHIP: Record<ReplyIntent, { label: string; className: string }> = {
-  interested:     { label: 'Interested',   className: 'bg-green/15 text-green' },
-  question:       { label: 'Question',     className: 'bg-blue/15 text-blue' },
-  objection:      { label: 'Objection',    className: 'bg-amber/15 text-amber' },
-  not_now:        { label: 'Not now',      className: 'bg-gray-200 text-gray-600' },
-  not_interested: { label: 'Not interested', className: 'bg-red/15 text-red' },
-};
+export const REPLY_INTENT_CHIP = _REPLY_INTENT_CHIP;

@@ -143,8 +143,8 @@ export default function ImportPage() {
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text tracking-tight">Import Leads</h1>
-        <p className="text-sm text-text-muted mt-1">
+        <h1 className="text-2xl font-bold text-foreground tracking-tight">Import Leads</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Upload a CSV file to import leads into your pipeline
         </p>
       </div>
@@ -168,17 +168,17 @@ export default function ImportPage() {
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
                     done
-                      ? "bg-green text-white"
+                      ? "bg-success text-success-foreground"
                       : active
-                      ? "bg-accent text-accent-text"
-                      : "bg-surface-2 text-text-faint border border-border"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-foreground-faint border border-border"
                   }`}
                 >
                   {done ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                 </div>
                 <span
                   className={
-                    active || done ? "font-semibold text-text" : "text-text-faint"
+                    active || done ? "font-semibold text-foreground" : "text-foreground-faint"
                   }
                 >
                   {s.label}
@@ -198,7 +198,7 @@ export default function ImportPage() {
           <div
             className={`p-12 border-2 border-dashed transition-colors ${
               isDragging
-                ? "border-blue bg-blue/5"
+                ? "border-primary bg-primary/5"
                 : "border-border hover:border-border-strong"
             }`}
             onDragOver={(e) => {
@@ -209,14 +209,14 @@ export default function ImportPage() {
             onDrop={handleDrop}
           >
             <div className="text-center space-y-4">
-              <div className="mx-auto w-14 h-14 rounded-2xl bg-surface-2 flex items-center justify-center">
-                <Upload className="w-6 h-6 text-text-muted" />
+              <div className="mx-auto w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center">
+                <Upload className="w-6 h-6 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-text">
+                <p className="text-sm font-semibold text-foreground">
                   Drop your CSV file here
                 </p>
-                <p className="text-xs text-text-faint mt-1">
+                <p className="text-xs text-foreground-faint mt-1">
                   or click to browse from your computer
                 </p>
               </div>
@@ -237,13 +237,13 @@ export default function ImportPage() {
             </div>
           </div>
           {error && (
-            <div className="p-4 bg-red/5 text-red text-sm flex items-center gap-2">
+            <div className="p-4 bg-destructive/5 text-destructive text-sm flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               {error}
             </div>
           )}
-          <div className="p-4 bg-surface-2 border-t border-border/40">
-            <p className="text-xs text-text-muted flex items-center gap-1.5">
+          <div className="p-4 bg-secondary border-t border-border/40">
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5" />
               Accepted format: .CSV files only. Headers required.
             </p>
@@ -257,12 +257,12 @@ export default function ImportPage() {
           {/* File Info */}
           <Card className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-surface-2 flex items-center justify-center">
-                <Database className="w-5 h-5 text-text-muted" />
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                <Database className="w-5 h-5 text-muted-foreground" />
               </div>
               <div>
-                <p className="text-sm font-medium text-text">{fileName}</p>
-                <p className="text-xs text-text-faint">
+                <p className="text-sm font-medium text-foreground">{fileName}</p>
+                <p className="text-xs text-foreground-faint">
                   {formatFileSize(fileSize)} • {csvData.length} rows previewed
                 </p>
               </div>
@@ -274,7 +274,7 @@ export default function ImportPage() {
                 setHeaders([]);
                 setMapping({});
               }}
-              className="rounded-full p-2 text-text-faint hover:text-text hover:bg-surface-2 transition-colors"
+              className="rounded-full p-2 text-foreground-faint hover:text-foreground hover:bg-secondary transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -282,11 +282,11 @@ export default function ImportPage() {
 
           {/* Field Mapping */}
           <Card className="p-5">
-            <h3 className="text-sm font-semibold text-text mb-3">Map Fields</h3>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Map Fields</h3>
             <div className="space-y-3">
               {KNOWN_FIELDS.map((field) => (
                 <div key={field.key} className="flex items-center gap-3">
-                  <label className="text-xs font-medium text-text-muted w-24 shrink-0">
+                  <label className="text-xs font-medium text-muted-foreground w-24 shrink-0">
                     {field.label}
                   </label>
                   <select
@@ -297,7 +297,7 @@ export default function ImportPage() {
                         [field.key]: e.target.value,
                       }))
                     }
-                    className="flex-1 h-9 px-2 text-sm rounded-lg bg-surface-2 border border-border text-text focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="flex-1 h-9 px-2 text-sm rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="">— Skip —</option>
                     {headers.map((h) => (
@@ -314,19 +314,19 @@ export default function ImportPage() {
           {/* Preview Table */}
           <Card className="p-0 overflow-hidden">
             <div className="p-4 border-b border-border/40">
-              <h3 className="text-sm font-semibold text-text">Preview</h3>
-              <p className="text-xs text-text-faint">
+              <h3 className="text-sm font-semibold text-foreground">Preview</h3>
+              <p className="text-xs text-foreground-faint">
                 First {Math.min(csvData.length, 5)} rows
               </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border/40 bg-surface-2">
+                  <tr className="border-b border-border/40 bg-secondary">
                     {headers.slice(0, 5).map((h) => (
                       <th
                         key={h}
-                        className="text-left py-2 px-3 font-medium text-text-muted"
+                        className="text-left py-2 px-3 font-medium text-muted-foreground"
                       >
                         {h}
                       </th>
@@ -337,7 +337,7 @@ export default function ImportPage() {
                   {csvData.slice(0, 5).map((row, i) => (
                     <tr key={i} className="border-b border-border/30">
                       {headers.slice(0, 5).map((h) => (
-                        <td key={h} className="py-2 px-3 text-text truncate max-w-[150px]">
+                        <td key={h} className="py-2 px-3 text-foreground truncate max-w-[150px]">
                           {row[h] || "—"}
                         </td>
                       ))}
@@ -381,13 +381,13 @@ export default function ImportPage() {
       {/* Step 3: Complete */}
       {step === "complete" && (
         <Card className="p-12 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-green/10 flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mb-4">
+            <CheckCircle className="w-8 h-8 text-success" />
           </div>
-          <h2 className="text-xl font-bold text-text mb-1">
+          <h2 className="text-xl font-bold text-foreground mb-1">
             {importedCount} leads imported successfully!
           </h2>
-          <p className="text-sm text-text-muted mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             Your leads have been added to your pipeline and are ready for outreach.
           </p>
           <div className="flex items-center justify-center gap-3">

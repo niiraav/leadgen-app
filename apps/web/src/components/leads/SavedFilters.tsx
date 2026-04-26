@@ -140,8 +140,8 @@ export function SavedFilters({
         className={cn(
           "flex items-center gap-1.5 h-9 px-3 rounded-full text-xs border transition-colors",
           open
-            ? "bg-amber/10 border-amber text-amber"
-            : "bg-surface-2 border-border text-text-muted hover:text-text hover:border-border-strong"
+            ? "bg-warning/10 border-amber text-warning"
+            : "bg-secondary border-border text-muted-foreground hover:text-foreground hover:border-border-strong"
         )}
         title="Saved filters"
       >
@@ -150,7 +150,7 @@ export function SavedFilters({
 
       {open && dropdownPos && createPortal(
         <div
-          className="fixed bg-surface border border-border rounded-xl shadow-lg z-[100] overflow-hidden"
+          className="fixed bg-card border border-border rounded-xl shadow-lg z-[100] overflow-hidden"
           style={{
             top: dropdownPos.top,
             left: dropdownPos.left,
@@ -158,7 +158,7 @@ export function SavedFilters({
           }}
         >
           <div className="p-2 border-b border-border/40">
-            <h4 className="text-xs font-semibold text-text-faint uppercase tracking-wider px-2 py-1">
+            <h4 className="text-xs font-semibold text-foreground-faint uppercase tracking-wider px-2 py-1">
               Saved Filters
             </h4>
           </div>
@@ -167,31 +167,31 @@ export function SavedFilters({
             {loading ? (
               <div className="p-3 space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-7 bg-surface-2 rounded animate-pulse" />
+                  <div key={i} className="h-7 bg-secondary rounded animate-pulse" />
                 ))}
               </div>
             ) : displayFilters.length === 0 ? (
-              <p className="p-3 text-xs text-text-faint text-center">
+              <p className="p-3 text-xs text-foreground-faint text-center">
                 No saved filters yet
               </p>
             ) : (
               displayFilters.map((filter) => (
                 <div
                   key={filter.id}
-                  className="flex items-center gap-1 px-2 py-1.5 hover:bg-surface-2 group/row"
+                  className="flex items-center gap-1 px-2 py-1.5 hover:bg-secondary group/row"
                 >
                   <button
                     onClick={() => {
                       onApply(filter.filters);
                       setOpen(false);
                     }}
-                    className="flex-1 text-left text-sm text-text truncate hover:text-blue"
+                    className="flex-1 text-left text-sm text-foreground truncate hover:text-primary"
                   >
                     {filter.name}
                   </button>
                   <button
                     onClick={() => handleDelete(filter.id)}
-                    className="opacity-0 group-hover/row:opacity-100 text-text-faint hover:text-red transition-opacity"
+                    className="opacity-0 group-hover/row:opacity-100 text-foreground-faint hover:text-destructive transition-opacity"
                     title="Delete"
                   >
                     <X className="w-3 h-3" />
@@ -216,17 +216,17 @@ export function SavedFilters({
                     }
                   }}
                   placeholder="Filter name..."
-                  className="flex-1 h-7 text-sm bg-surface-2 border border-border rounded px-2 text-text focus:outline-none focus:ring-1 focus:ring-primary/20"
+                  className="flex-1 h-7 text-sm bg-secondary border border-border rounded px-2 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20"
                 />
                 <button
                   onClick={handleSave}
                   disabled={saving || !newName.trim()}
-                  className="text-xs p-1 rounded hover:bg-surface-2 disabled:opacity-40"
+                  className="text-xs p-1 rounded hover:bg-secondary disabled:opacity-40"
                 >
                   {saving ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Check className="w-3.5 h-3.5 text-green" />
+                    <Check className="w-3.5 h-3.5 text-success" />
                   )}
                 </button>
                 <button
@@ -234,7 +234,7 @@ export function SavedFilters({
                     setNewName("");
                     setShowSaveInput(false);
                   }}
-                  className="text-xs p-1 rounded hover:bg-surface-2 text-text-faint"
+                  className="text-xs p-1 rounded hover:bg-secondary text-foreground-faint"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -242,7 +242,7 @@ export function SavedFilters({
             ) : (
               <button
                 onClick={() => setShowSaveInput(true)}
-                className="flex items-center gap-1 text-xs text-text-muted hover:text-text w-full py-1.5 px-2 rounded"
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground w-full py-1.5 px-2 rounded"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Save current filters

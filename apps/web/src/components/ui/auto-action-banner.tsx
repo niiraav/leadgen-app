@@ -23,18 +23,18 @@ export default function AutoActionBanner({ message, onUndo, onDismiss }: Props) 
 
   return (
     <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-md">
-        <span className="text-sm text-text flex-1 truncate">{message}</span>
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-md">
+        <span className="text-sm text-foreground flex-1 truncate">{message}</span>
         {timeLeft > 0 && (
           <button
             onClick={async () => { await onUndo(); onDismiss(); }}
-            className="flex items-center gap-1.5 text-xs font-medium text-blue hover:underline"
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             Undo
           </button>
         )}
-        <button onClick={onDismiss} className="text-text-faint hover:text-text">
+        <button onClick={onDismiss} className="text-foreground-faint hover:text-foreground">
           <X className="w-4 h-4" />
         </button>
       </div>

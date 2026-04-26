@@ -59,18 +59,18 @@ export default function FollowUpModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-surface rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay/50">
+      <div className="bg-card rounded-xl border border-border shadow-lg w-full max-w-sm mx-4 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text">Follow-up due</h3>
-          <button onClick={onClose} className="text-text-faint hover:text-text">
+          <h3 className="text-sm font-semibold text-foreground">Follow-up due</h3>
+          <button onClick={onClose} aria-label="Close modal" className="text-foreground-faint hover:text-foreground">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <p className="text-xs text-text-muted mb-4">
+        <p className="text-xs text-muted-foreground mb-4">
           {existingDate ? "Update follow-up for" : "Set follow-up for"}{" "}
-          <span className="font-medium text-text">{leadName}</span>
+          <span className="font-medium text-foreground">{leadName}</span>
         </p>
 
         <div className="flex gap-2 mb-4">
@@ -78,10 +78,10 @@ export default function FollowUpModal({
             <button
               key={opt.days}
               onClick={() => handleQuick(opt.days)}
-              className={`flex-1 py-1.5 px-2 rounded-md text-[11px] font-medium border transition-colors ${
+              className={`flex-1 py-1.5 px-2 rounded-md text-micro-sm font-medium border transition-colors focus-ring ${
                 quickDays === opt.days
                   ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-surface-2 text-text-muted border-border hover:bg-secondary"
+                  : "bg-secondary text-muted-foreground border-border hover:bg-secondary"
               }`}
             >
               {opt.label}
@@ -90,7 +90,7 @@ export default function FollowUpModal({
         </div>
 
         <div className="relative mb-5">
-          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
           <input
             type="date"
             value={selectedDate}

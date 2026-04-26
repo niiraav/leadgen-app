@@ -101,7 +101,7 @@ export default function EnrollPage() {
 
   if (loading) {
     return <div className="space-y-4">
-      {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-surface-2 rounded-xl animate-pulse" />)}
+      {[1, 2, 3].map((i) => <div key={i} className="h-16 bg-secondary rounded-xl animate-pulse" />)}
     </div>;
   }
 
@@ -109,13 +109,13 @@ export default function EnrollPage() {
     return (
       <div className="space-y-6">
         <div className="card text-center py-16">
-          <div className="mx-auto w-12 h-12 rounded-full bg-green/10 flex items-center justify-center mb-4">
-            <Check className="w-6 h-6 text-green" />
+          <div className="mx-auto w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mb-4">
+            <Check className="w-6 h-6 text-success" />
           </div>
-          <h2 className="text-lg font-bold text-text mb-2">
+          <h2 className="text-lg font-bold text-foreground mb-2">
             {selected.length} lead{selected.length > 1 ? "s" : ""} enrolled!
           </h2>
-          <p className="text-sm text-text-muted mb-6">
+          <p className="text-sm text-muted-foreground mb-6">
             Lead{selected.length > 1 ? "s have" : " has"} been added to &quot;{seqName}&quot;
           </p>
           <div className="flex items-center justify-center gap-3">
@@ -134,18 +134,18 @@ export default function EnrollPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center gap-3">
-        <Link href={`/sequences/${seqId}`} className="p-2 hover:bg-surface-2 rounded-lg transition-colors">
-          <ArrowLeft className="w-5 h-5 text-text-muted" />
+        <Link href={`/sequences/${seqId}`} className="p-2 hover:bg-secondary rounded-lg transition-colors">
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-text tracking-tight">Enroll Leads</h1>
-          <p className="text-sm text-text-muted mt-1">Select leads to add to &quot;{seqName}&quot;</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Enroll Leads</h1>
+          <p className="text-sm text-muted-foreground mt-1">Select leads to add to &quot;{seqName}&quot;</p>
         </div>
       </div>
 
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground-faint" />
           <input
             type="text"
             value={search}
@@ -155,7 +155,7 @@ export default function EnrollPage() {
           />
         </div>
         {selected.length > 0 && (
-          <span className="text-xs text-text-muted">{selected.length} selected</span>
+          <span className="text-xs text-muted-foreground">{selected.length} selected</span>
         )}
       </div>
 
@@ -166,27 +166,27 @@ export default function EnrollPage() {
             onClick={() => toggleLead(lead.id)}
             className={`rounded-xl border p-4 cursor-pointer transition-all ${
               selected.includes(lead.id)
-                ? "border-blue bg-blue/5"
-                : "border-border/60 bg-surface hover:bg-surface-2"
+                ? "border-primary bg-primary/5"
+                : "border-border/60 bg-card hover:bg-secondary"
             }`}
           >
             <div className="flex items-center gap-3">
               <div
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                   selected.includes(lead.id)
-                    ? "border-blue bg-blue"
+                    ? "border-primary bg-primary"
                     : "border-border"
                 }`}
               >
-                {selected.includes(lead.id) && <Check className="w-3 h-3 text-white" />}
+                {selected.includes(lead.id) && <Check className="w-3 h-3 text-primary-foreground" />}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-text truncate">{lead.business_name}</p>
-                <p className="text-xs text-text-muted">
+                <p className="text-sm font-medium text-foreground truncate">{lead.business_name}</p>
+                <p className="text-xs text-muted-foreground">
                   {lead.email ?? "No email"}{lead.city ? ` · ${lead.city}` : ""}
                 </p>
               </div>
-              <span className="text-xs text-text-faint capitalize">
+              <span className="text-xs text-foreground-faint capitalize">
                 {lead.do_not_contact ? 'DNC' : (lead.engagement_status ?? lead.status)}
               </span>
             </div>
@@ -194,7 +194,7 @@ export default function EnrollPage() {
         ))}
         {leads.length === 0 && (
           <div className="card text-center py-12">
-            <p className="text-sm text-text-muted">No leads match your search</p>
+            <p className="text-sm text-muted-foreground">No leads match your search</p>
           </div>
         )}
       </div>

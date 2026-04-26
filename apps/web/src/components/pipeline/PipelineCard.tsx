@@ -3,6 +3,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { ChevronRight } from "lucide-react";
 import { PipelineLead } from "@/hooks/usePipelineBoard";
 import { getColumnDef, getLeadColumn, followUpHealth, formatCompactDealValue } from "@leadgen/shared";
+import { Badge } from "@/components/ui/badge";
+import {
+  PIPELINE_STAGE_VARIANTS,
+  ENGAGEMENT_STATUS_VARIANTS,
+  LOSS_REASON_VARIANTS,
+} from "@/lib/status-colors";
 
 interface PipelineCardProps {
   lead: PipelineLead;
@@ -41,7 +47,7 @@ export default function PipelineCard({
   const renderStateSignal = () => {
     if ((lead.unreadReplyCount ?? 0) > 0) {
       return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-destructive">
+        <span className="inline-flex items-center gap-1 text-micro font-semibold text-destructive">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive" />
@@ -66,7 +72,7 @@ export default function PipelineCard({
           ? "Due today"
           : new Date(lead.followUpDate).toLocaleDateString(undefined, { month: "short", day: "numeric" });
       return (
-        <span className={`inline-flex items-center gap-1 text-[10px] font-medium ${colorClass}`}>
+        <span className={`inline-flex items-center gap-1 text-micro font-medium ${colorClass}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${health === "red" ? "bg-destructive" : health === "amber" ? "bg-warning" : "bg-muted-foreground"}`} />
           {label}
         </span>
@@ -75,7 +81,7 @@ export default function PipelineCard({
 
     if (lead.status === "lost") {
       return (
-        <span className="inline-flex items-center text-[10px] font-medium text-muted-foreground">
+        <span className="inline-flex items-center text-micro font-medium text-muted-foreground">
           Lost
         </span>
       );
@@ -92,7 +98,7 @@ export default function PipelineCard({
       items.push(
         <span
           key="intent"
-          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium bg-primary/10 text-primary"
+          className="inline-flex items-center rounded-full px-1.5 py-0.5 text-micro font-medium bg-primary/10 text-primary"
         >
           {String(lead.latestReply.intent).replace(/_/g, " ")}
         </span>
@@ -103,7 +109,7 @@ export default function PipelineCard({
       items.push(
         <span
           key="deal"
-          className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-primary"
+          className="inline-flex items-center gap-0.5 text-micro font-semibold text-primary"
         >
           {formatCompactDealValue(lead.dealValue)}
         </span>
@@ -111,13 +117,15 @@ export default function PipelineCard({
     }
 
     if (columnId === "lost" && lead.lossReason) {
+      const lossVariant = LOSS_REASON_VARIANTS[lead.lossReason as keyof typeof LOSS_REASON_VARIANTS] ?? "secondary";
       items.push(
-        <span
+        <Badge
           key="loss"
-          className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200"
+          variant={lossVariant}
+          className="text-micro rounded-md"
         >
           {lead.lossReason.replace(/_/g, " ")}
-        </span>
+        </Badge>
       );
     }
 
@@ -145,7 +153,7 @@ export default function PipelineCard({
       className={`
         relative group cursor-pointer select-none
         rounded-lg border p-3 transition-colors
-        ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-surface hover:border-primary/30 hover:bg-primary/[0.02]"}
+        ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-card hover:border-primary/30 hover:bg-primary/[0.02]"}
         ${isRecentlyMoved ? "border-primary/35 bg-primary/5 shadow-sm" : ""}
       `}
     >
@@ -164,7 +172,7 @@ export default function PipelineCard({
           className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
             isSelected
               ? "bg-primary border-primary"
-              : "bg-surface border-border group-hover:border-primary/40"
+              : "bg-card border-border group-hover:border-primary/40"
           }`}
         >
           {isSelected && (
@@ -178,20 +186,25 @@ export default function PipelineCard({
       <div className="pl-5">
         {/* Row 1: Business name + hover arrow */}
         <div className="flex items-center justify-between gap-2 min-w-0">
-          <h4 className="text-sm font-semibold text-text truncate flex-1 min-w-0">
+          <h4 className="text-sm font-semibold text-foreground truncate flex-1 min-w-0">
             {lead.business_name}
           </h4>
-          <ChevronRight className="w-3.5 h-3.5 text-text-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+          <ChevronRight className="w-3.5 h-3.5 text-foreground-faint opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
         </div>
 
         {/* Row 2: Stage badge */}
         <div className="mt-1">
-          <span
-            className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
-            style={{ backgroundColor: column?.color ?? "#6b7280" }}
-          >
-            {column?.title ?? lead.status}
-          </span>
+          {((): React.ReactNode => {
+            const variant =
+              column?.field === "pipeline_stage"
+                ? PIPELINE_STAGE_VARIANTS[column.id as keyof typeof PIPELINE_STAGE_VARIANTS]
+                : ENGAGEMENT_STATUS_VARIANTS[column?.id as keyof typeof ENGAGEMENT_STATUS_VARIANTS];
+            return (
+              <Badge variant={variant ?? "secondary"} className="text-micro">
+                {column?.title ?? lead.status}
+              </Badge>
+            );
+          })()}
         </div>
 
         {/* Row 3: State signal */}

@@ -28,7 +28,7 @@ export default function PipelineColumn({
   });
 
   return (
-    <div className="flex flex-col min-w-[272px] w-[272px] flex-shrink-0">
+    <div className="flex flex-col min-w-72 w-72 flex-shrink-0">
       {/* Column header */}
       <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-1.5">
@@ -36,11 +36,11 @@ export default function PipelineColumn({
             className="w-2 h-2 rounded-full flex-shrink-0"
             style={{ backgroundColor: column.color }}
           />
-          <h3 className="text-xs font-semibold text-text uppercase tracking-wide">
+          <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide">
             {column.title}
           </h3>
         </div>
-        <span className="text-xs font-medium text-text-faint tabular-nums">
+        <span className="text-xs font-medium text-foreground-faint tabular-nums">
           {leads.length}
         </span>
       </div>
@@ -48,11 +48,20 @@ export default function PipelineColumn({
       {/* Droppable area */}
       <div
         ref={setNodeRef}
+        role="button"
+        aria-label="Clear selection"
+        tabIndex={0}
         onClick={() => onClearSelection?.()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClearSelection?.();
+          }
+        }}
         className={`
-          flex-1 flex flex-col gap-2 min-h-[120px] rounded-lg p-2
+          flex-1 flex flex-col gap-2 min-h-32 rounded-lg p-2
           transition-colors
-          ${isOver ? "bg-primary/5 ring-1 ring-primary/20" : "bg-gray-50/50"}
+          ${isOver ? "bg-primary/5 ring-1 ring-primary/20" : "bg-secondary/50"}
         `}
       >
         <SortableContext
@@ -76,11 +85,11 @@ export default function PipelineColumn({
           <div
             className={`
               rounded-md border border-dashed flex items-center justify-center
-              ${isOver ? "border-primary/40 bg-primary/[0.03] h-16" : "border-gray-200 bg-gray-50/30 h-12"}
+              ${isOver ? "border-primary/40 bg-primary/[0.03] h-16" : "border-border bg-secondary/50 h-12"}
             `}
           >
             {leads.length === 0 && !isOver && (
-              <span className="text-[10px] text-text-faint">Drop leads here</span>
+              <span className="text-micro text-foreground-faint">Drop leads here</span>
             )}
           </div>
         )}

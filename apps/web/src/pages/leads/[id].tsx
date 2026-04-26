@@ -11,6 +11,7 @@ import {
 import { motion } from "framer-motion";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/router";
+import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { UpgradeRequiredError } from "@/lib/api";
@@ -23,6 +24,7 @@ import { NotesEditor } from "@/components/leads/NotesEditor";
 import { LeadDetailTabs } from "@/components/leads/LeadDetailTabs";
 import { StatusDropdown } from "@/components/leads/StatusDropdown";
 import { formatRelativeTime, REPLY_INTENT_CHIP } from "@/lib/activity-utils";
+import { REPLY_INTENT_CLASS } from "@/lib/status-colors";
 import UpgradePrompt from "@/components/ui/upgrade-prompt";
 import { getLeadDomain, resolveStatusPatch, type LeadDomainFields, DOMAIN_LABELS } from "@/lib/lead-domains";
 
@@ -395,14 +397,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
   if (loading) {
     return (
       <div className="space-y-6 max-w-6xl animate-pulse">
-        <div className="h-8 w-64 bg-surface-2 rounded" />
-        <div className="h-4 w-48 bg-surface-2 rounded" />
+        <div className="h-8 w-64 bg-secondary rounded" />
+        <div className="h-4 w-48 bg-secondary rounded" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="space-y-4">
-            <div className="h-40 bg-surface-2 rounded-xl" />
-            <div className="h-40 bg-surface-2 rounded-xl" />
+            <div className="h-40 bg-secondary rounded-xl" />
+            <div className="h-40 bg-secondary rounded-xl" />
           </div>
-          <div className="lg:col-span-2 h-80 bg-surface-2 rounded-xl" />
+          <div className="lg:col-span-2 h-80 bg-secondary rounded-xl" />
         </div>
       </div>
     );
@@ -412,10 +414,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
     return (
       <div className="space-y-6 max-w-3xl">
         <div className="card text-center py-12">
-          <p className="text-text-muted">{error || "Lead not found"}</p>
-          <a href="/leads" className="text-sm text-blue hover:underline mt-2 inline-block">
+          <p className="text-muted-foreground">{error || "Lead not found"}</p>
+          <Link href="/leads" className="text-sm text-primary hover:underline mt-2 inline-block">
             ← Back to leads
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -436,7 +438,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       <div>
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm text-text-muted hover:text-text transition-colors"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -450,14 +452,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-text tracking-tight">{lead.business_name}</h1>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{lead.business_name}</h1>
             <HotScoreBadge score={lead.hot_score} />
           </div>
-          <p className="text-sm text-text-muted">
+          <p className="text-sm text-muted-foreground">
             {lead.category}
             {lead.city && ` — ${lead.city}`}
           </p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted mt-1.5">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5">
             {lead.city && (
               <span className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5" />{lead.city}, {lead.country}
@@ -470,7 +472,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
         <div className="flex items-center gap-2 flex-wrap">
           {/* Deal value — editable inline */}
           <div className="flex items-center gap-1.5">
-            <PoundSterling className="w-3.5 h-3.5 text-text-faint" />
+            <PoundSterling className="w-3.5 h-3.5 text-foreground-faint" />
             <input
               type="number"
               min={0}
@@ -484,9 +486,9 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 }
               }}
               placeholder="Value"
-              className="w-24 text-xs font-medium text-text bg-transparent border-b border-border/40 focus:border-primary focus:outline-none px-1 py-0.5"
+              className="w-24 text-xs font-medium text-foreground bg-transparent border-b border-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 px-1 py-0.5 rounded-sm"
             />
-            {saving && <Loader2 className="w-3 h-3 animate-spin text-text-faint" />}
+            {saving && <Loader2 className="w-3 h-3 animate-spin text-foreground-faint" />}
           </div>
 
           {/* Phase 4.1: StatusDropdown + domain context */}
@@ -508,7 +510,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     }
                   }}
           />
-          <span className="text-[10px] uppercase tracking-wider text-text-faint font-medium">
+          <span className="text-micro uppercase tracking-wider text-foreground-faint font-medium">
             {DOMAIN_LABELS[getLeadDomain({
               engagementStatus: lead.engagementStatus ?? null,
               pipelineStage: lead.pipelineStage ?? null,
@@ -517,10 +519,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             })]}
           </span>
           {lead.doNotContact && (
-            <Badge className="bg-red-100 text-red-800 text-[11px]">Do Not Contact</Badge>
+            <Badge variant="destructive" className="text-micro-sm">Do Not Contact</Badge>
           )}
           {lead.lastActivity && (
-            <span className="text-[11px] text-text-muted flex items-center gap-1">
+            <span className="text-micro-sm text-muted-foreground flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
               {lead.lastActivity.replyIntent && (() => {
@@ -534,7 +536,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             </span>
           )}
           {repliesQuery.data?.replies?.length ? (
-            <span className="text-[10px] font-medium bg-blue/10 text-blue px-1.5 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-micro font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded-full flex items-center gap-1">
               <MessageSquare className="w-2.5 h-2.5" />
               {repliesQuery.data.replies!.length}
             </span>
@@ -547,33 +549,33 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               disabled={!!lead.doNotContact}
             >
               Enroll in Sequence
-              {lead.doNotContact && <AlertTriangle className="w-3 h-3 ml-1 text-amber-500" />}
+              {lead.doNotContact && <AlertTriangle className="w-3 h-3 ml-1 text-warning" />}
               <ChevronDown className="w-3 h-3" />
             </button>
             {sequencesDropdown && (
-              <div className="absolute right-0 mt-1 w-56 rounded-lg border border-border/60 bg-surface shadow-lg py-1 z-20">
+              <div className="absolute right-0 mt-1 w-56 rounded-lg border border-border/60 bg-card shadow-lg py-1 z-20">
                 <div className="px-3 py-1.5 border-b border-border/40">
-                  <p className="text-xs font-medium text-text">Enroll in Sequence</p>
+                  <p className="text-xs font-medium text-foreground">Enroll in Sequence</p>
                 </div>
                 {sequences.length === 0 ? (
-                  <div className="px-3 py-2 text-xs text-text-muted">No active sequences</div>
+                  <div className="px-3 py-2 text-xs text-muted-foreground">No active sequences</div>
                 ) : (
                   sequences.map((seq: { id: string; name: string }) => (
                     <button
                       key={seq.id}
                       onClick={() => handleEnroll(seq.id)}
-                      className="w-full px-3 py-2 text-sm text-text hover:bg-surface-2 transition-colors text-left truncate"
+                      className="w-full px-3 py-2 text-sm text-foreground hover:bg-secondary transition-colors text-left truncate focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                     >
                       {seq.name}
                     </button>
                   ))
                 )}
-                <a
+                <Link
                   href="/sequences/new"
-                  className="block px-3 py-2 text-xs text-blue hover:bg-blue/5 transition-colors"
+                  className="block px-3 py-2 text-xs text-primary hover:bg-primary/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                 >
                   + Create Sequence
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -605,14 +607,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
 
           {/* ── Pipeline Details Card ── */}
           <Card className="p-4 space-y-3">
-            <h3 className="text-sm font-semibold text-text flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-primary" />
               Pipeline Details
             </h3>
 
             {/* Follow-up date */}
             <div className="space-y-1">
-              <label className="text-[11px] font-medium text-text-muted uppercase tracking-wide">Follow-up Date</label>
+              <label className="text-micro-sm font-medium text-muted-foreground uppercase tracking-wide">Follow-up Date</label>
               <div className="flex items-center gap-2">
                 <input
                   type="date"
@@ -624,10 +626,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       saveField("followUpDate", val);
                     }
                   }}
-                  className="flex-1 text-sm bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary"
+                  className="flex-1 text-sm bg-secondary border border-border/40 rounded-md px-2 py-1.5 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
                 {lead.followUpDate && (
-                  <span className="text-[11px] text-text-muted whitespace-nowrap">
+                  <span className="text-micro-sm text-muted-foreground whitespace-nowrap">
                     {(() => {
                       const due = new Date(lead.followUpDate);
                       const today = new Date();
@@ -645,14 +647,14 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
             {/* Loss reason — only show if lost */}
             {(lead.status === "lost" || lead.pipelineStage === "lost") && (
               <div className="space-y-2 pt-1 border-t border-border/30">
-                <label className="text-[11px] font-medium text-text-muted uppercase tracking-wide">Loss Reason</label>
+                <label className="text-micro-sm font-medium text-muted-foreground uppercase tracking-wide">Loss Reason</label>
                 <select
                   value={editLossReason}
                   onChange={(e) => {
                     setEditLossReason(e.target.value);
                     saveField("lossReason", e.target.value || null);
                   }}
-                  className="w-full text-sm bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary"
+                  className="w-full text-sm bg-secondary border border-border/40 rounded-md px-2 py-1.5 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">Select a reason…</option>
                   {LOSS_REASON_OPTIONS.map((opt) => (
@@ -669,7 +671,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                   }}
                   placeholder="Additional notes…"
                   rows={2}
-                  className="w-full text-xs bg-surface-2 border border-border/40 rounded-md px-2 py-1.5 text-text focus:outline-none focus:border-primary resize-none"
+                  className="w-full text-xs bg-secondary border border-border/40 rounded-md px-2 py-1.5 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
                 />
               </div>
             )}
@@ -681,13 +683,13 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               ────────────────────────────────────────────────────────────── */}
           <Card className="p-0">
             <div className="px-4 pt-4 pb-2 flex items-center gap-1.5">
-              <Star className="w-4 h-4 text-amber" />
-              <h3 className="text-sm font-semibold text-text">Review Intelligence</h3>
+              <Star className="w-4 h-4 text-warning" />
+              <h3 className="text-sm font-semibold text-foreground">Review Intelligence</h3>
               {lead?.review_summary && lead.reviews_fetched_at && (Date.now() - new Date(lead.reviews_fetched_at).getTime()) / 86400000 >= 7 && (lead?.place_id || lead?.business_name) && (
                 <button
                   onClick={handleFetchReviews}
                   disabled={reviewsLoading}
-                  className="ml-auto text-xs text-blue hover:underline flex items-center gap-1"
+                  className="ml-auto text-xs text-primary hover:underline flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
                 >
                   {reviewsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
                   Refresh
@@ -700,10 +702,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Themes */}
                 {lead.review_summary.themes && lead.review_summary.themes.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">What Customers Value</h4>
+                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">What Customers Value</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.themes.map((t, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-green/10 text-green font-medium">{t}</span>
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-success/10 text-success font-medium">{t}</span>
                       ))}
                     </div>
                   </div>
@@ -711,10 +713,10 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* USP Candidates */}
                 {lead.review_summary.usp_candidates && lead.review_summary.usp_candidates.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
+                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Unique Strengths</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.usp_candidates.map((u, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-blue/10 text-blue font-medium">{u}</span>
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-primary/10 text-primary font-medium">{u}</span>
                       ))}
                     </div>
                   </div>
@@ -722,11 +724,11 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Staff Names */}
                 {lead.review_summary.staff_names && lead.review_summary.staff_names.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
+                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Staff Mentioned</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.staff_names.map((s, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-surface-2 text-text font-medium">
-                          <span className="w-4 h-4 rounded-full bg-purple/20 text-purple text-[9px] flex items-center justify-center font-bold">{s.charAt(0)}</span>
+                        <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs bg-secondary text-foreground font-medium">
+                          <span className="w-4 h-4 rounded-full bg-muted/20 text-muted-foreground text-[9px] flex items-center justify-center font-bold">{s.charAt(0)}</span>
                           {s}
                         </span>
                       ))}
@@ -736,38 +738,38 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 {/* Pain Points */}
                 {lead.review_summary.pain_points && lead.review_summary.pain_points.length > 0 && (
                   <div>
-                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Pain Points</h4>
+                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Pain Points</h4>
                     <div className="flex flex-wrap gap-1.5">
                       {lead.review_summary.pain_points.map((p, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-amber/10 text-amber font-medium">{p}</span>
+                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-md text-xs bg-warning/10 text-warning font-medium">{p}</span>
                       ))}
                     </div>
                   </div>
                 )}
                 {/* Owner Evidence */}
                 {lead.review_summary.owner_name && lead.review_summary.owner_evidence && (
-                  <div className="rounded-lg bg-surface-2/60 p-2.5">
-                    <h4 className="text-xs font-medium text-text-faint uppercase tracking-wide mb-1">Owner Evidence</h4>
-                    <p className="text-xs text-text-muted italic">{lead.review_summary.owner_evidence}</p>
+                  <div className="rounded-lg bg-secondary/60 p-2.5">
+                    <h4 className="text-xs font-medium text-foreground-faint uppercase tracking-wide mb-1">Owner Evidence</h4>
+                    <p className="text-xs text-muted-foreground italic">{lead.review_summary.owner_evidence}</p>
                   </div>
                 )}
                 {/* Fetched timestamp */}
                 {lead.reviews_fetched_at && (
-                  <p className="text-[10px] text-text-faint pt-1">
+                  <p className="text-micro text-foreground-faint pt-1">
                     Insights from {lead.review_count || 0} reviews &middot; analyzed {new Date(lead.reviews_fetched_at).toLocaleDateString()}
                   </p>
                 )}
               </div>
             ) : reviewsLoading ? (
-              <div className="px-4 pb-4 flex items-center gap-2 text-sm text-text-muted">
+              <div className="px-4 pb-4 flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Scanning reviews and extracting insights...
               </div>
             ) : reviewsError ? (
               <div className="px-4 pb-4">
-                <div className="rounded-lg bg-red/5 border border-red/20 p-3 mb-2">
-                  <p className="text-xs text-red font-medium">Failed to scan reviews</p>
-                  <p className="text-[11px] text-text-muted mt-0.5">{reviewsError}</p>
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 mb-2">
+                  <p className="text-xs text-destructive font-medium">Failed to scan reviews</p>
+                  <p className="text-micro-sm text-muted-foreground mt-0.5">{reviewsError}</p>
                 </div>
                 <button
                   onClick={handleFetchReviews}
@@ -780,7 +782,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               </div>
             ) : lead?.place_id || lead?.business_name ? (
               <div className="px-4 pb-4">
-                <p className="text-xs text-text-muted mb-2">Scan customer reviews to discover what makes this business unique and personalize your outreach.</p>
+                <p className="text-xs text-muted-foreground mb-2">Scan customer reviews to discover what makes this business unique and personalize your outreach.</p>
                 <button
                   onClick={handleFetchReviews}
                   disabled={reviewsLoading}
@@ -792,7 +794,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               </div>
             ) : (
               <div className="px-4 pb-4">
-                <p className="text-xs text-text-muted">No Google Maps data available for review analysis.</p>
+                <p className="text-xs text-muted-foreground">No Google Maps data available for review analysis.</p>
               </div>
             )}
           </Card>
@@ -804,17 +806,17 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
         <div className="lg:col-span-2 space-y-4">
 
           {isRecontact && (
-            <div className="rounded-xl border border-amber/20 bg-amber/5 p-4 flex items-start gap-3">
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-4 flex items-start gap-3">
               <span className="text-lg">💡</span>
               <div>
-                <p className="text-sm text-amber font-medium">Re-engaging a cold lead</p>
-                <p className="text-xs text-amber/80 mt-0.5">Try a different angle — shorter, more direct, no reference to previous outreach</p>
+                <p className="text-sm text-warning font-medium">Re-engaging a cold lead</p>
+                <p className="text-xs text-warning/80 mt-0.5">Try a different angle — shorter, more direct, no reference to previous outreach</p>
               </div>
             </div>
           )}
 
           {lead.email_status === "catch-all" && (
-            <div className="rounded-xl border border-amber/20 bg-amber/5 p-3 text-xs text-amber">
+            <div className="rounded-xl border border-warning/20 bg-warning/5 p-3 text-xs text-warning">
               ⚠️ This email is catch-all — it may not reach a real inbox
             </div>
           )}
@@ -827,8 +829,8 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                   {/* ── Email Composer Header ── */}
                   <div className="px-4 pt-4 pb-3 border-b border-border/40">
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-text flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-blue" />
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-primary" />
                         AI Email Composer
                       </h3>
                       <button
@@ -852,20 +854,20 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
 
                     {/* Prerequisite hints */}
                     {!lead.review_summary && !emailLoading && !lead.email && (
-                      <div className="rounded-lg bg-amber/5 border border-amber/20 p-2 text-xs text-amber space-y-1">
+                      <div className="rounded-lg bg-warning/5 border border-warning/20 p-2 text-xs text-warning space-y-1">
                         <p className="font-medium">Missing prerequisites</p>
                         <p>Enrich contact for an email address, then scan reviews for personalized content.</p>
                       </div>
                     )}
                     {!lead.review_summary && !emailLoading && lead.email && (
-                      <p className="text-[10px] text-text-faint mt-1 flex items-center gap-1">
+                      <p className="text-micro text-foreground-faint mt-1 flex items-center gap-1">
                         <Star className="w-2.5 h-2.5" />
                         Scan reviews first for a personalised email
                       </p>
                     )}
 
                     {emailError && (
-                      <div className="text-xs text-red mb-2">{emailError}</div>
+                      <div className="text-xs text-destructive mb-2">{emailError}</div>
                     )}
 
                     {subjectOptions.length > 0 && (
@@ -879,8 +881,8 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                             }}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                               idx === selectedSubjectIdx
-                                ? "bg-blue text-white"
-                                : "bg-surface-2 text-text-muted hover:text-text hover:bg-border/10"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-border/10"
                             }`}
                           >
                             Option {idx + 1}
@@ -901,7 +903,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                         const matchIdx = subjectOptions.indexOf(e.target.value);
                         if (matchIdx >= 0) setSelectedSubjectIdx(matchIdx);
                       }}
-                      className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0"
+                      className="w-full px-0 py-2 text-sm font-medium bg-transparent border-0 text-foreground placeholder:text-foreground-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
                   </div>
 
@@ -912,27 +914,27 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                       value={draftEmail}
                       onChange={(e) => setDraftEmail(e.target.value)}
                       rows={12}
-                      className="w-full px-0 py-1 text-sm bg-transparent border-0 text-text placeholder:text-text-faint focus:outline-none focus:ring-0 resize-none leading-relaxed"
+                      className="w-full px-0 py-1 text-sm bg-transparent border-0 text-foreground placeholder:text-foreground-faint focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none leading-relaxed"
                       placeholder="Write your email here or use AI to generate..."
                     />
                   </div>
 
                   {/* ── Footer Toolbar ── */}
-                  <div className="px-4 py-3 bg-surface-2/60 border-t border-border/40 flex items-center justify-between">
+                  <div className="px-4 py-3 bg-secondary/60 border-t border-border/40 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleCopy}
-                        className="rounded-md p-2 text-text-muted hover:text-text hover:bg-border/10 transition-colors"
+                        className="rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-border/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         aria-label="Copy email"
                         title="Copy subject + body"
                       >
                         {copied ? (
-                          <Check className="w-4 h-4 text-green" />
+                          <Check className="w-4 h-4 text-success" />
                         ) : (
                           <Copy className="w-4 h-4" />
                         )}
                       </button>
-                      <span className="text-xs text-text-faint">
+                      <span className="text-xs text-foreground-faint">
                         {draftEmail.split(/\s+/).filter(Boolean).length} words
                       </span>
                       {isMobile && !copied && (
@@ -957,17 +959,17 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                             {!hasEmail ? "No email" : "Email invalid"}
                           </button>
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48">
-                            <div className="text-xs text-text bg-surface border border-border rounded-lg px-3 py-2 shadow-lg">
-                              <AlertCircle className="w-3 h-3 inline mr-1 text-red" />
+                            <div className="text-xs text-foreground bg-card border border-border rounded-lg px-3 py-2 shadow-lg">
+                              <AlertCircle className="w-3 h-3 inline mr-1 text-destructive" />
                               {!hasEmail ? "No email address — enrich this lead first" : "Email marked invalid — cannot send outreach"}
                             </div>
-                            <div className="w-2 h-2 bg-surface border-r border-b border-border rotate-45 mx-auto -mt-1" />
+                            <div className="w-2 h-2 bg-card border-r border-b border-border rotate-45 mx-auto -mt-1" />
                           </div>
                         </div>
                       ) : (
                         <>
                           {emailSent && (
-                            <span className="text-xs text-green font-medium animate-pulse">
+                            <span className="text-xs text-success font-medium animate-pulse">
                               ✓ Email queued!
                             </span>
                           )}
@@ -998,7 +1000,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                             {logEmailLoading ? "Logging..." : "Log as sent"}
                           </button>
                           {lead.doNotContact && (
-                            <span className="text-[10px] text-red flex items-center gap-1">
+                            <span className="text-micro text-destructive flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" />
                               Blocked — do not contact
                             </span>
@@ -1013,16 +1015,16 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                 <div className="divide-y divide-border/40">
                   {allActivities.length > 0 ? (
                     allActivities.map((activity) => (
-                      <div key={activity.id} className="p-4 hover:bg-surface-2/50 transition-colors">
+                      <div key={activity.id} className="p-4 hover:bg-secondary/50 transition-colors">
                         <div>
-                          <p className="text-sm font-medium text-text">
+                          <p className="text-sm font-medium text-foreground">
                             {activity.type === 'status_changed' && activity.field && FIELD_LABELS[activity.field]
                               ? FIELD_LABELS[activity.field]
                               : activity.type === 'status_changed'
                                 ? 'Status changed'
                                 : activity.description}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-text-muted mt-0.5">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
                             <Clock className="w-3 h-3" />
                             {new Date(activity.created_at).toLocaleString()}
                           </div>
@@ -1031,7 +1033,7 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
                     ))
                   ) : (
                     <div className="p-4">
-                      <p className="text-xs text-text-muted">No activity yet</p>
+                      <p className="text-xs text-muted-foreground">No activity yet</p>
                     </div>
                   )}
                 </div>
@@ -1039,37 +1041,33 @@ export default function LeadProfilePage({ user }: { user?: { id: string; email: 
               repliesTab={
                 <div className="px-4 pb-4 space-y-3">
                   {repliesQuery.isLoading ? (
-                    <div className="flex items-center gap-2 text-xs text-text-muted py-4">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
                       <Loader2 className="w-3 h-3 animate-spin" /> Loading replies...
                     </div>
                   ) : !repliesQuery.data?.replies?.length ? (
-                    <p className="text-xs text-text-muted py-2">No replies yet</p>
+                    <p className="text-xs text-muted-foreground py-2">No replies yet</p>
                   ) : (
                     <div className="space-y-3">
                       {repliesQuery.data.replies.map((r: any) => {
-                        const intentColor: Record<string, string> = {
-                          interested: "text-green", question: "text-blue", objection: "text-amber",
-                          not_now: "text-orange", not_interested: "text-red", referral: "text-purple",
-                          other: "text-text-muted",
-                        };
+                        const intentClass = REPLY_INTENT_CLASS[r.intent_label] ?? "text-muted-foreground";
                         return (
                           <div key={r.id} className="border border-border/40 rounded-lg p-3 space-y-1.5">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-medium text-text">{r.subject || "(no subject)"}</span>
-                              <span className="text-[10px] text-text-faint">{new Date(r.received_at).toLocaleDateString()}</span>
+                              <span className="text-xs font-medium text-foreground">{r.subject || "(no subject)"}</span>
+                              <span className="text-micro text-foreground-faint">{new Date(r.received_at).toLocaleDateString()}</span>
                             </div>
-                            <p className="text-xs text-text-muted line-clamp-3">{r.body_plain?.slice(0, 300)}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-3">{r.body_plain?.slice(0, 300)}</p>
                             <div className="flex items-center gap-2 flex-wrap">
                               {r.intent_label && (
-                                <span className={`text-[10px] font-semibold uppercase ${intentColor[r.intent_label] ?? "text-text-muted"}`}>
+                                <span className={`text-micro font-semibold uppercase ${intentClass}`}>
                                   {r.intent_label}
                                 </span>
                               )}
                               {r.key_phrase && (
-                                <span className="text-[10px] text-text-faint italic">"{r.key_phrase}"</span>
+                                <span className="text-micro text-foreground-faint italic">"{r.key_phrase}"</span>
                               )}
                               {r.needs_review && (
-                                <span className="text-[10px] bg-amber/10 text-amber px-1.5 py-0.5 rounded">Needs review</span>
+                                <span className="text-micro bg-warning/10 text-warning px-1.5 py-0.5 rounded">Needs review</span>
                               )}
                             </div>
                           </div>

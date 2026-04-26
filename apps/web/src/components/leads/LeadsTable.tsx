@@ -145,7 +145,7 @@ const TooltipLayer = memo(function TooltipLayer({ tip }: { tip: TooltipState }) 
   if (!tip.show || !tip.text) return null;
   return (
     <div
-      className="fixed z-[9999] pointer-events-none px-2 py-1 rounded-md bg-[#1a1a1a] text-white text-xs shadow-lg max-w-[240px] text-center"
+      className="fixed z-[9999] pointer-events-none px-2 py-1 rounded-md bg-popover text-popover-foreground text-xs shadow-lg max-w-60 text-center"
       style={{
         left: tip.x,
         top: tip.y,
@@ -153,7 +153,7 @@ const TooltipLayer = memo(function TooltipLayer({ tip }: { tip: TooltipState }) 
       }}
     >
       {tip.text}
-      <div className="absolute left-1/2 -bottom-1 w-2 h-2 bg-[#1a1a1a] rotate-45 -translate-x-1/2" />
+      <div className="absolute left-1/2 -bottom-1 w-2 h-2 bg-popover rotate-45 -translate-x-1/2" />
     </div>
   );
 });
@@ -179,8 +179,8 @@ function SortHeader({
   return (
     <th
       className={cn(
-        "px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted select-none",
-        onSort && "cursor-pointer hover:text-text",
+        "px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground select-none",
+        onSort && "cursor-pointer hover:text-foreground",
         className
       )}
       onClick={() => onSort?.(sortKey)}
@@ -190,9 +190,9 @@ function SortHeader({
         {active && (
           <span className="inline-flex">
             {order === "asc" ? (
-              <ArrowUp className="w-4 h-4 text-text" />
+              <ArrowUp className="w-4 h-4 text-foreground" />
             ) : (
-              <ArrowDown className="w-4 h-4 text-text" />
+              <ArrowDown className="w-4 h-4 text-foreground" />
             )}
           </span>
         )}
@@ -205,21 +205,21 @@ function SortHeader({
 
 const STATUS_PILL_COLORS: Record<string, string> = {
   // Engagement
-  new: "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700",
-  contacted: "bg-blue/10 text-blue border-blue/20",
-  replied: "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-700",
-  interested: "bg-amber/10 text-amber border-amber/20",
-  not_interested: "bg-red/10 text-red border-red/20",
-  out_of_office: "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-700",
+  new: "bg-muted text-muted-foreground border-border",
+  contacted: "bg-primary/10 text-primary border-primary/20",
+  replied: "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border-primary/20 dark:border-primary/30",
+  interested: "bg-warning/10 text-warning border-warning/20",
+  not_interested: "bg-destructive/10 text-destructive border-destructive/20",
+  out_of_office: "bg-warning/10 dark:bg-warning/20 text-warning dark:text-warning border-warning/20 dark:border-warning/30",
   // Pipeline
-  qualified: "bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-700",
-  proposal_sent: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-700",
-  converted: "bg-green/10 text-green border-green/20",
-  lost: "bg-red/10 text-red border-red/20",
+  qualified: "bg-success/10 dark:bg-success/20 text-success dark:text-success border-success/20 dark:border-success/30",
+  proposal_sent: "bg-primary/10 dark:bg-primary/20 text-primary dark:text-primary border-primary/20 dark:border-primary/30",
+  converted: "bg-success/10 text-success border-success/20",
+  lost: "bg-destructive/10 text-destructive border-destructive/20",
   // Lifecycle
-  active: "bg-green/10 text-green border-green/20",
-  closed: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
-  archived: "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700",
+  active: "bg-success/10 text-success border-success/20",
+  closed: "bg-muted text-muted-foreground border-border",
+  archived: "bg-muted text-muted-foreground border-border",
 };
 
 // ── Skeletal row (7 columns) ─────────────────────────────────────────────────
@@ -228,28 +228,28 @@ function SkeletonRow() {
   return (
     <tr className="animate-pulse h-14">
       <td className="px-3 py-3 w-10">
-        <div className="w-4 h-4 rounded bg-surface-2" />
+        <div className="w-4 h-4 rounded bg-secondary" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3.5 w-40 bg-surface-2 rounded" />
+        <div className="h-3.5 w-40 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3 w-32 bg-surface-2 rounded" />
+        <div className="h-3 w-32 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3 w-24 bg-surface-2 rounded" />
+        <div className="h-3 w-24 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-5 w-24 bg-surface-2 rounded-full" />
+        <div className="h-5 w-24 bg-secondary rounded-full" />
       </td>
       <td className="px-3 py-3">
-        <div className="h-3 w-20 bg-surface-2 rounded" />
+        <div className="h-3 w-20 bg-secondary rounded" />
       </td>
       <td className="px-3 py-3">
         <div className="flex justify-end gap-2">
-          <div className="w-5 h-5 bg-surface-2 rounded" />
-          <div className="w-5 h-5 bg-surface-2 rounded" />
-          <div className="w-5 h-5 bg-surface-2 rounded" />
+          <div className="w-5 h-5 bg-secondary rounded" />
+          <div className="w-5 h-5 bg-secondary rounded" />
+          <div className="w-5 h-5 bg-secondary rounded" />
         </div>
       </td>
     </tr>
@@ -311,21 +311,21 @@ export const LeadsTable = memo(function LeadsTable({
   return (
     <>
       <TooltipLayer tip={tooltip.tip} />
-      <div className="overflow-x-auto rounded-xl border border-border/60 bg-surface">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
-          <thead className="sticky top-0 z-10 bg-surface">
-            <tr className="border-b border-border/40 bg-surface">
+          <thead className="sticky top-0 z-10 bg-card">
+            <tr className="border-b border-border/40 bg-card">
               <th className="px-3 py-3 w-10 text-left">
                 {onSelectionChange && (
                   <button
                     onClick={handleToggleAll}
                     className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
+                      "w-4 h-4 rounded border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       allSelected
-                        ? "bg-accent border-accent text-accent-text"
+                        ? "bg-primary border-primary text-primary-foreground"
                         : someSelected
-                          ? "bg-accent/30 border-accent"
-                          : "border-border hover:border-border-strong"
+                          ? "bg-primary/30 border-primary"
+                          : "border-border hover:border-border"
                     )}
                     aria-label="Select all on page"
                     title="Select all on page"
@@ -344,12 +344,12 @@ export const LeadsTable = memo(function LeadsTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[200px]"
+                className="min-w-52"
               />
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted min-w-[180px]">
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground min-w-48">
                 Email
               </th>
-              <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-text-muted min-w-[120px]">
+              <th className="px-3 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground min-w-32">
                 Phone
               </th>
               <SortHeader
@@ -358,7 +358,7 @@ export const LeadsTable = memo(function LeadsTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[140px]"
+                className="min-w-36"
               />
               <SortHeader
                 label="Last activity"
@@ -366,9 +366,9 @@ export const LeadsTable = memo(function LeadsTable({
                 currentField={sortField}
                 order={sortOrder}
                 onSort={onSortChange}
-                className="min-w-[160px]"
+                className="min-w-40"
               />
-              <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-text-muted w-[140px]">
+              <th className="px-3 py-3 text-right text-xs font-medium uppercase tracking-wider text-muted-foreground w-36">
                 Actions
               </th>
             </tr>
@@ -385,7 +385,7 @@ export const LeadsTable = memo(function LeadsTable({
                   const isDNC = !!lead.doNotContact;
                   const primaryStatus = lead.pipelineStage || lead.engagementStatus || lead.status || "new";
                   const domain = lead.pipelineStage ? "pipeline" : lead.engagementStatus ? "engagement" : "engagement";
-                  const pillColor = STATUS_PILL_COLORS[primaryStatus] ?? "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700";
+                  const pillColor = STATUS_PILL_COLORS[primaryStatus] ?? "bg-muted text-muted-foreground border-border";
 
                   return (
                     <motion.tr
@@ -395,9 +395,9 @@ export const LeadsTable = memo(function LeadsTable({
                       transition={springSoft}
                       className={cn(
                         "border-b border-border/20 transition-colors group relative h-14",
-                        !isSelected && !isDNC && "hover:bg-surface-2",
-                        isSelected && "bg-blue/5",
-                        isDNC && "bg-red/[0.06]"
+                        !isSelected && !isDNC && "hover:bg-secondary",
+                        isSelected && "bg-primary/5",
+                        isDNC && "bg-destructive/[0.06]"
                       )}
                     >
                       {/* Checkbox */}
@@ -411,10 +411,10 @@ export const LeadsTable = memo(function LeadsTable({
                               onSelectionChange?.(next);
                             }}
                             className={cn(
-                              "w-4 h-4 rounded border flex items-center justify-center transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
+                              "w-4 h-4 rounded border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                               isSelected
-                                ? "bg-accent border-accent text-accent-text"
-                                : "border-border hover:border-border-strong"
+                                ? "bg-primary border-primary text-primary-foreground"
+                                : "border-border hover:border-border"
                             )}
                             aria-label={isSelected ? "Deselect row" : "Select row"}
                           >
@@ -431,18 +431,18 @@ export const LeadsTable = memo(function LeadsTable({
                       <td className="px-3 py-0">
                         <Link
                           href={`/leads/${lead.id}`}
-                          className="group/link flex items-center gap-1.5 py-3 text-text text-sm hover:text-blue transition-colors hover:underline underline-offset-2"
+                          className="group/link flex items-center gap-1.5 py-3 text-foreground text-sm hover:text-primary transition-colors hover:underline underline-offset-2"
                         >
                           {isDNC && (
                             <span
-                              className="inline-flex text-red shrink-0"
+                              className="inline-flex text-destructive shrink-0"
                               onMouseEnter={(e) => tooltip.show("Do not contact — this lead has been marked DNC", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
                             >
                               <Ban className="w-4 h-4" />
                             </span>
                           )}
-                          <span className="truncate max-w-[220px]">
+                          <span className="truncate max-w-56">
                             {lead.business_name}
                           </span>
                         </Link>
@@ -453,25 +453,25 @@ export const LeadsTable = memo(function LeadsTable({
                         <div className="inline-flex items-center gap-1.5">
                           {lead.email && lead.email_status === "valid" ? (
                             <span
-                              className="inline-flex items-center gap-1.5 text-green"
+                              className="inline-flex items-center gap-1.5 text-success"
                               onMouseEnter={(e) => tooltip.show("Verified email address", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
                             >
                               <MailCheck className="w-4 h-4" />
-                              <span className="text-text text-sm">{lead.email}</span>
+                              <span className="text-foreground text-sm">{lead.email}</span>
                             </span>
                           ) : lead.email ? (
                             <span
-                              className="inline-flex items-center gap-1.5 text-text-faint"
+                              className="inline-flex items-center gap-1.5 text-muted-foreground"
                               onMouseEnter={(e) => tooltip.show("Email found but not verified", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
                             >
                               <Mail className="w-4 h-4" />
-                              <span className="text-text text-sm">{lead.email}</span>
+                              <span className="text-foreground text-sm">{lead.email}</span>
                             </span>
                           ) : (
                             <span
-                              className="text-text-faint text-sm"
+                              className="text-muted-foreground text-sm"
                               onMouseEnter={(e) => tooltip.show("Email not yet available", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
                             >
@@ -482,12 +482,12 @@ export const LeadsTable = memo(function LeadsTable({
                       </td>
 
                       {/* Phone */}
-                      <td className="px-3 py-3 text-text text-sm">
+                      <td className="px-3 py-3 text-foreground text-sm">
                         {lead.phone ? (
                           <span>{lead.phone}</span>
                         ) : (
                           <span
-                            className="text-text-faint"
+                            className="text-muted-foreground"
                             onMouseEnter={(e) => tooltip.show("Phone number not yet available", e.currentTarget as HTMLElement)}
                             onMouseLeave={tooltip.hide}
                           >
@@ -512,7 +512,7 @@ export const LeadsTable = memo(function LeadsTable({
                             onStatusChange={(_id, patch) => onStatusChange?.(lead.id, patch)}
                           />
                           {/* Domain prefix — optional per PRD. Hidden by default; show if colour alone insufficient in testing. */}
-                          <span className="text-[9px] text-text-faint uppercase hidden">
+                          <span className="text-[9px] text-muted-foreground uppercase hidden">
                             {domain === "engagement" ? "E" : "P"}
                           </span>
                         </div>
@@ -522,12 +522,12 @@ export const LeadsTable = memo(function LeadsTable({
                       <td className="px-3 py-3">
                         {lead.lastActivity ? (
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-sm text-text-muted">
+                            <span className="text-sm text-muted-foreground">
                               {lead.lastActivity.label} · {formatRelativeTime(lead.lastActivity.timestamp)}
                             </span>
                           </div>
                         ) : (
-                          <span className="text-sm text-text-faint">—</span>
+                          <span className="text-sm text-muted-foreground">—</span>
                         )}
                       </td>
 
@@ -542,11 +542,12 @@ export const LeadsTable = memo(function LeadsTable({
                             aria-disabled={isDNC || !lead.email}
                             tabIndex={isDNC || !lead.email ? -1 : 0}
                             className={cn(
-                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
+                              "p-1.5 rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                               isDNC || !lead.email
-                                ? "opacity-40 cursor-not-allowed text-text-faint"
-                                : "text-text-muted hover:text-blue hover:bg-blue/10"
+                                ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                             )}
+                            aria-label={isDNC ? "Actions disabled — lead is marked Do Not Contact" : !lead.email ? "Missing email" : "Send email"}
                             onMouseEnter={(e) =>
                               tooltip.show(
                                 isDNC
@@ -574,11 +575,12 @@ export const LeadsTable = memo(function LeadsTable({
                             aria-disabled={isDNC || !lead.phone}
                             tabIndex={isDNC || !lead.phone ? -1 : 0}
                             className={cn(
-                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
+                              "p-1.5 rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                               isDNC || !lead.phone
-                                ? "opacity-40 cursor-not-allowed text-text-faint"
-                                : "text-text-muted hover:text-green hover:bg-green/10"
+                                ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                                : "text-muted-foreground hover:text-success hover:bg-success/10"
                             )}
+                            aria-label={isDNC ? "Actions disabled — lead is marked Do Not Contact" : !lead.phone ? "Missing phone" : "Send WhatsApp message"}
                             onMouseEnter={(e) =>
                               tooltip.show(
                                 isDNC
@@ -602,11 +604,12 @@ export const LeadsTable = memo(function LeadsTable({
                             aria-disabled={isDNC || !lead.phone}
                             tabIndex={isDNC || !lead.phone ? -1 : 0}
                             className={cn(
-                              "p-1.5 rounded-md transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40",
+                              "p-1.5 rounded-md transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                               isDNC || !lead.phone
-                                ? "opacity-40 cursor-not-allowed text-text-faint"
-                                : "text-text-muted hover:text-blue hover:bg-blue/10"
+                                ? "opacity-40 cursor-not-allowed text-muted-foreground"
+                                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
                             )}
+                            aria-label={isDNC ? "Actions disabled — lead is marked Do Not Contact" : !lead.phone ? "Missing phone" : "Send SMS"}
                             onMouseEnter={(e) =>
                               tooltip.show(
                                 isDNC
@@ -641,7 +644,8 @@ export const LeadsTable = memo(function LeadsTable({
                                   });
                                 }
                               }}
-                              className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-surface-2 transition-colors focus:outline-none focus:ring-1 focus:ring-primary/40"
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              aria-label="More actions"
                               onMouseEnter={(e) => tooltip.show("More actions", e.currentTarget as HTMLElement)}
                               onMouseLeave={tooltip.hide}
                             >
@@ -651,7 +655,7 @@ export const LeadsTable = memo(function LeadsTable({
                               <div
                                 id="leads-overflow-menu"
                                 style={{ position: "fixed", top: overflowPos.top, left: overflowPos.left, zIndex: 100 }}
-                                className="w-48 rounded-lg border border-border/60 bg-surface shadow-lg py-1"
+                                className="w-48 rounded-lg border border-border bg-card shadow-lg py-1"
                               >
                                 <OverflowItem
                                   icon={<ListPlus className="w-4 h-4" />}
@@ -746,12 +750,12 @@ function OverflowItem({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "w-full px-3 py-2 text-sm text-left flex items-center gap-2 transition-colors",
+        "w-full px-3 py-2 text-sm text-left flex items-center gap-2 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         disabled
-          ? "opacity-40 cursor-not-allowed text-text-faint"
+          ? "opacity-40 cursor-not-allowed text-muted-foreground"
           : danger
-            ? "text-red hover:bg-red/5"
-            : "text-text-muted hover:bg-surface-2 hover:text-text"
+            ? "text-destructive hover:bg-destructive/5"
+            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
     >
       {icon}
