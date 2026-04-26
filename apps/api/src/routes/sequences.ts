@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { getUserId, supabaseAdmin, createActivity } from '../db';
-import { schedulerQueue, deadLeadQueue } from '../services/sequence-scheduler';
+import { schedulerQueue, deadLeadQueue, isSchedulerHealthy } from '../services/sequence-scheduler';
 import { enforceFeatureGate, enforceCredits, EnforcementError } from '../lib/billing/enforce';
 import { incrementUsage } from '../lib/usage';
 
@@ -276,6 +276,10 @@ router.post('/:id/enroll', async (c) => {
         }
         throw err;
       }
+    }
+
+    if (!isSchedulerHealthy()) {
+      return c.json({ error: 'Sequence scheduler is currently unavailable. Please try again shortly.' }, 503);
     }
 
     // Verify sequence exists and is active

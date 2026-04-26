@@ -84,11 +84,29 @@ router.get('/dashboard', async (c) => {
       .eq('user_id', userId);
 
     const enrollCount = new Map<string, number>();
-    let deadLeadsPending = 0;
     for (const e of enrollStats ?? []) {
       const s = e.status as string;
       enrollCount.set(s, (enrollCount.get(s) ?? 0) + 1);
-      if (s === 'failed' || s === 'paused') deadLeadsPending++;
+    }
+
+    // Dead leads pending: dead_lead_prompt activities in last 7 days where lead is still new/contacted
+    let deadLeadsPending = 0;
+    const { data: deadActivities } = await supabaseAdmin
+      .from('lead_activities')
+      .select('lead_id')
+      .eq('user_id', userId)
+      .eq('type', 'dead_lead_prompt')
+      .gte('created_at', weekStart.toISOString());
+
+    if (deadActivities && deadActivities.length > 0) {
+      const leadIds = [...new Set(deadActivities.map((a: { lead_id: string }) => a.lead_id))];
+      const { count: pendingCount } = await supabaseAdmin
+        .from('leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .in('id', leadIds)
+        .in('status', ['new', 'contacted']);
+      deadLeadsPending = pendingCount ?? 0;
     }
     return c.json({
       kpis: { total_leads: totalLeads ?? 0, contacted: contacted ?? 0, replied: replied ?? 0, active_sequences: enrollCount.get('active') ?? 0 },
