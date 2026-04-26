@@ -80,16 +80,16 @@ router.get('/dashboard', async (c) => {
     // Sequence stats
     const { data: enrollStats } = await supabaseAdmin
       .from('sequence_enrollments')
-      .select('status, is_failed, is_paused')
+      .select('status')
       .eq('user_id', userId);
 
     const enrollCount = new Map<string, number>();
     let deadLeadsPending = 0;
-    for (const e of enrollStats || []) {
-      enrollCount.set(e.status, (enrollCount.get(e.status) || 0) + 1);
-      if (e.is_failed || e.is_paused) deadLeadsPending++;
+    for (const e of enrollStats ?? []) {
+      const s = e.status as string;
+      enrollCount.set(s, (enrollCount.get(s) ?? 0) + 1);
+      if (s === 'failed' || s === 'paused') deadLeadsPending++;
     }
-
     return c.json({
       kpis: { total_leads: totalLeads ?? 0, contacted: contacted ?? 0, replied: replied ?? 0, active_sequences: enrollCount.get('active') ?? 0 },
       weekly_leads,
