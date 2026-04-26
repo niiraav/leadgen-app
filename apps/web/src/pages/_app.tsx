@@ -73,7 +73,7 @@ export default function App({ Component, pageProps }: AppProps) {
               <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:top-2 focus:left-2">
                 Skip to content
               </a>
-              <main id="main-content">
+              <main id="main-content" tabIndex={-1}>
                 <Component {...pageProps} />
               </main>
               <Toaster
@@ -112,7 +112,7 @@ export default function App({ Component, pageProps }: AppProps) {
               {userEmail && <Sidebar />}
               <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-[var(--sidebar-width,256px)]" : ""}`}>
                 {userEmail && <TopBar userEmail={userEmail} />}
-                <main id="main-content" className="flex-1 pb-24 md:pb-6 overflow-y-auto">
+                <main id="main-content" tabIndex={-1} className="flex-1 pb-24 md:pb-6 overflow-y-auto">
                   <div className="p-4 md:p-6">
                     <Component {...pageProps} />
                   </div>
