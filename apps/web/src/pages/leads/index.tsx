@@ -345,7 +345,7 @@ export default function LeadsPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col">
+    <div className="h-[calc(100dvh-8rem)] flex flex-col">
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">

@@ -49,7 +49,7 @@ export default function SavedLeadsTestPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-6">
+      <div className="min-h-dvh bg-white p-6">
       <h1 className="text-xl font-bold mb-4">Saved Leads Table — Sprint 2 QA</h1>
       <SavedLeadsTable leads={leads} {...handlers} />
 

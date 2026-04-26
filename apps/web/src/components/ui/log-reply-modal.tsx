@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { X, Loader2, Send, Check } from "lucide-react";
+import FocusTrap from "focus-trap-react";
 import { Portal } from "@/components/ui/portal";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const CLASSIFICATION_STYLE: Record<string, { emoji: string; color: string; bg: string }> = {
   INTERESTED: { emoji: "🟢", color: "text-success", bg: "bg-success/10 border-green/30" },
@@ -40,6 +43,9 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
   const [error, setError] = useState("");
   const [result, setResult] = useState<ReplyResult | null>(null);
 
+  useScrollLock(true);
+  useEscapeKey(true, onClose);
+
   const handleAnalyze = async () => {
     if (!replyText.trim()) return;
     setStep("loading");
@@ -78,7 +84,8 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
   return (
     <Portal>
     <div className="fixed inset-0 bg-overlay flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-card border border-border/60 rounded-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+      <FocusTrap>
+        <div className="bg-card border border-border/60 rounded-xl w-full max-w-lg" role="dialog" aria-modal="true" aria-label={`Log Reply — ${leadName}`} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-border/40">
           <h2 className="text-base font-semibold text-foreground">Log Reply — {leadName}</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
@@ -135,7 +142,8 @@ export default function LogReplyModal({ leadId, leadName, onReplyLogged, onClose
             </>
           )}
         </div>
-      </div>
+        </div>
+      </FocusTrap>
     </div>
     </Portal>
   );

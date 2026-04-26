@@ -70,7 +70,12 @@ export default function App({ Component, pageProps }: AppProps) {
         <ReplyToastProvider>
           <UndoProvider>
             <ProfileProvider>
-              <Component {...pageProps} />
+              <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:top-2 focus:left-2">
+                Skip to content
+              </a>
+              <main id="main-content">
+                <Component {...pageProps} />
+              </main>
               <Toaster
                 position="bottom-right"
                 richColors
@@ -89,7 +94,7 @@ export default function App({ Component, pageProps }: AppProps) {
   // Show nothing while checking session on first visit after login
   if (!sessionChecked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg">
+      <div className="min-h-dvh flex items-center justify-center bg-bg">
         <div className="w-8 h-8 border-2 border-primary/30 border-t-blue rounded-full animate-spin" />
       </div>
     );
@@ -100,11 +105,14 @@ export default function App({ Component, pageProps }: AppProps) {
       <ReplyToastProvider>
         <UndoProvider>
           <ProfileProvider>
-            <div className="min-h-screen flex bg-bg">
+            <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:top-2 focus:left-2">
+              Skip to content
+            </a>
+            <div className="min-h-dvh flex bg-bg">
               {userEmail && <Sidebar />}
               <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${userEmail ? "md:ml-[var(--sidebar-width,256px)]" : ""}`}>
                 {userEmail && <TopBar userEmail={userEmail} />}
-                <main className="flex-1 pb-24 md:pb-6 overflow-y-auto">
+                <main id="main-content" className="flex-1 pb-24 md:pb-6 overflow-y-auto">
                   <div className="p-4 md:p-6">
                     <Component {...pageProps} />
                   </div>

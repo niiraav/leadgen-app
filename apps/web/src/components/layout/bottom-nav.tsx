@@ -1,8 +1,11 @@
 import { Home, Users, Search, Columns3, MoreHorizontal, X, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import FocusTrap from "focus-trap-react";
 import { createBrowserSupabaseClient } from "@/lib/supabase";
+import { useScrollLock } from "@/hooks/useScrollLock";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 const mainTabs = [
   { label: "Dashboard", href: "/dashboard", icon: Home },
@@ -43,17 +46,13 @@ export function BottomNav() {
     }
   }, [router]);
 
-  // Close drawer on ESC
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") setMoreOpen(false); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
   // Close drawer on backdrop click
   const onBackdropClick = useCallback((e: React.MouseEvent) => {
     if (sheetRef && !sheetRef.contains(e.target as Node)) setMoreOpen(false);
   }, [sheetRef]);
+
+  useScrollLock(moreOpen);
+  useEscapeKey(moreOpen, () => setMoreOpen(false));
 
   return (
     <>
@@ -69,13 +68,15 @@ export function BottomNav() {
         style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
       >
         {moreOpen && (
-          <div className={`transform transition-transform duration-300 ${moreOpen ? "translate-y-0" : "translate-y-full"}`}>
-            <div className="p-4 max-h-[60vh] overflow-y-auto">
+          <FocusTrap>
+            <div role="dialog" aria-modal="true" aria-label="More menu" className={`transform transition-transform duration-300 ${moreOpen ? "translate-y-0" : "translate-y-full"}`}>
+              <div className="p-4 max-h-[60vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold text-foreground">More</h3>
+                <h2 className="text-sm font-semibold text-foreground">More</h2>
                 <button
                   onClick={() => setMoreOpen(false)}
                   className="p-2 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+                  aria-label="Close menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -102,12 +103,13 @@ export function BottomNav() {
                 })}
               </div>
             </div>
-          </div>
+            </div>
+          </FocusTrap>
         )}
       </div>
 
       {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card/95 backdrop-blur-md border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav aria-label="Mobile navigation" className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card/95 backdrop-blur-md border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="flex items-center justify-around h-16">
           {mainTabs.map((tab) => {
             const Icon = tab.icon;

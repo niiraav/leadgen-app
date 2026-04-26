@@ -186,6 +186,8 @@ export function TopBar({ userEmail }: TopBarProps) {
             }}
             className="hidden md:flex rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors relative focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             title="Notifications"
+            aria-expanded={notifOpen}
+            aria-haspopup="menu"
           >
             <motion.div key={bellKey} animate={unreadCount > 0 ? bellShake : {}}>
               <Bell className="w-4 h-4" />
@@ -256,6 +258,9 @@ export function TopBar({ userEmail }: TopBarProps) {
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
             className="flex items-center gap-2 hover:bg-secondary rounded-full px-2 py-1 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label={userEmail ? `User menu for ${userEmail}` : "User menu"}
+            aria-expanded={dropdownOpen}
+            aria-haspopup="menu"
           >
             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-xs font-semibold text-primary">{userInitial}</span>

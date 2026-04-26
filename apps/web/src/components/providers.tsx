@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, useEffect, ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -23,7 +24,9 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {mounted ? children : <div className="min-h-screen bg-bg" />}
+      <MotionConfig reducedMotion="user">
+        {mounted ? children : <div className="min-h-dvh bg-bg" />}
+      </MotionConfig>
     </QueryClientProvider>
   );
 }

@@ -53,7 +53,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 hidden md:flex h-screen bg-card border-r border-border flex-col transition-all duration-300 z-40",
+        "fixed left-0 top-0 hidden md:flex h-dvh bg-card border-r border-border flex-col transition-all duration-300 z-40",
         collapsed ? "w-[72px]" : "w-64"
       )}
     >
@@ -70,7 +70,7 @@ export function Sidebar() {
         )}
       </div>
 
-      <nav className="flex-1 py-3 px-2 space-y-1">
+      <nav className="flex-1 py-3 px-2 space-y-1" aria-label="Primary navigation">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
@@ -94,6 +94,7 @@ export function Sidebar() {
                 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="overflow-hidden whitespace-nowrap"
+                aria-hidden={collapsed}
               >
                 {item.label}
               </motion.span>
@@ -111,6 +112,7 @@ export function Sidebar() {
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
             <ChevronRight className="w-4 h-4" />
